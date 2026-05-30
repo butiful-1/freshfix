@@ -88,32 +88,47 @@ export default function App() {
   // ── Auth initialization ───────────────────────
   useEffect(() => {
     const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const path = window.location.pathname
-
-      if (session?.user) {
-        setUser(session.user)
-        await loadProfile(session.user.id)
-        if (path !== '/success' && path !== '/cancel') goToApp()
-      }
-      setAuthChecked(true)
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const path = window.location.pathname
         if (session?.user) {
           setUser(session.user)
           await loadProfile(session.user.id)
-          if (event === 'SIGNED_IN') goToApp()
-        } else {
-          setUser(null); setProfile(null)
-          setPlan('free'); setSwapUsage({ month: '', count: 0 })
-          setScreen('splash')
+          if (path !== '/success' && path !== '/cancel') goToApp()
         }
+      } catch (e) {
+        console.error('[FreshFix] Auth init error:', e.message)
+      } finally {
+        setAuthChecked(true)
       }
-    )
-    return () => subscription.unsubscribe()
+    }
+    init()
+
+    let cleanupFn = () => {}
+    try {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          try {
+            if (session?.user) {
+              setUser(session.user)
+              await loadProfile(session.user.id)
+              if (event === 'SIGNED_IN') goToApp()
+            } else {
+              setUser(null); setProfile(null)
+              setPlan('free'); setSwapUsage({ month: '', count: 0 })
+              setScreen('splash')
+            }
+          } catch (e) {
+            console.error('[FreshFix] Auth state change error:', e.message)
+          }
+        }
+      )
+      cleanupFn = () => subscription.unsubscribe()
+    } catch (e) {
+      console.error('[FreshFix] Auth listener error:', e.message)
+      setAuthChecked(true)
+    }
+    return cleanupFn
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Saved recipes ─────────────────────────────
