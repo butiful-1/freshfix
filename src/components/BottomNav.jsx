@@ -1,11 +1,16 @@
+const FREE_LIMIT = 5
+
 const NAV_ITEMS = [
-  { id: 'home', label: 'Home', icon: '🏠', activeIcon: '🏡' },
-  { id: 'saved', label: 'Saved', icon: '🔖', activeIcon: '🔖' },
-  { id: 'about', label: 'About', icon: 'ℹ️', activeIcon: 'ℹ️' },
+  { id: 'home',    label: 'Home',    icon: '🏠', activeIcon: '🏡' },
+  { id: 'saved',   label: 'Saved',   icon: '🔖', activeIcon: '🔖' },
+  { id: 'pricing', label: 'Pricing', icon: '⭐', activeIcon: '⭐' },
+  { id: 'about',   label: 'About',   icon: 'ℹ️', activeIcon: 'ℹ️' },
 ]
 
-export default function BottomNav({ activeScreen, onNavigate, savedCount }) {
+export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, swapUsage }) {
   const activeBase = ['results', 'shopping'].includes(activeScreen) ? 'home' : activeScreen
+  const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
+  const atLimit = plan === 'free' && swapsLeft === 0
 
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Main navigation">
@@ -25,6 +30,9 @@ export default function BottomNav({ activeScreen, onNavigate, savedCount }) {
               </span>
               {item.id === 'saved' && savedCount > 0 && (
                 <span className="nav-badge">{savedCount > 9 ? '9+' : savedCount}</span>
+              )}
+              {item.id === 'pricing' && atLimit && (
+                <span className="nav-badge" style={{ background: 'var(--orange)' }}>!</span>
               )}
               {isActive && <div className="nav-active-dot" />}
             </div>

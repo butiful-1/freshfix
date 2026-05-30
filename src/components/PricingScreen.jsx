@@ -1,0 +1,219 @@
+import { useState } from 'react'
+
+const FREE_LIMIT = 5
+
+const PLANS = [
+  {
+    id: 'free',
+    name: 'Free',
+    price: '$0',
+    period: 'forever',
+    emoji: '🌱',
+    color: '#6B9E6D',
+    features: [
+      `${FREE_LIMIT} recipe fixes/month`,
+      'All 7 diet types',
+      'Shopping list',
+      'Save up to 3 recipes',
+    ],
+    cta: 'Your Current Plan',
+    stripeKey: null,
+  },
+  {
+    id: 'wellness',
+    name: 'Wellness',
+    price: '$9.99',
+    period: '/mo',
+    emoji: '💚',
+    color: '#22C55E',
+    popular: true,
+    features: [
+      'Unlimited recipe fixes',
+      'All 7 diet types',
+      'Shopping list',
+      'Unlimited saves',
+      'Priority AI processing',
+    ],
+    cta: 'Start Wellness',
+    stripeKey: 'wellness',
+  },
+  {
+    id: 'family',
+    name: 'Family',
+    price: '$14.99',
+    period: '/mo',
+    emoji: '👨‍👩‍👧‍👦',
+    color: '#16A34A',
+    features: [
+      'Everything in Wellness',
+      'Up to 5 family profiles',
+      'Per-profile diet preferences',
+      'Shared recipe library',
+      'Priority support',
+    ],
+    cta: 'Start Family',
+    stripeKey: 'family',
+  },
+]
+
+export default function PricingScreen({ plan, swapUsage, onBack }) {
+  const [loading, setLoading] = useState(null)
+  const [error, setError] = useState('')
+
+  const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
+
+  async function handleSubscribe(planKey) {
+    setLoading(planKey)
+    setError('')
+    try {
+      const res = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planKey }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        setError(data.error || 'Something went wrong. Please try again.')
+        setLoading(null)
+      }
+    } catch {
+      setError('Could not connect to payment service. Please try again.')
+      setLoading(null)
+    }
+  }
+
+  return (
+    <div className="animate-in">
+      <div className="screen-header">
+        <button className="back-btn" onClick={onBack} aria-label="Back">←</button>
+        <h1>Pricing</h1>
+      </div>
+
+      <div style={{ padding: '24px 16px 8px', textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🌿</div>
+        <h2 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.8, marginBottom: 8 }}>
+          Fix Recipes Without Limits
+        </h2>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          Upgrade for unlimited fixes, saves, and more.
+        </p>
+
+        {plan === 'free' && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: swapsLeft === 0 ? 'var(--red-bg)' : 'var(--green-pale)',
+            color: swapsLeft === 0 ? 'var(--red)' : 'var(--green-dark)',
+            border: `1px solid ${swapsLeft === 0 ? '#FFCDD2' : 'var(--green-light)'}`,
+            borderRadius: 20, padding: '6px 14px',
+            fontSize: 13, fontWeight: 600, marginTop: 12,
+          }}>
+            {swapsLeft === 0 ? '⚠️' : '💡'}
+            {swapsLeft === 0
+              ? 'You\'ve used all 5 free swaps this month'
+              : `${swapsLeft} of ${FREE_LIMIT} free swaps remaining this month`}
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="error-msg" style={{ margin: '0 16px 8px' }}>
+          <span className="error-icon">⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 32px' }}>
+        {PLANS.map((p) => {
+          const isCurrent = plan === p.id
+          const isLoading = loading === p.stripeKey
+
+          return (
+            <div
+              key={p.id}
+              style={{
+                background: 'white',
+                border: `2px solid ${isCurrent ? p.color : 'var(--gray-200)'}`,
+                borderRadius: 20,
+                overflow: 'hidden',
+                boxShadow: isCurrent ? `0 4px 20px ${p.color}22` : 'var(--shadow-xs)',
+                position: 'relative',
+              }}
+            >
+              {p.popular && (
+                <div style={{
+                  background: p.color, color: 'white',
+                  textAlign: 'center', fontSize: 12, fontWeight: 700,
+                  padding: '5px 0', letterSpacing: 0.5,
+                }}>
+                  ⭐ MOST POPULAR
+                </div>
+              )}
+
+              <div style={{ padding: '20px 20px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 28 }}>{p.emoji}</span>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
+                      {isCurrent && (
+                        <div style={{ fontSize: 11, fontWeight: 700, color: p.color, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                          Current Plan
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: p.color }}>{p.price}</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.period}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+                  {p.features.map((f) => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--text-secondary)' }}>
+                      <span style={{ color: p.color, fontWeight: 700, fontSize: 16, flexShrink: 0 }}>✓</span>
+                      {f}
+                    </div>
+                  ))}
+                </div>
+
+                {p.stripeKey ? (
+                  <button
+                    className="btn btn-primary"
+                    style={{ background: isCurrent ? 'var(--gray-200)' : p.color, boxShadow: 'none' }}
+                    onClick={() => !isCurrent && handleSubscribe(p.stripeKey)}
+                    disabled={isCurrent || isLoading}
+                  >
+                    {isLoading ? (
+                      <><div className="spinner" /> Redirecting to Stripe…</>
+                    ) : isCurrent ? (
+                      '✓ Active'
+                    ) : (
+                      p.cta
+                    )}
+                  </button>
+                ) : (
+                  <div style={{
+                    textAlign: 'center', fontSize: 14,
+                    color: isCurrent ? p.color : 'var(--text-muted)',
+                    fontWeight: isCurrent ? 700 : 400,
+                    padding: '10px 0',
+                  }}>
+                    {isCurrent ? '✓ Your current plan' : 'No credit card required'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="footer-disclaimer">
+        <p>Cancel anytime. No hidden fees. Billed monthly via Stripe.</p>
+        <p style={{ marginTop: 4 }}>FreshFix is for informational purposes only. Not medical advice.</p>
+      </div>
+    </div>
+  )
+}

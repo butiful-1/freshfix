@@ -1,3 +1,5 @@
+const FREE_LIMIT = 5
+
 const DIETS = [
   { id: 'GLP-1 Friendly', label: 'GLP-1 Friendly', icon: '💊' },
   { id: 'Keto', label: 'Keto', icon: '🥑' },
@@ -15,9 +17,13 @@ export default function HomeScreen({
   selectedDiets, onDietToggle,
   onTransform, isLoading, error,
   savedRecipes, onViewSaved,
+  plan, swapUsage, onUpgrade,
 }) {
   const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
   const recent = savedRecipes.slice(0, 3)
+  const swapsUsed = swapUsage?.count || 0
+  const swapsLeft = Math.max(0, FREE_LIMIT - swapsUsed)
+  const atLimit = plan === 'free' && swapsLeft === 0
 
   return (
     <div className="animate-in">
@@ -68,6 +74,33 @@ export default function HomeScreen({
           </div>
         )}
 
+        {/* Swap usage indicator for free users */}
+        {plan === 'free' && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 14px', borderRadius: 12, marginBottom: 12,
+            background: atLimit ? 'var(--red-bg)' : 'var(--green-pale)',
+            border: `1px solid ${atLimit ? '#FFCDD2' : 'var(--green-light)'}`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 16 }}>{atLimit ? '🔒' : '💡'}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: atLimit ? 'var(--red)' : 'var(--green-dark)' }}>
+                {atLimit ? 'Monthly limit reached' : `${swapsLeft} free fix${swapsLeft !== 1 ? 'es' : ''} left this month`}
+              </span>
+            </div>
+            <button
+              onClick={onUpgrade}
+              style={{
+                fontSize: 12, fontWeight: 700, color: 'white',
+                background: atLimit ? 'var(--red)' : 'var(--green)',
+                border: 'none', borderRadius: 10, padding: '4px 10px', cursor: 'pointer',
+              }}
+            >
+              Upgrade
+            </button>
+          </div>
+        )}
+
         <button
           className="btn btn-primary transform-btn"
           onClick={onTransform}
@@ -86,6 +119,14 @@ export default function HomeScreen({
         {selectedDiets.length === 0 && recipeInput.trim().length > 0 && (
           <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: 6 }}>
             Select at least one diet above to continue
+          </p>
+        )}
+        {atLimit && (
+          <p style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginTop: 6 }}>
+            Upgrade to fix unlimited recipes →{' '}
+            <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>
+              View plans
+            </button>
           </p>
         )}
       </div>

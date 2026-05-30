@@ -7,7 +7,23 @@ import ResultsScreen from './components/ResultsScreen'
 import ShoppingListScreen from './components/ShoppingListScreen'
 import SavedRecipesScreen from './components/SavedRecipesScreen'
 import AboutScreen from './components/AboutScreen'
+import PricingScreen from './components/PricingScreen'
+import UpgradeModal from './components/UpgradeModal'
+import PaymentSuccessScreen from './components/PaymentSuccessScreen'
+import PaymentCancelScreen from './components/PaymentCancelScreen'
 import BottomNav from './components/BottomNav'
+
+const FREE_LIMIT = 5
+
+function initUsage() {
+  try {
+    const month = new Date().toISOString().slice(0, 7)
+    const saved = JSON.parse(localStorage.getItem('freshfix_usage') || '{}')
+    return saved.month === month ? saved : { month, count: 0 }
+  } catch {
+    return { month: new Date().toISOString().slice(0, 7), count: 0 }
+  }
+}
 
 export default function App() {
   const [screen, setScreen] = useState('splash')
@@ -19,11 +35,30 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Subscription state
+  const [plan, setPlan] = useState(() => localStorage.getItem('freshfix_plan') || 'free')
+  const [swapUsage, setSwapUsage] = useState(initUsage)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [stripeSessionId, setStripeSessionId] = useState(null)
+
+  // Load saved recipes
   useEffect(() => {
     try {
       const saved = localStorage.getItem('freshfix_recipes')
       if (saved) setSavedRecipes(JSON.parse(saved))
     } catch {}
+  }, [])
+
+  // URL-based routing for Stripe redirect pages
+  useEffect(() => {
+    const path = window.location.pathname
+    const params = new URLSearchParams(window.location.search)
+    if (path === '/success') {
+      setStripeSessionId(params.get('session_id'))
+      setScreen('success')
+    } else if (path === '/cancel') {
+      setScreen('cancel')
+    }
   }, [])
 
   const handleGetStarted = () => {
@@ -65,6 +100,12 @@ export default function App() {
       return
     }
 
+    // Enforce free-tier swap limit
+    if (plan === 'free' && swapUsage.count >= FREE_LIMIT) {
+      setShowUpgradeModal(true)
+      return
+    }
+
     setIsLoading(true)
     setError('')
 
@@ -81,6 +122,13 @@ export default function App() {
       const result = { ...data, originalRecipe: recipeInput, diets: selectedDiets, id: Date.now() }
       setTransformResult(result)
       setScreen('results')
+
+      // Increment free-tier usage counter
+      if (plan === 'free') {
+        const newUsage = { ...swapUsage, count: swapUsage.count + 1 }
+        setSwapUsage(newUsage)
+        try { localStorage.setItem('freshfix_usage', JSON.stringify(newUsage)) } catch {}
+      }
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {
@@ -115,7 +163,16 @@ export default function App() {
     setScreen('home')
   }
 
-  const showNav = !['splash', 'onboarding'].includes(screen)
+  const handlePlanUpdate = (newPlan) => {
+    setPlan(newPlan)
+    localStorage.setItem('freshfix_plan', newPlan)
+    // Reset usage on upgrade
+    const usage = { month: new Date().toISOString().slice(0, 7), count: 0 }
+    setSwapUsage(usage)
+    try { localStorage.setItem('freshfix_usage', JSON.stringify(usage)) } catch {}
+  }
+
+  const showNav = !['splash', 'onboarding', 'success', 'cancel'].includes(screen)
 
   const renderScreen = () => {
     switch (screen) {
@@ -137,6 +194,9 @@ export default function App() {
             error={error}
             savedRecipes={savedRecipes}
             onViewSaved={handleViewSaved}
+            plan={plan}
+            swapUsage={swapUsage}
+            onUpgrade={() => setScreen('pricing')}
           />
         )
 
@@ -168,8 +228,39 @@ export default function App() {
           />
         )
 
+      case 'pricing':
+        return (
+          <PricingScreen
+            plan={plan}
+            swapUsage={swapUsage}
+            onBack={() => setScreen('home')}
+          />
+        )
+
       case 'about':
         return <AboutScreen />
+
+      case 'success':
+        return (
+          <PaymentSuccessScreen
+            sessionId={stripeSessionId}
+            onPlanUpdate={handlePlanUpdate}
+            onContinue={() => {
+              window.history.replaceState({}, '', '/')
+              setScreen('home')
+            }}
+          />
+        )
+
+      case 'cancel':
+        return (
+          <PaymentCancelScreen
+            onBack={() => {
+              window.history.replaceState({}, '', '/')
+              setScreen('pricing')
+            }}
+          />
+        )
 
       default:
         return null
@@ -179,6 +270,14 @@ export default function App() {
   return (
     <div className="app">
       {showDisclaimer && <DisclaimerPopup onAgree={handleAgreeDisclaimer} />}
+
+      {showUpgradeModal && (
+        <UpgradeModal
+          swapUsage={swapUsage}
+          onClose={() => setShowUpgradeModal(false)}
+          onViewPlans={() => { setShowUpgradeModal(false); setScreen('pricing') }}
+        />
+      )}
 
       {/* Loading overlay during transform */}
       {isLoading && (
@@ -201,6 +300,8 @@ export default function App() {
           activeScreen={screen}
           onNavigate={setScreen}
           savedCount={savedRecipes.length}
+          plan={plan}
+          swapUsage={swapUsage}
         />
       )}
     </div>
