@@ -82,31 +82,14 @@ function StarRow({ count }) {
   )
 }
 
-export default function SplashScreen({ onGetStarted }) {
+export default function SplashScreen({ onSignUp, onLogin }) {
   const [visible, setVisible]   = useState(false)
-  const [subLoading, setSubLoading] = useState(null)
   const pricingRef = useRef(null)
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 80)
     return () => clearTimeout(t)
   }, [])
-
-  async function handleSubscribe(planKey) {
-    setSubLoading(planKey)
-    try {
-      const res = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planKey }),
-      })
-      const data = await res.json()
-      if (data.url) { window.location.href = data.url; return }
-    } catch {}
-    // Fallback: start free flow
-    setSubLoading(null)
-    onGetStarted()
-  }
 
   const scrollToPricing = () =>
     pricingRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -157,13 +140,18 @@ export default function SplashScreen({ onGetStarted }) {
           </p>
 
           {/* CTAs */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, margin: '0 auto 28px' }}>
-            <button className="btn btn-primary" onClick={onGetStarted} style={{ fontSize: 17, minHeight: 54 }}>
-              🌿 Get Started Free
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, margin: '0 auto 24px' }}>
+            <button className="btn btn-primary" onClick={onSignUp} style={{ fontSize: 17, minHeight: 54 }}>
+              🌿 Sign Up Free
             </button>
-            <button className="btn btn-secondary" onClick={scrollToPricing} style={{ fontSize: 15 }}>
-              View Pricing →
-            </button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-secondary" onClick={onLogin} style={{ fontSize: 15, flex: 1 }}>
+                Sign In
+              </button>
+              <button className="btn btn-secondary" onClick={scrollToPricing} style={{ fontSize: 15, flex: 1 }}>
+                Pricing →
+              </button>
+            </div>
           </div>
 
           {/* Diet badges */}
@@ -289,7 +277,7 @@ export default function SplashScreen({ onGetStarted }) {
                   <span style={{ fontSize: 11, color: TM }}>{p.period}</span>
                 </div>
                 <button
-                  onClick={() => p.planKey ? handleSubscribe(p.planKey) : onGetStarted()}
+                  onClick={onSignUp}
                   disabled={subLoading === p.planKey}
                   style={{
                     background: p.color, color: 'white',
@@ -299,7 +287,7 @@ export default function SplashScreen({ onGetStarted }) {
                     opacity: subLoading === p.planKey ? 0.7 : 1,
                   }}
                 >
-                  {subLoading === p.planKey ? '…' : (p.planKey ? 'Start →' : 'Free →')}
+                  {p.planKey ? 'Start →' : 'Free →'}
                 </button>
               </div>
             </div>
@@ -327,10 +315,16 @@ export default function SplashScreen({ onGetStarted }) {
         </p>
         <button
           className="btn btn-primary"
-          onClick={onGetStarted}
+          onClick={onSignUp}
           style={{ maxWidth: 320, width: '100%', fontSize: 17, minHeight: 54 }}
         >
-          🌿 Get Started Free →
+          🌿 Sign Up Free →
+        </button>
+        <button
+          onClick={onLogin}
+          style={{ background: 'none', border: 'none', color: 'var(--green-dark)', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 10 }}
+        >
+          Already have an account? Sign In →
         </button>
       </section>
 

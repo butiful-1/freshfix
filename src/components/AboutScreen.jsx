@@ -24,7 +24,7 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen() {
+export default function AboutScreen({ user, onLogout }) {
   return (
     <div className="animate-in">
       <div className="screen-header">
@@ -127,6 +127,25 @@ export default function AboutScreen() {
             for transformation — it is not retained or used for training.
           </p>
         </div>
+
+        {/* Account */}
+        {user && (
+          <div className="about-section">
+            <h3>Account</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--gray-50)', borderRadius: 14, border: '1px solid var(--gray-200)' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Signed in as</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{user.email}</div>
+              </div>
+              <button
+                onClick={onLogout}
+                style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Contact */}
         <div className="about-section">
