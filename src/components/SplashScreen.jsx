@@ -278,13 +278,11 @@ export default function SplashScreen({ onSignUp, onLogin }) {
                 </div>
                 <button
                   onClick={onSignUp}
-                  disabled={subLoading === p.planKey}
                   style={{
                     background: p.color, color: 'white',
                     border: 'none', borderRadius: 12, padding: '8px 14px',
                     fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     whiteSpace: 'nowrap', minWidth: 68,
-                    opacity: subLoading === p.planKey ? 0.7 : 1,
                   }}
                 >
                   {p.planKey ? 'Start →' : 'Free →'}
