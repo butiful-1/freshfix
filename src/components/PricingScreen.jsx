@@ -16,7 +16,6 @@ const PLANS = [
       'Shopping list',
       'Save up to 3 recipes',
     ],
-    cta: 'Your Current Plan',
     stripeKey: null,
   },
   {
@@ -34,7 +33,6 @@ const PLANS = [
       'Unlimited saves',
       'Priority AI processing',
     ],
-    cta: 'Start Wellness',
     stripeKey: 'wellness',
   },
   {
@@ -51,14 +49,73 @@ const PLANS = [
       'Shared recipe library',
       'Priority support',
     ],
-    cta: 'Start Family',
     stripeKey: 'family',
   },
 ]
 
+const FAQ = [
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes — cancel anytime with no penalties. Your plan stays active until the end of the billing period, then reverts to Free.',
+  },
+  {
+    q: 'Is there a free trial for paid plans?',
+    a: `We offer ${FREE_LIMIT} free recipe fixes every month on the Free plan — forever. Try FreshFix before you commit to anything.`,
+  },
+  {
+    q: 'What payment methods are accepted?',
+    a: 'All major credit and debit cards via Stripe\'s secure checkout. Apple Pay and Google Pay are available where supported.',
+  },
+  {
+    q: "What's included in the Family plan?",
+    a: 'Everything in Wellness, plus up to 5 separate family profiles — each with their own diet preferences, saved recipes, and swap history.',
+  },
+  {
+    q: 'Can I switch between plans?',
+    a: 'Yes. Upgrade or downgrade at any time. Changes take effect at your next billing cycle. Upgrades are prorated.',
+  },
+  {
+    q: 'Is my recipe data private?',
+    a: 'Absolutely. Your recipes are stored only on your device. Recipe text is sent to the Claude AI API for transformation only — nothing is stored on our servers.',
+  },
+]
+
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{
+      borderBottom: '1px solid var(--gray-200)',
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: 'none', border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 0', cursor: 'pointer', textAlign: 'left', gap: 12,
+          fontFamily: 'var(--font)',
+        }}
+      >
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 }}>{q}</span>
+        <span style={{
+          fontSize: 18, color: 'var(--green)', flexShrink: 0,
+          transform: open ? 'rotate(45deg)' : 'rotate(0)',
+          transition: 'transform 0.2s ease',
+          display: 'inline-block',
+        }}>+</span>
+      </button>
+      {open && (
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, paddingBottom: 16, marginTop: -4 }}>
+          {a}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function PricingScreen({ plan, swapUsage, onBack }) {
   const [loading, setLoading] = useState(null)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
 
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
 
@@ -72,16 +129,12 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
         body: JSON.stringify({ plan: planKey }),
       })
       const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        setError(data.error || 'Something went wrong. Please try again.')
-        setLoading(null)
-      }
+      if (data.url) { window.location.href = data.url; return }
+      setError(data.error || 'Something went wrong. Please try again.')
     } catch {
       setError('Could not connect to payment service. Please try again.')
-      setLoading(null)
     }
+    setLoading(null)
   }
 
   return (
@@ -91,6 +144,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
         <h1>Pricing</h1>
       </div>
 
+      {/* Header */}
       <div style={{ padding: '24px 16px 8px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🌿</div>
         <h2 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.8, marginBottom: 8 }}>
@@ -111,8 +165,8 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
           }}>
             {swapsLeft === 0 ? '⚠️' : '💡'}
             {swapsLeft === 0
-              ? 'You\'ve used all 5 free swaps this month'
-              : `${swapsLeft} of ${FREE_LIMIT} free swaps remaining this month`}
+              ? 'You\'ve used all 5 free fixes this month'
+              : `${swapsLeft} of ${FREE_LIMIT} free fixes remaining this month`}
           </div>
         )}
       </div>
@@ -124,33 +178,25 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 32px' }}>
+      {/* Plan cards */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 8px' }}>
         {PLANS.map((p) => {
           const isCurrent = plan === p.id
           const isLoading = loading === p.stripeKey
 
           return (
-            <div
-              key={p.id}
-              style={{
-                background: 'white',
-                border: `2px solid ${isCurrent ? p.color : 'var(--gray-200)'}`,
-                borderRadius: 20,
-                overflow: 'hidden',
-                boxShadow: isCurrent ? `0 4px 20px ${p.color}22` : 'var(--shadow-xs)',
-                position: 'relative',
-              }}
-            >
+            <div key={p.id} style={{
+              background: 'white',
+              border: `2px solid ${isCurrent ? p.color : 'var(--gray-200)'}`,
+              borderRadius: 20, overflow: 'hidden',
+              boxShadow: isCurrent ? `0 4px 20px ${p.color}22` : 'var(--shadow-xs)',
+              position: 'relative',
+            }}>
               {p.popular && (
-                <div style={{
-                  background: p.color, color: 'white',
-                  textAlign: 'center', fontSize: 12, fontWeight: 700,
-                  padding: '5px 0', letterSpacing: 0.5,
-                }}>
+                <div style={{ background: p.color, color: 'white', textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '5px 0', letterSpacing: 0.5 }}>
                   ⭐ MOST POPULAR
                 </div>
               )}
-
               <div style={{ padding: '20px 20px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -186,21 +232,10 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
                     onClick={() => !isCurrent && handleSubscribe(p.stripeKey)}
                     disabled={isCurrent || isLoading}
                   >
-                    {isLoading ? (
-                      <><div className="spinner" /> Redirecting to Stripe…</>
-                    ) : isCurrent ? (
-                      '✓ Active'
-                    ) : (
-                      p.cta
-                    )}
+                    {isLoading ? <><div className="spinner" /> Redirecting to Stripe…</> : isCurrent ? '✓ Active' : p.name === 'Wellness' ? 'Start Wellness →' : 'Start Family →'}
                   </button>
                 ) : (
-                  <div style={{
-                    textAlign: 'center', fontSize: 14,
-                    color: isCurrent ? p.color : 'var(--text-muted)',
-                    fontWeight: isCurrent ? 700 : 400,
-                    padding: '10px 0',
-                  }}>
+                  <div style={{ textAlign: 'center', fontSize: 14, color: isCurrent ? p.color : 'var(--text-muted)', fontWeight: isCurrent ? 700 : 400, padding: '10px 0' }}>
                     {isCurrent ? '✓ Your current plan' : 'No credit card required'}
                   </div>
                 )}
@@ -210,9 +245,40 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
         })}
       </div>
 
-      <div className="footer-disclaimer">
-        <p>Cancel anytime. No hidden fees. Billed monthly via Stripe.</p>
-        <p style={{ marginTop: 4 }}>FreshFix is for informational purposes only. Not medical advice.</p>
+      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '8px 16px 4px' }}>
+        Cancel anytime · No hidden fees · Billed monthly via Stripe
+      </p>
+
+      {/* FAQ */}
+      <div style={{ padding: '32px 16px 16px' }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.4, marginBottom: 4 }}>
+          Frequently Asked Questions
+        </h3>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+          Everything you need to know about FreshFix pricing.
+        </p>
+        <div>
+          {FAQ.map((item) => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+        </div>
+
+        <div style={{
+          marginTop: 28, padding: '20px', background: 'var(--green-pale)',
+          borderRadius: 16, border: '1px solid var(--green-light)', textAlign: 'center',
+        }}>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            Still have questions?
+          </p>
+          <a
+            href="mailto:hello@freshfix.app"
+            style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)', textDecoration: 'none' }}
+          >
+            ✉️ hello@freshfix.app
+          </a>
+        </div>
+      </div>
+
+      <div className="footer-disclaimer" style={{ marginTop: 8 }}>
+        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )
