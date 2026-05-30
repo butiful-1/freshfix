@@ -83,7 +83,7 @@ export default function LoginScreen({ onSignUp }) {
           {forgotMode ? 'Reset password' : 'Welcome back!'}
         </h1>
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 6 }}>
-          {forgotMode ? 'Enter your email to receive a reset link.' : 'Sign in to your FreshFix account.'}
+          {forgotMode ? 'Enter your email to receive a reset link.' : 'Sign in to your Old2New account.'}
         </p>
       </div>
 
@@ -180,7 +180,7 @@ export default function LoginScreen({ onSignUp }) {
       </div>
 
       <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 28, maxWidth: 300, lineHeight: 1.6 }}>
-        FreshFix is for informational purposes only. Not medical advice.
+        Old2New is for informational purposes only. Not medical advice.
       </p>
     </div>
   )

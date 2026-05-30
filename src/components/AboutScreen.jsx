@@ -3,7 +3,7 @@ const STEPS = [
     n: '1',
     icon: '📋',
     title: 'Paste or type your recipe',
-    desc: 'Enter a full recipe with ingredients, or just type a dish name like "Chicken Alfredo" — FreshFix handles both.',
+    desc: 'Enter a full recipe with ingredients, or just type a dish name like "Chicken Alfredo" — Old2New handles both.',
   },
   {
     n: '2',
@@ -30,29 +30,29 @@ export default function AboutScreen({ user, onLogout }) {
       <div className="screen-header">
         <div className="header-logo">
           <div className="header-logo-icon">🌿</div>
-          <span className="header-logo-text">Fresh<span>Fix</span></span>
+          <span className="header-logo-text">Old<span style={{color:'var(--amber)'}}>2</span><span>New</span></span>
         </div>
       </div>
 
       {/* Hero */}
       <div className="about-hero">
         <div className="about-logo">🌿</div>
-        <div className="about-name">FreshFix</div>
+        <div className="about-name">Old<span style={{color:'var(--amber)'}}>2</span><span style={{color:'var(--green)'}}>New</span></div>
         <div className="about-version">Version 1.0 · Powered by Claude AI</div>
       </div>
 
       <div className="about-content">
 
-        {/* What is FreshFix */}
+        {/* What is Old2New */}
         <div className="about-section">
-          <h3>What is FreshFix?</h3>
+          <h3>What is Old2New?</h3>
           <p>
-            FreshFix is an AI-powered recipe transformation app that takes your favorite recipes and
+            Old2New is an AI-powered recipe transformation app that takes your favorite recipes and
             makes them healthier — without losing the flavor or comfort you love.
           </p>
           <p style={{ marginTop: 10 }}>
             Whether you're managing a GLP-1 medication like Ozempic or Wegovy, following a keto lifestyle,
-            eating Mediterranean, or just trying to eat a little cleaner — FreshFix adapts any recipe to
+            eating Mediterranean, or just trying to eat a little cleaner — Old2New adapts any recipe to
             match your goals in seconds.
           </p>
         </div>
@@ -104,9 +104,9 @@ export default function AboutScreen({ user, onLogout }) {
         <div className="about-section">
           <h3>⚠️ Health Disclaimer</h3>
           <div className="about-legal">
-            <p><strong>FreshFix is a recipe transformation tool for informational purposes ONLY.</strong></p>
+            <p><strong>Old2New is a recipe transformation tool for informational purposes ONLY.</strong></p>
             <p>
-              We are not doctors, dietitians, or medical professionals. FreshFix does not provide
+              We are not doctors, dietitians, or medical professionals. Old2New does not provide
               medical advice, diagnosis, or treatment. Calorie and macro estimates are approximate
               and for general guidance only — individual results will vary.
             </p>
@@ -122,7 +122,7 @@ export default function AboutScreen({ user, onLogout }) {
         <div className="about-section">
           <h3>Privacy</h3>
           <p>
-            FreshFix does not collect or store personal data. Your recipes and saved results
+            Old2New does not collect or store personal data. Your recipes and saved results
             are stored only on your device. Recipe text is sent to the Claude AI API solely
             for transformation — it is not retained or used for training.
           </p>
@@ -168,7 +168,7 @@ export default function AboutScreen({ user, onLogout }) {
               ✉️ hello@freshfix.app
             </a>
             <p style={{ marginTop: 14, color: 'var(--text-muted)', fontSize: 13 }}>
-              FreshFix is an independent app not affiliated with any pharmaceutical company or medical institution.
+              Old2New is an independent app not affiliated with any pharmaceutical company or medical institution.
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function AboutScreen({ user, onLogout }) {
       </div>
 
       <div className="footer-disclaimer">
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

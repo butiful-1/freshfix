@@ -21,7 +21,7 @@ export default function OnboardingScreen({ onComplete }) {
       <p className="onboarding-step">Step 1 of 1</p>
       <h1 className="onboarding-title">What's your health goal?</h1>
       <p className="onboarding-sub">
-        Choose your diet preferences so FreshFix can fix recipes your way. You can always change this later.
+        Choose your diet preferences so Old2New can fix recipes your way. You can always change this later.
       </p>
 
       <div className="onboarding-grid">

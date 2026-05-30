@@ -11,6 +11,11 @@
   --green-light: #86EFAC;
   --green-pale: #DCFCE7;
   --green-bg: #F0FDF4;
+  --amber: #F59E0B;
+  --amber-dark: #B45309;
+  --amber-pale: #FEF3C7;
+  --amber-bg: #FFFBEB;
+  --shadow-amber: 0 4px 20px rgba(245, 158, 11, 0.3);
   --white: #FFFFFF;
   --gray-50: #FAFAFA;
   --gray-100: #F5F5F5;

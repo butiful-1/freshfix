@@ -19,7 +19,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
         <div className="screen-header">
           <div className="header-logo">
             <div className="header-logo-icon">🌿</div>
-            <span className="header-logo-text">Fresh<span>Fix</span></span>
+            <span className="header-logo-text">Old<span style={{color:'var(--amber)'}}>2</span><span>New</span></span>
           </div>
         </div>
         <div className="saved-empty">
@@ -31,7 +31,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
           </div>
         </div>
         <div className="footer-disclaimer">
-          <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+          <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
         </div>
       </div>
     )
@@ -42,7 +42,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
       <div className="screen-header">
         <div className="header-logo">
           <div className="header-logo-icon">🌿</div>
-          <span className="header-logo-text">Fresh<span>Fix</span></span>
+          <span className="header-logo-text">Old<span style={{color:'var(--amber)'}}>2</span><span>New</span></span>
         </div>
         <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
           {recipes.length} saved
@@ -101,7 +101,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
       </div>
 
       <div className="footer-disclaimer" style={{ marginTop: 8 }}>
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

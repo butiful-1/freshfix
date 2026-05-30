@@ -5,7 +5,7 @@ const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnon) {
   console.error(
-    '[FreshFix] Missing Supabase env vars.',
+    '[Old2New] Missing Supabase env vars.',
     'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel → Settings → Environment Variables, then redeploy.'
   )
 }

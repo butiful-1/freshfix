@@ -84,7 +84,7 @@ export default function PaymentSuccessScreen({ sessionId, onPlanUpdate, onContin
             Your subscription is being activated. It may take a moment to reflect.
           </p>
           <button className="btn btn-primary" style={{ maxWidth: 320, width: '100%' }} onClick={onContinue}>
-            Continue to FreshFix →
+            Continue to Old2New →
           </button>
         </>
       )}

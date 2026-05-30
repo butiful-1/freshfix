@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: 'Is there a free trial for paid plans?',
-    a: `We offer ${FREE_LIMIT} free recipe fixes every month on the Free plan — forever. Try FreshFix before you commit to anything.`,
+    a: `We offer ${FREE_LIMIT} free recipe fixes every month on the Free plan — forever. Try Old2New before you commit to anything.`,
   },
   {
     q: 'What payment methods are accepted?',
@@ -255,7 +255,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
           Frequently Asked Questions
         </h3>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-          Everything you need to know about FreshFix pricing.
+          Everything you need to know about Old2New pricing.
         </p>
         <div>
           {FAQ.map((item) => <FaqItem key={item.q} q={item.q} a={item.a} />)}
@@ -278,7 +278,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
       </div>
 
       <div className="footer-disclaimer" style={{ marginTop: 8 }}>
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

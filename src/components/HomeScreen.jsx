@@ -31,7 +31,7 @@ export default function HomeScreen({
       <div className="home-header">
         <div className="header-logo">
           <div className="header-logo-icon">🌿</div>
-          <span className="header-logo-text">Fresh<span>Fix</span></span>
+          <span className="header-logo-text">Old<span style={{color:'var(--amber)'}}>2</span><span>New</span></span>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export default function HomeScreen({
       </div>
 
       <div className="footer-disclaimer" style={{ marginTop: 16 }}>
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

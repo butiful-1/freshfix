@@ -11,7 +11,7 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[FreshFix] Render error:', error.message, info?.componentStack)
+    console.error('[Old2New] Render error:', error.message, info?.componentStack)
   }
 
   render() {

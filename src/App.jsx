@@ -75,8 +75,8 @@ export default function App() {
 
   // ── Navigate after sign-in ────────────────────
   const goToApp = () => {
-    const agreed    = localStorage.getItem('freshfix_agreed')
-    const onboarded = localStorage.getItem('freshfix_onboarded')
+    const agreed    = localStorage.getItem('old2new_agreed')
+    const onboarded = localStorage.getItem('old2new_onboarded')
     if (!agreed) {
       setShowDisclaimer(true)
       setScreen('onboarding')
@@ -97,7 +97,7 @@ export default function App() {
           if (path !== '/success' && path !== '/cancel') goToApp()
         }
       } catch (e) {
-        console.error('[FreshFix] Auth init error:', e.message)
+        console.error('[Old2New] Auth init error:', e.message)
       } finally {
         setAuthChecked(true)
       }
@@ -119,13 +119,13 @@ export default function App() {
               setScreen('splash')
             }
           } catch (e) {
-            console.error('[FreshFix] Auth state change error:', e.message)
+            console.error('[Old2New] Auth state change error:', e.message)
           }
         }
       )
       cleanupFn = () => subscription.unsubscribe()
     } catch (e) {
-      console.error('[FreshFix] Auth listener error:', e.message)
+      console.error('[Old2New] Auth listener error:', e.message)
       setAuthChecked(true)
     }
     return cleanupFn
@@ -134,7 +134,7 @@ export default function App() {
   // ── Saved recipes ─────────────────────────────
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('freshfix_recipes')
+      const saved = localStorage.getItem('old2new_recipes')
       if (saved) setSavedRecipes(JSON.parse(saved))
     } catch {}
   }, [])
@@ -149,13 +149,13 @@ export default function App() {
 
   // ── Handlers ─────────────────────────────────
   const handleAgreeDisclaimer = () => {
-    localStorage.setItem('freshfix_agreed', '1')
+    localStorage.setItem('old2new_agreed', '1')
     setShowDisclaimer(false)
-    setScreen(localStorage.getItem('freshfix_onboarded') ? 'home' : 'onboarding')
+    setScreen(localStorage.getItem('old2new_onboarded') ? 'home' : 'onboarding')
   }
 
   const handleOnboardingComplete = (diets) => {
-    localStorage.setItem('freshfix_onboarded', '1')
+    localStorage.setItem('old2new_onboarded', '1')
     if (diets.length > 0) setSelectedDiets(diets)
     setScreen('home')
   }
@@ -208,13 +208,13 @@ export default function App() {
     if (!transformResult) return
     const updated = [{ ...transformResult }, ...savedRecipes.filter(r => r.id !== transformResult.id)]
     setSavedRecipes(updated)
-    try { localStorage.setItem('freshfix_recipes', JSON.stringify(updated)) } catch {}
+    try { localStorage.setItem('old2new_recipes', JSON.stringify(updated)) } catch {}
   }
 
   const handleDeleteSaved = (id) => {
     const updated = savedRecipes.filter(r => r.id !== id)
     setSavedRecipes(updated)
-    try { localStorage.setItem('freshfix_recipes', JSON.stringify(updated)) } catch {}
+    try { localStorage.setItem('old2new_recipes', JSON.stringify(updated)) } catch {}
   }
 
   const handleViewSaved  = (recipe) => { setTransformResult(recipe); setScreen('results') }
@@ -228,7 +228,7 @@ export default function App() {
       await supabase.from('profiles').update({ plan: newPlan, swaps_used: 0 }).eq('id', user.id)
       setProfile(prev => prev ? { ...prev, plan: newPlan, swaps_used: 0 } : prev)
     }
-    localStorage.setItem('freshfix_plan', newPlan)
+    localStorage.setItem('old2new_plan', newPlan)
   }
 
   const handleLogout = () => supabase.auth.signOut()

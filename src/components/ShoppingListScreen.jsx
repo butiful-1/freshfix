@@ -34,20 +34,20 @@ export default function ShoppingListScreen({ result, onBack }) {
   const handlePrint = () => window.print()
 
   const handleCopy = async () => {
-    const lines = [`🛒 Shopping List — ${transformedRecipe?.name || 'FreshFix Recipe'}\n`]
+    const lines = [`🛒 Shopping List — ${transformedRecipe?.name || 'Old2New Recipe'}\n`]
     categories.forEach(([cat, items]) => {
       lines.push(`${CATEGORY_LABELS[cat] || cat}:`)
       items.forEach(item => lines.push(`  • ${item}`))
       lines.push('')
     })
-    lines.push('Made with FreshFix · Not medical advice.')
+    lines.push('Made with Old2New · Not medical advice.')
     await navigator.clipboard.writeText(lines.join('\n'))
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   const handleShare = async () => {
-    const lines = [`🛒 ${transformedRecipe?.name || 'FreshFix Recipe'} — Shopping List\n`]
+    const lines = [`🛒 ${transformedRecipe?.name || 'Old2New Recipe'} — Shopping List\n`]
     categories.forEach(([cat, items]) => {
       lines.push(`${CATEGORY_LABELS[cat] || cat}: ${items.join(', ')}`)
     })
@@ -141,7 +141,7 @@ export default function ShoppingListScreen({ result, onBack }) {
       </div>
 
       <div className="footer-disclaimer">
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

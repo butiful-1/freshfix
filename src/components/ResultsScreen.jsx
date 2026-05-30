@@ -56,10 +56,10 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   }
 
   const handleShare = async () => {
-    const text = `🌿 FreshFix Recipe Transformation\n\n${transformedRecipe?.name || 'Transformed Recipe'}\n${caloriesAfter} calories · ${diets?.join(', ')}\n\nTransformed with FreshFix\n⚠️ Not medical advice. Consult your doctor.`
+    const text = `🌿 Old2New Recipe Transformation\n\n${transformedRecipe?.name || 'Transformed Recipe'}\n${caloriesAfter} calories · ${diets?.join(', ')}\n\nTransformed with Old2New\n⚠️ Not medical advice. Consult your doctor.`
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'FreshFix Recipe', text })
+        await navigator.share({ title: 'Old2New Recipe', text })
       } catch {}
     } else {
       await navigator.clipboard.writeText(text)
@@ -285,7 +285,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
       </div>
 
       <div className="footer-disclaimer">
-        <p>FreshFix is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
     </div>
   )

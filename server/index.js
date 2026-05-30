@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3001
 app.use(cors({ origin: ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:4173'] }))
 app.use(express.json({ limit: '16kb' }))
 
-const SYSTEM_PROMPT = `You are FreshFix, a warm and encouraging recipe transformation assistant for healthy eating. You help people fix their favorite recipes into healthier, fresher versions matching their diet preferences.
+const SYSTEM_PROMPT = `You are Old2New, a warm and encouraging recipe transformation assistant for healthy eating. You help people transform their old comfort recipes into healthy new favorites matching their diet preferences.
 
 CRITICAL RULE: Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Your entire response must be a single JSON object starting with { and ending with }.
 
@@ -115,6 +115,6 @@ Transform it according to the diet preferences and return the JSON response.`
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', model: 'claude-sonnet-4-6' }))
 
 app.listen(PORT, () => {
-  console.log(`\n🌿 FreshFix API server running on http://localhost:${PORT}`)
+  console.log(`\n🌿 Old2New API server running on http://localhost:${PORT}`)
   console.log(`   API key configured: ${process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'your_api_key_here' ? '✅ Yes' : '❌ No — add to .env file'}\n`)
 })

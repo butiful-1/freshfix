@@ -151,7 +151,7 @@ export default function SignUpScreen({ onLogin }) {
 
       {/* Legal */}
       <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', marginTop: 28, maxWidth: 300, lineHeight: 1.6 }}>
-        By creating an account you agree to our terms. FreshFix is for informational purposes only. Not medical advice.
+        By creating an account you agree to our terms. Old2New is for informational purposes only. Not medical advice.
       </p>
     </div>
   )

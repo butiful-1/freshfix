@@ -29,7 +29,7 @@ const TESTIMONIALS = [
   {
     name: 'Sarah M.',
     badge: '💊 GLP-1 Friendly',
-    quote: 'FreshFix keeps me on track with my Ozempic journey. The pasta alternatives are incredible and actually taste amazing!',
+    quote: 'Old2New keeps me on track with my Ozempic journey. The pasta alternatives are incredible and actually taste amazing!',
     stars: 5,
   },
   {
@@ -126,12 +126,12 @@ export default function SplashScreen({ onSignUp, onLogin }) {
 
           {/* App name */}
           <h1 style={{ fontSize: 48, fontWeight: 800, color: T, letterSpacing: -2, marginBottom: 16, lineHeight: 1 }}>
-            Fresh<span style={{ color: G }}>Fix</span>
+            Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
           </h1>
 
           {/* Headline */}
           <p style={{ fontSize: 22, fontWeight: 700, color: T, lineHeight: 1.35, marginBottom: 12, letterSpacing: -0.5 }}>
-            Transform Any Recipe Into<br />Your Healthiest Version
+            Transform your old comfort recipes<br />into healthy new favorites
           </p>
 
           {/* Subheadline */}
@@ -166,7 +166,7 @@ export default function SplashScreen({ onSignUp, onLogin }) {
       {/* ── FEATURES ───────────────────────────────── */}
       <section style={{ padding: '48px 20px', background: 'white' }}>
         <h2 style={{ fontSize: 24, fontWeight: 800, color: T, textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 }}>
-          Why FreshFix?
+          Why Old2New?
         </h2>
         <p style={{ fontSize: 14, color: TM, textAlign: 'center', marginBottom: 28 }}>
           Smart recipe transformation in seconds
@@ -329,10 +329,10 @@ export default function SplashScreen({ onSignUp, onLogin }) {
       {/* ── FOOTER ─────────────────────────────────── */}
       <footer style={{ padding: '24px 24px 36px', background: T, textAlign: 'center' }}>
         <div style={{ fontSize: 22, fontWeight: 800, color: 'white', marginBottom: 6, letterSpacing: -0.5 }}>
-          Fresh<span style={{ color: G }}>Fix</span>
+          Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
         </div>
         <p style={{ fontSize: 11, color: '#4B7A4D', lineHeight: 1.6, marginBottom: 14 }}>
-          FreshFix is for informational purposes only. Not medical advice.<br />
+          Old2New is for informational purposes only. Not medical advice.<br />
           Always consult your physician before changing your diet.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
