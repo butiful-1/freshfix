@@ -94,7 +94,7 @@ export default function App() {
         if (session?.user) {
           setUser(session.user)
           await loadProfile(session.user.id)
-          if (path !== '/success' && path !== '/cancel') goToApp()
+          if (path !== '/success' && path !== '/cancel' && path !== '/auth/callback') goToApp()
         }
       } catch (e) {
         console.error('[Old2New] Auth init error:', e.message)
@@ -265,7 +265,7 @@ export default function App() {
 
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
-    if (!user && !['splash', 'signup', 'login', 'success', 'cancel'].includes(screen)) {
+    if (!user && !['splash', 'signup', 'login', 'callback', 'success', 'cancel'].includes(screen)) {
       return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
     }
 
