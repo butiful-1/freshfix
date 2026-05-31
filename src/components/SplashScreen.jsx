@@ -336,9 +336,9 @@ export default function SplashScreen({ onSignUp, onLogin }) {
           Always consult your physician before changing your diet.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <a href="mailto:hello@freshfix.app" style={{ fontSize: 12, color: G, textDecoration: 'none' }}>Contact</a>
+          <a href="mailto:hello@old2new.app" style={{ fontSize: 12, color: G, textDecoration: 'none' }}>Contact</a>
           <span style={{ color: '#2D4D2E', fontSize: 12 }}>·</span>
-          <span style={{ fontSize: 12, color: '#4B7A4D' }}>freshfix.app</span>
+          <span style={{ fontSize: 12, color: '#4B7A4D' }}>old2new.app</span>
         </div>
       </footer>
     </div>
