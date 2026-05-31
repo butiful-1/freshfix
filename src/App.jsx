@@ -139,12 +139,28 @@ export default function App() {
     } catch {}
   }, [])
 
-  // ── URL routing for Stripe ────────────────────
+  // ── URL routing ──────────────────────────────
   useEffect(() => {
     const path   = window.location.pathname
     const params = new URLSearchParams(window.location.search)
-    if (path === '/success') { setStripeSessionId(params.get('session_id')); setScreen('success') }
-    else if (path === '/cancel') setScreen('cancel')
+
+    if (path === '/auth/callback') {
+      // Email confirmation / OAuth callback — show loading screen while SDK
+      // exchanges the PKCE code for a session. onAuthStateChange fires
+      // SIGNED_IN on success and calls goToApp().
+      setScreen('callback')
+      window.history.replaceState({}, '', '/')
+      const code = params.get('code')
+      if (code) {
+        supabase.auth.exchangeCodeForSession(code)
+          .catch(e => console.error('[Old2New] Auth callback error:', e.message))
+      }
+    } else if (path === '/success') {
+      setStripeSessionId(params.get('session_id'))
+      setScreen('success')
+    } else if (path === '/cancel') {
+      setScreen('cancel')
+    }
   }, [])
 
   // ── Handlers ─────────────────────────────────
@@ -245,7 +261,7 @@ export default function App() {
     )
   }
 
-  const showNav = !['splash', 'signup', 'login', 'onboarding', 'success', 'cancel'].includes(screen)
+  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel'].includes(screen)
 
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
@@ -286,6 +302,24 @@ export default function App() {
         return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} />
       case 'pricing':
         return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} />
+      case 'callback':
+        return (
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', minHeight: '100vh', textAlign: 'center',
+            padding: 24,
+            background: 'linear-gradient(160deg, var(--green-pale), var(--green-bg) 40%, white 100%)',
+          }}>
+            <div style={{ fontSize: 56, marginBottom: 20, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
+              Verifying your email…
+            </h2>
+            <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
+              Just a moment while we log you in.
+            </p>
+            <div className="loading-dots"><span /><span /><span /></div>
+          </div>
+        )
       case 'about':
         return <AboutScreen user={user} onLogout={handleLogout} />
       case 'success':

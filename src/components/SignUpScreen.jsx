@@ -18,7 +18,7 @@ export default function SignUpScreen({ onLogin }) {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: 'https://old2new.app',
+        emailRedirectTo: 'https://old2new.app/auth/callback',
       },
     })
     setLoading(false)

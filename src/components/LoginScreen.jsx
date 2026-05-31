@@ -29,7 +29,7 @@ export default function LoginScreen({ onSignUp }) {
 
     setLoading(true); setError('')
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'https://old2new.app',
+      redirectTo: 'https://old2new.app/auth/callback',
     })
     setLoading(false)
     if (err) { setError(err.message); return }
