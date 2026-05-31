@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import SplashScreen from './components/SplashScreen'
 import SignUpScreen from './components/SignUpScreen'
@@ -27,6 +27,8 @@ export default function App() {
   // ── Navigation ────────────────────────────────
   const [screen, setScreen]             = useState('splash')
   const [showDisclaimer, setShowDisclaimer] = useState(false)
+  const [callbackStatus, setCallbackStatus] = useState('loading') // 'loading' | 'success' | 'error'
+  const inCallbackRef = useRef(false)
 
   // ── Recipe state ──────────────────────────────
   const [recipeInput, setRecipeInput]     = useState('')
@@ -112,7 +114,7 @@ export default function App() {
             if (session?.user) {
               setUser(session.user)
               await loadProfile(session.user.id)
-              if (event === 'SIGNED_IN') goToApp()
+              if (event === 'SIGNED_IN' && !inCallbackRef.current) goToApp()
             } else {
               setUser(null); setProfile(null)
               setPlan('free'); setSwapUsage({ month: '', count: 0 })
@@ -145,15 +147,19 @@ export default function App() {
     const params = new URLSearchParams(window.location.search)
 
     if (path === '/auth/callback') {
-      // Email confirmation / OAuth callback — show loading screen while SDK
-      // exchanges the PKCE code for a session. onAuthStateChange fires
-      // SIGNED_IN on success and calls goToApp().
       setScreen('callback')
+      inCallbackRef.current = true
       window.history.replaceState({}, '', '/')
       const code = params.get('code')
       if (code) {
         supabase.auth.exchangeCodeForSession(code)
-          .catch(e => console.error('[Old2New] Auth callback error:', e.message))
+          .then(() => setCallbackStatus('success'))
+          .catch(e => {
+            console.error('[Old2New] Auth callback error:', e.message)
+            setCallbackStatus('error')
+          })
+      } else {
+        setCallbackStatus('error')
       }
     } else if (path === '/success') {
       setStripeSessionId(params.get('session_id'))
@@ -302,14 +308,59 @@ export default function App() {
         return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} />
       case 'pricing':
         return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} />
-      case 'callback':
+      case 'callback': {
+        const wrapStyle = {
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '100vh', textAlign: 'center',
+          padding: 24,
+          background: 'linear-gradient(160deg, var(--green-pale), var(--green-bg) 40%, white 100%)',
+        }
+        if (callbackStatus === 'success') {
+          return (
+            <div style={wrapStyle}>
+              <div style={{ textAlign: 'center', maxWidth: 320 }}>
+                <div style={{ fontSize: 64, marginBottom: 20, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>
+                  Email Confirmed! 🌿
+                </h2>
+                <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28 }}>
+                  Your account is ready. Please sign in to get started.
+                </p>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                  onClick={() => { inCallbackRef.current = false; goToApp() }}
+                >
+                  Sign In
+                </button>
+              </div>
+            </div>
+          )
+        }
+        if (callbackStatus === 'error') {
+          return (
+            <div style={wrapStyle}>
+              <div style={{ textAlign: 'center', maxWidth: 320 }}>
+                <div style={{ fontSize: 64, marginBottom: 20 }}>⚠️</div>
+                <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>
+                  Confirmation failed.
+                </h2>
+                <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 28 }}>
+                  Please try signing up again.
+                </p>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                  onClick={() => { inCallbackRef.current = false; setScreen('signup') }}
+                >
+                  Back to Sign Up
+                </button>
+              </div>
+            </div>
+          )
+        }
         return (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', minHeight: '100vh', textAlign: 'center',
-            padding: 24,
-            background: 'linear-gradient(160deg, var(--green-pale), var(--green-bg) 40%, white 100%)',
-          }}>
+          <div style={wrapStyle}>
             <div style={{ fontSize: 56, marginBottom: 20, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
               Verifying your email…
@@ -320,6 +371,7 @@ export default function App() {
             <div className="loading-dots"><span /><span /><span /></div>
           </div>
         )
+      }
       case 'about':
         return <AboutScreen user={user} onLogout={handleLogout} />
       case 'success':
