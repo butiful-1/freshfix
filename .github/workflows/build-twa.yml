@@ -67,11 +67,11 @@ jobs:
           KEYSTORE_PATH: android.keystore
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new2024' }}
           KEY_ALIAS: old2new
-        run: gradle assembleRelease
+        run: gradle bundleRelease
 
-      - name: Upload APK
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: old2new-twa-release
-          path: twa/android/app/build/outputs/apk/release/app-release.apk
+          path: twa/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
