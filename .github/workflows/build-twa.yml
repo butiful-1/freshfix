@@ -24,16 +24,6 @@ jobs:
         with:
           gradle-version: '8.6'
 
-      - name: Generate mipmap icons
-        run: |
-          sudo apt-get install -y imagemagick
-          for spec in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
-            size="${spec%%:*}"; density="${spec##*:}"
-            mkdir -p twa/android/app/src/main/res/mipmap-$density
-            magick public/icon-512.png -resize ${size}x${size} \
-              twa/android/app/src/main/res/mipmap-$density/ic_launcher.png
-          done
-
       - name: Restore or generate keystore
         working-directory: twa/android
         env:
