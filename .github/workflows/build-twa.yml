@@ -19,33 +19,32 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Cache Bubblewrap deps
-        uses: actions/cache@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: ~/.bubblewrap
-          key: bubblewrap-${{ runner.os }}-v1
+          gradle-version: '8.6'
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Point Bubblewrap at system JDK
+      - name: Generate mipmap icons
         run: |
-          mkdir -p ~/.bubblewrap
-          echo "{\"jdkPath\":\"$JAVA_HOME\",\"androidSdkPath\":\"$HOME/.bubblewrap/android_sdk\"}" \
-            > ~/.bubblewrap/config.json
+          for spec in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
+            size="${spec%%:*}"; density="${spec##*:}"
+            mkdir -p twa/android/app/src/main/res/mipmap-$density
+            convert public/icon-512.png -resize ${size}x${size} \
+              twa/android/app/src/main/res/mipmap-$density/ic_launcher.png
+          done
 
       - name: Restore or generate keystore
+        working-directory: twa/android
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
           KEY_PASS: ${{ secrets.KEY_PASS || 'old2new_key_2024!' }}
         run: |
-          cd twa
           if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "Restoring keystore from secret…"
+            echo "Restoring keystore from secret..."
             echo "$KEYSTORE_BASE64" | base64 -d > android.keystore
           else
-            echo "Generating new keystore (first run)…"
+            echo "Generating new keystore (first run)..."
             keytool -genkeypair -v \
               -keystore android.keystore \
               -alias old2new \
@@ -55,35 +54,34 @@ jobs:
               -dname "CN=Old2New, OU=App, O=Old2New, L=US, S=US, C=US" \
               -noprompt
             echo ""
-            echo "=== Save this as KEYSTORE_BASE64 secret for future builds ==="
+            echo "=== First run: save this as KEYSTORE_BASE64 secret for reproducible future builds ==="
             base64 -w 0 android.keystore
             echo ""
           fi
 
       - name: Print SHA-256 fingerprint
+        working-directory: twa/android
         env:
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
         run: |
-          cd twa
           echo ""
-          echo "=== SHA-256 fingerprint — paste into assetlinks.json ==="
+          echo "=== SHA-256 fingerprint — add this to public/.well-known/assetlinks.json ==="
           keytool -list -v -keystore android.keystore -alias old2new \
             -storepass "$KEYSTORE_PASS" 2>&1 | grep "SHA256:"
           echo ""
 
-      - name: Build TWA APK
+      - name: Build signed APK
+        working-directory: twa/android
         env:
+          KEYSTORE_PATH: android.keystore
           KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
+          KEY_ALIAS: old2new
           KEY_PASS: ${{ secrets.KEY_PASS || 'old2new_key_2024!' }}
-        run: |
-          cd twa
-          # Pipe answers: Y=SDK download, then keystore password, key password
-          printf "Y\n%s\n%s\n" "$KEYSTORE_PASS" "$KEY_PASS" | \
-            bubblewrap build --skipPwaValidation 2>&1
+        run: gradle assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: old2new-twa-release
-          path: twa/app-release-signed.apk
+          path: twa/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
