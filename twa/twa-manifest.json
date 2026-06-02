@@ -1,0 +1,39 @@
+{
+  "packageId": "app.old2new.twa",
+  "host": "old2new.app",
+  "name": "Old2New",
+  "launcherName": "Old2New",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#22C55E",
+  "navigationColor": "#22C55E",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#22C55E",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://old2new.app/icon-512.png",
+  "maskableIconUrl": "https://old2new.app/icon-512.png",
+  "monochromeIconUrl": "",
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://old2new.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://old2new.app/",
+  "minSdkVersion": 19,
+  "fingerprints": [],
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "old2new"
+  },
+  "appVersion": "1",
+  "appVersionCode": 1
+}
