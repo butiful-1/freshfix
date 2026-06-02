@@ -26,10 +26,11 @@ jobs:
 
       - name: Generate mipmap icons
         run: |
+          sudo apt-get install -y imagemagick
           for spec in "48:mdpi" "72:hdpi" "96:xhdpi" "144:xxhdpi" "192:xxxhdpi"; do
             size="${spec%%:*}"; density="${spec##*:}"
             mkdir -p twa/android/app/src/main/res/mipmap-$density
-            convert public/icon-512.png -resize ${size}x${size} \
+            magick public/icon-512.png -resize ${size}x${size} \
               twa/android/app/src/main/res/mipmap-$density/ic_launcher.png
           done
 
