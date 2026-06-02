@@ -19,7 +19,7 @@ android {
             storeFile rootProject.file(System.getenv('KEYSTORE_PATH') ?: 'android.keystore')
             storePassword System.getenv('KEYSTORE_PASS') ?: ''
             keyAlias System.getenv('KEY_ALIAS') ?: 'old2new'
-            keyPassword System.getenv('KEY_PASS') ?: ''
+            keyPassword System.getenv('KEYSTORE_PASS') ?: ''
         }
     }
 

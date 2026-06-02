@@ -28,8 +28,7 @@ jobs:
         working-directory: twa/android
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
-          KEY_PASS: ${{ secrets.KEY_PASS || 'old2new_key_2024!' }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new2024' }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
             echo "Restoring keystore from secret..."
@@ -38,14 +37,15 @@ jobs:
             echo "Generating new keystore (first run)..."
             keytool -genkeypair -v \
               -keystore android.keystore \
+              -storetype JKS \
               -alias old2new \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass "$KEYSTORE_PASS" \
-              -keypass "$KEY_PASS" \
+              -keypass "$KEYSTORE_PASS" \
               -dname "CN=Old2New, OU=App, O=Old2New, L=US, S=US, C=US" \
               -noprompt
             echo ""
-            echo "=== First run: save this as KEYSTORE_BASE64 secret for reproducible future builds ==="
+            echo "=== Save this as KEYSTORE_BASE64 secret for reproducible future builds ==="
             base64 -w 0 android.keystore
             echo ""
           fi
@@ -53,7 +53,7 @@ jobs:
       - name: Print SHA-256 fingerprint
         working-directory: twa/android
         env:
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new2024' }}
         run: |
           echo ""
           echo "=== SHA-256 fingerprint — add this to public/.well-known/assetlinks.json ==="
@@ -65,9 +65,8 @@ jobs:
         working-directory: twa/android
         env:
           KEYSTORE_PATH: android.keystore
-          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new_ks_2024!' }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS || 'old2new2024' }}
           KEY_ALIAS: old2new
-          KEY_PASS: ${{ secrets.KEY_PASS || 'old2new_key_2024!' }}
         run: gradle assembleRelease
 
       - name: Upload APK
