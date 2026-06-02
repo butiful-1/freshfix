@@ -22,7 +22,7 @@ export default function PaymentCancelScreen({ onBack }) {
         </button>
         <button className="btn btn-ghost" onClick={() => {
           window.history.replaceState({}, '', '/')
-          onBack()
+          window.location.reload()
         }}>
           Back to Home
         </button>

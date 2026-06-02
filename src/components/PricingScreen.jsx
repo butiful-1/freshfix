@@ -20,14 +20,14 @@ const PLANS = [
   },
   {
     id: 'wellness',
-    name: 'Wellness',
+    name: 'Basic',
     price: '$9.99',
     period: '/mo',
     emoji: '💚',
     color: '#22C55E',
     popular: true,
     features: [
-      'Unlimited recipe fixes',
+      '50 recipe fixes/month',
       'All 7 diet types',
       'Shopping list',
       'Unlimited saves',
@@ -37,16 +37,17 @@ const PLANS = [
   },
   {
     id: 'family',
-    name: 'Family',
+    name: 'Pro',
     price: '$14.99',
     period: '/mo',
-    emoji: '👨‍👩‍👧‍👦',
+    emoji: '⚡',
     color: '#16A34A',
     features: [
-      'Everything in Wellness',
-      'Up to 5 family profiles',
-      'Per-profile diet preferences',
-      'Shared recipe library',
+      '150 recipe fixes/month',
+      'All 7 diet types',
+      'Shopping list',
+      'Unlimited saves',
+      'Priority AI processing',
       'Priority support',
     ],
     stripeKey: 'family',
@@ -76,7 +77,7 @@ const FAQ = [
   },
   {
     q: 'Is my recipe data private?',
-    a: 'Absolutely. Your recipes are stored only on your device. Recipe text is sent to the Claude AI API for transformation only — nothing is stored on our servers.',
+    a: 'Your saved recipes are stored securely in your account. Recipe text is sent to the Claude AI API for transformation only — it is not retained or used for training. We do not sell your data.',
   },
 ]
 
@@ -151,7 +152,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
           Fix Recipes Without Limits
         </h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Upgrade for unlimited fixes, saves, and more.
+          Upgrade for more monthly fixes, saves, and more.
         </p>
 
         {plan === 'free' && (
@@ -165,7 +166,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
           }}>
             {swapsLeft === 0 ? '⚠️' : '💡'}
             {swapsLeft === 0
-              ? 'You\'ve used all 5 free fixes this month'
+              ? `You've used all ${FREE_LIMIT} free fixes this month`
               : `${swapsLeft} of ${FREE_LIMIT} free fixes remaining this month`}
           </div>
         )}
@@ -232,7 +233,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
                     onClick={() => !isCurrent && handleSubscribe(p.stripeKey)}
                     disabled={isCurrent || isLoading}
                   >
-                    {isLoading ? <><div className="spinner" /> Redirecting to Stripe…</> : isCurrent ? '✓ Active' : p.name === 'Wellness' ? 'Start Wellness →' : 'Start Family →'}
+                    {isLoading ? <><div className="spinner" /> Redirecting to Stripe…</> : isCurrent ? '✓ Active' : `Start ${p.name} →`}
                   </button>
                 ) : (
                   <div style={{ textAlign: 'center', fontSize: 14, color: isCurrent ? p.color : 'var(--text-muted)', fontWeight: isCurrent ? 700 : 400, padding: '10px 0' }}>
@@ -269,10 +270,10 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
             Still have questions?
           </p>
           <a
-            href="mailto:hello@freshfix.app"
+            href="mailto:hello@old2new.app"
             style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)', textDecoration: 'none' }}
           >
-            ✉️ hello@freshfix.app
+            ✉️ hello@old2new.app
           </a>
         </div>
       </div>

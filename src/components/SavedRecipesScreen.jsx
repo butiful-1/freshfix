@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const DIET_EMOJI = {
   'GLP-1 Friendly': '💊', Keto: '🥑', Mediterranean: '🫒',
   'High Protein': '💪', 'Low Sugar': '🍬', 'Low Calorie': '🔥', 'Diabetic Friendly': '❤️'
@@ -13,6 +15,22 @@ const BG_GRADIENTS = [
 ]
 
 export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
+  const [copiedId, setCopiedId] = useState(null)
+
+  const handleShare = async (recipe, e) => {
+    e.stopPropagation()
+    const url = `https://old2new.app/recipe/${recipe.id}`
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: recipe.transformedRecipe?.name || 'Old2New Recipe', url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setCopiedId(recipe.id)
+        setTimeout(() => setCopiedId(null), 2000)
+      }
+    } catch {}
+  }
+
   if (recipes.length === 0) {
     return (
       <div className="animate-in">
@@ -26,9 +44,6 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
           <div className="saved-empty-icon">📚</div>
           <h3>No Saved Recipes Yet</h3>
           <p>Transform a recipe and tap "Save Recipe" to see it here.</p>
-          <div style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 240 }}>
-            Your saved recipes are stored on this device.
-          </div>
         </div>
         <div className="footer-disclaimer">
           <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
@@ -75,14 +90,31 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
             >
               <div className="saved-card-thumb" style={{ background: bg }}>
                 <span style={{ fontSize: 38 }}>{emoji}</span>
-                <button
-                  className="saved-delete"
-                  onClick={e => { e.stopPropagation(); onDelete(recipe.id) }}
-                  aria-label="Delete recipe"
-                  title="Delete"
-                >
-                  ✕
-                </button>
+                <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <button
+                    className="saved-delete"
+                    onClick={e => { e.stopPropagation(); onDelete(recipe.id) }}
+                    aria-label="Delete recipe"
+                    title="Delete"
+                    style={{ position: 'static' }}
+                  >
+                    ✕
+                  </button>
+                  <button
+                    onClick={e => handleShare(recipe, e)}
+                    aria-label="Copy share link"
+                    title={copiedId === recipe.id ? 'Copied!' : 'Copy link'}
+                    style={{
+                      width: 26, height: 26, borderRadius: 8,
+                      background: 'rgba(255,255,255,0.85)', border: 'none',
+                      cursor: 'pointer', fontSize: 12, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--green-dark)',
+                    }}
+                  >
+                    {copiedId === recipe.id ? '✓' : '↑'}
+                  </button>
+                </div>
               </div>
               <div className="saved-card-body">
                 <div className="saved-card-name">{name}</div>

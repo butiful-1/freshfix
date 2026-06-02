@@ -7,6 +7,7 @@ export default function SignUpScreen({ onLogin }) {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [done, setDone]         = useState(false)
+  const [resent, setResent]     = useState(false)
 
   async function handleSignUp(e) {
     e.preventDefault()
@@ -18,7 +19,7 @@ export default function SignUpScreen({ onLogin }) {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: 'https://old2new.app/auth/callback',
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     setLoading(false)
@@ -47,8 +48,16 @@ export default function SignUpScreen({ onLogin }) {
           <button className="btn btn-primary" onClick={onLogin} style={{ width: '100%', marginBottom: 10 }}>
             Go to Sign In →
           </button>
-          <button className="btn btn-ghost" onClick={() => setDone(false)} style={{ width: '100%' }}>
-            Resend email
+          <button
+            className="btn btn-ghost"
+            style={{ width: '100%' }}
+            onClick={async () => {
+              setResent(false)
+              await supabase.auth.resend({ type: 'signup', email: email.trim() })
+              setResent(true)
+            }}
+          >
+            {resent ? '✓ Email resent!' : 'Resend confirmation email'}
           </button>
         </div>
       </div>

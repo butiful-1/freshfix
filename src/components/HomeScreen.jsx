@@ -1,5 +1,3 @@
-const FREE_LIMIT = 5
-
 const DIETS = [
   { id: 'GLP-1 Friendly', label: 'GLP-1 Friendly', icon: '💊' },
   { id: 'Keto', label: 'Keto', icon: '🥑' },
@@ -17,13 +15,18 @@ export default function HomeScreen({
   selectedDiets, onDietToggle,
   onTransform, isLoading, error,
   savedRecipes, onViewSaved,
-  plan, swapUsage, onUpgrade,
+  plan, swapUsage, onUpgrade, transformLimit,
+  dietaryPreferences,
 }) {
   const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
   const recent = savedRecipes.slice(0, 3)
   const swapsUsed = swapUsage?.count || 0
-  const swapsLeft = Math.max(0, FREE_LIMIT - swapsUsed)
-  const atLimit = plan === 'free' && swapsLeft === 0
+  const activePrefCount = Object.entries(dietaryPreferences || {}).filter(([k, v]) =>
+    k === 'custom' ? v?.trim() : v
+  ).length
+  const swapsLeft = transformLimit !== undefined ? Math.max(0, transformLimit - swapsUsed) : null
+  const atLimit = transformLimit !== undefined && swapsLeft === 0
+  const isLifetime = false
 
   return (
     <div className="animate-in">
@@ -67,6 +70,20 @@ export default function HomeScreen({
           ))}
         </div>
 
+        {activePrefCount > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', marginBottom: 8,
+            background: 'var(--amber-pale)', border: '1px solid #FCD34D',
+            borderRadius: 10, fontSize: 13, color: 'var(--amber-dark)',
+          }}>
+            <span>🔒</span>
+            <span style={{ fontWeight: 600 }}>
+              {activePrefCount} dietary restriction{activePrefCount !== 1 ? 's' : ''} auto-applied
+            </span>
+          </div>
+        )}
+
         {error && (
           <div className="error-msg mb-12">
             <span className="error-icon">⚠️</span>
@@ -74,8 +91,8 @@ export default function HomeScreen({
           </div>
         )}
 
-        {/* Swap usage indicator for free users */}
-        {plan === 'free' && (
+        {/* Usage indicator */}
+        {transformLimit !== undefined && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '10px 14px', borderRadius: 12, marginBottom: 12,
@@ -85,7 +102,12 @@ export default function HomeScreen({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 16 }}>{atLimit ? '🔒' : '💡'}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: atLimit ? 'var(--red)' : 'var(--green-dark)' }}>
-                {atLimit ? 'Monthly limit reached' : `${swapsLeft} free fix${swapsLeft !== 1 ? 'es' : ''} left this month`}
+                {atLimit
+                  ? isLifetime ? 'Free fixes used up' : 'Monthly limit reached'
+                  : isLifetime
+                    ? `${swapsLeft} of ${transformLimit} free lifetime fix${swapsLeft !== 1 ? 'es' : ''} remaining`
+                    : `${swapsLeft} of ${transformLimit} fix${swapsLeft !== 1 ? 'es' : ''} left this month`
+                }
               </span>
             </div>
             <button
@@ -123,7 +145,7 @@ export default function HomeScreen({
         )}
         {atLimit && (
           <p style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginTop: 6 }}>
-            Upgrade to fix unlimited recipes →{' '}
+            {isLifetime ? 'Upgrade to keep transforming recipes →' : 'Upgrade for more fixes →'}{' '}
             <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>
               View plans
             </button>

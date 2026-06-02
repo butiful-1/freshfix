@@ -8,6 +8,11 @@ export default function LoginScreen({ onSignUp }) {
   const [error, setError]       = useState('')
   const [forgotMode, setForgotMode] = useState(false)
   const [resetSent, setResetSent]   = useState(false)
+  const [hint, setHint] = useState(() => {
+    const msg = localStorage.getItem('old2new_login_hint') || ''
+    if (msg) localStorage.removeItem('old2new_login_hint')
+    return msg
+  })
 
   async function handleSignIn(e) {
     e.preventDefault()
@@ -85,6 +90,11 @@ export default function LoginScreen({ onSignUp }) {
       </div>
 
       <div style={{ width: '100%', maxWidth: 400 }}>
+        {hint && (
+          <div style={{ background: 'var(--green-pale)', border: '1px solid var(--green-light)', borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 14, color: 'var(--green-dark)', fontWeight: 600 }}>
+            ✅ {hint}
+          </div>
+        )}
         {error && (
           <div className="error-msg" style={{ marginBottom: 16 }}>
             <span className="error-icon">⚠️</span>

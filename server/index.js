@@ -52,8 +52,46 @@ Your JSON response must match this EXACT structure:
   "encouragement": "string - 1-2 sentence motivating message about this transformation"
 }`
 
+const SUBSTITUTE_SYSTEM_PROMPT = `You are Old2New, a helpful recipe substitution assistant. Provide practical, healthy alternatives for ingredients the user wants to swap out.
+
+CRITICAL RULE: Respond ONLY with valid JSON. No markdown, no code fences, no explanatory text. Your entire response must be a single JSON object starting with { and ending with }.
+
+Your JSON response must match this EXACT structure:
+{
+  "substitutions": [
+    {
+      "original": "string - the original ingredient name",
+      "substitute": "string - the recommended substitute",
+      "reason": "string - brief friendly reason, max 15 words"
+    }
+  ]
+}`
+
+function buildDietaryRestrictionLines(dietaryPreferences) {
+  const lines = []
+  if (dietaryPreferences?.noPork) lines.push('- No pork or pork-derived products (bacon, ham, lard, etc.)')
+  if (dietaryPreferences?.vegan) lines.push('- Vegan: strictly no animal products (no meat, poultry, seafood, dairy, eggs, honey)')
+  if (dietaryPreferences?.dairyFree) lines.push('- Dairy free: no milk, cheese, butter, cream, yogurt, or any dairy derivatives')
+  if (dietaryPreferences?.glutenFree) lines.push('- Gluten free: no wheat, barley, rye, or gluten-containing ingredients')
+  if (dietaryPreferences?.noNuts) lines.push('- No nuts or tree nuts (treat as allergy — safety-critical)')
+  if (dietaryPreferences?.custom?.trim()) lines.push(`- ${dietaryPreferences.custom.trim()}`)
+  return lines
+}
+
+function parseJsonResponse(text) {
+  let t = text.trim()
+  if (t.startsWith('```')) {
+    const match = t.match(/```(?:json)?\s*([\s\S]*?)```/)
+    if (match) t = match[1].trim()
+  }
+  const start = t.indexOf('{')
+  const end = t.lastIndexOf('}')
+  if (start !== -1 && end !== -1) t = t.slice(start, end + 1)
+  return JSON.parse(t)
+}
+
 app.post('/api/transform', async (req, res) => {
-  const { recipe, diets } = req.body
+  const { recipe, diets, dietaryPreferences } = req.body
 
   if (!recipe || !diets || !Array.isArray(diets) || diets.length === 0) {
     return res.status(400).json({ error: 'Recipe and at least one diet preference are required.' })
@@ -69,12 +107,17 @@ app.post('/api/transform', async (req, res) => {
   const client = new Anthropic({ apiKey })
 
   try {
-    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.
+    const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
+    const restrictionsSection = restrictionLines.length > 0
+      ? `\nIMPORTANT dietary restrictions that MUST be strictly followed:\n${restrictionLines.join('\n')}\n`
+      : ''
+
+    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.${restrictionsSection}
 
 Recipe input:
 ${recipe}
 
-Transform it according to the diet preferences and return the JSON response.`
+Transform it according to the diet preferences${restrictionLines.length > 0 ? ' AND dietary restrictions' : ''} and return the JSON response.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -83,22 +126,7 @@ Transform it according to the diet preferences and return the JSON response.`
       messages: [{ role: 'user', content: userMessage }]
     })
 
-    let responseText = message.content[0].text.trim()
-
-    // Strip markdown code fences if present
-    if (responseText.startsWith('```')) {
-      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (match) responseText = match[1].trim()
-    }
-
-    // Find JSON boundaries
-    const start = responseText.indexOf('{')
-    const end = responseText.lastIndexOf('}')
-    if (start !== -1 && end !== -1) {
-      responseText = responseText.slice(start, end + 1)
-    }
-
-    const result = JSON.parse(responseText)
+    const result = parseJsonResponse(message.content[0].text)
     res.json(result)
   } catch (err) {
     console.error('Transform error:', err.message)
@@ -106,8 +134,59 @@ Transform it according to the diet preferences and return the JSON response.`
       res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
     } else if (err.status === 401) {
       res.status(500).json({ error: 'Invalid API key. Please check your ANTHROPIC_API_KEY in .env.' })
+    } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
+      res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
     } else {
-      res.status(500).json({ error: err.message || 'Failed to transform recipe. Please try again.' })
+      res.status(500).json({ error: 'Something went wrong. Please try again!' })
+    }
+  }
+})
+
+app.post('/api/substitute', async (req, res) => {
+  const { ingredients, diets, recipeName, dietaryPreferences } = req.body
+
+  if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+    return res.status(400).json({ error: 'At least one ingredient is required.' })
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || apiKey === 'your_api_key_here') {
+    return res.status(500).json({ error: 'API key not configured.' })
+  }
+
+  const client = new Anthropic({ apiKey })
+
+  try {
+    const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
+    const contextParts = []
+    if (recipeName) contextParts.push(`Recipe: ${recipeName}`)
+    if (diets?.length > 0) contextParts.push(`Diet preferences: ${diets.join(', ')}`)
+    if (restrictionLines.length > 0) contextParts.push(`Dietary restrictions:\n${restrictionLines.join('\n')}`)
+
+    const userMessage = `${contextParts.join('\n')}
+
+Please suggest healthy substitutes for these ingredients the user wants to swap out:
+${ingredients.map(ing => `- ${ing}`).join('\n')}
+
+Provide practical substitutes that work in this recipe and respect all dietary preferences and restrictions.`
+
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: SUBSTITUTE_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }]
+    })
+
+    const result = parseJsonResponse(message.content[0].text)
+    res.json(result)
+  } catch (err) {
+    console.error('Substitute error:', err.message)
+    if (err instanceof SyntaxError) {
+      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+    } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
+      res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
+    } else {
+      res.status(500).json({ error: 'Something went wrong. Please try again!' })
     }
   }
 })

@@ -1,3 +1,93 @@
+import { useState } from 'react'
+
+const PREF_OPTIONS = [
+  { key: 'noPork',     label: 'No Pork',     icon: '🐷', desc: 'Excludes all pork & pork products' },
+  { key: 'vegan',      label: 'Vegan',        icon: '🌱', desc: 'No animal products of any kind' },
+  { key: 'dairyFree',  label: 'Dairy Free',   icon: '🥛', desc: 'No milk, cheese, butter, or cream' },
+  { key: 'glutenFree', label: 'Gluten Free',  icon: '🌾', desc: 'No wheat, barley, or rye' },
+  { key: 'noNuts',     label: 'No Nuts',      icon: '🥜', desc: 'Nut-allergy safe' },
+]
+
+function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
+  const [prefs, setPrefs] = useState({
+    noPork: false, vegan: false, dairyFree: false, glutenFree: false, noNuts: false, custom: '',
+    ...dietaryPreferences,
+  })
+  const [saved, setSaved] = useState(false)
+
+  const toggle = (key) => {
+    setPrefs(prev => ({ ...prev, [key]: !prev[key] }))
+    setSaved(false)
+  }
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+    onSave(prefs)
+  }
+
+  return (
+    <div className="about-section">
+      <h3>Dietary Preferences</h3>
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+        These restrictions auto-apply to every recipe transformation.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+        {PREF_OPTIONS.map(({ key, label, icon, desc }) => (
+          <label
+            key={key}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+              background: prefs[key] ? 'var(--green-pale)' : 'var(--gray-50)',
+              border: `1px solid ${prefs[key] ? 'var(--green-light)' : 'var(--gray-200)'}`,
+              borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={!!prefs[key]}
+              onChange={() => toggle(key)}
+              style={{ width: 18, height: 18, accentColor: 'var(--green)', cursor: 'pointer', flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{label}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{desc}</div>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
+          Custom restriction (optional)
+        </label>
+        <input
+          type="text"
+          value={prefs.custom || ''}
+          onChange={e => { setPrefs(prev => ({ ...prev, custom: e.target.value })); setSaved(false) }}
+          placeholder="e.g. No shellfish, no soy..."
+          style={{
+            width: '100%', padding: '10px 12px', fontSize: 14,
+            border: '1px solid var(--gray-200)', borderRadius: 10,
+            fontFamily: 'var(--font)', color: 'var(--text-primary)',
+            outline: 'none', background: 'white',
+          }}
+        />
+      </div>
+
+      <button
+        onClick={handleSave}
+        className="btn btn-primary"
+        style={{ width: '100%', fontSize: 14 }}
+      >
+        {saved ? 'Saved! ✓' : 'Save Preferences'}
+      </button>
+    </div>
+  )
+}
+
 const STEPS = [
   {
     n: '1',
@@ -24,7 +114,7 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen({ user, onLogout }) {
+export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences }) {
   return (
     <div className="animate-in">
       <div className="screen-header">
@@ -122,11 +212,18 @@ export default function AboutScreen({ user, onLogout }) {
         <div className="about-section">
           <h3>Privacy</h3>
           <p>
-            Old2New does not collect or store personal data. Your recipes and saved results
-            are stored only on your device. Recipe text is sent to the Claude AI API solely
-            for transformation — it is not retained or used for training.
+            Your saved recipes are stored securely in your account. Recipe text is sent to the Claude AI API solely
+            for transformation — it is not retained or used for training. We do not sell your data.
           </p>
         </div>
+
+        {/* Dietary Preferences */}
+        {user && onSavePreferences && (
+          <DietaryPreferencesSection
+            dietaryPreferences={dietaryPreferences || {}}
+            onSave={onSavePreferences}
+          />
+        )}
 
         {/* Account */}
         {user && (
@@ -152,10 +249,10 @@ export default function AboutScreen({ user, onLogout }) {
           <h3>Contact</h3>
           <div className="about-contact">
             <p>
-              Questions, feedback, or partnership enquiries?
+              Questions, feedback, or partnership inquiries?
             </p>
             <a
-              href="mailto:hello@freshfix.app"
+              href="mailto:hello@old2new.app"
               style={{
                 display: 'inline-block', marginTop: 10,
                 background: 'var(--green-pale)',
@@ -165,10 +262,10 @@ export default function AboutScreen({ user, onLogout }) {
                 fontSize: 15, fontWeight: 700, textDecoration: 'none',
               }}
             >
-              ✉️ hello@freshfix.app
+              ✉️ hello@old2new.app
             </a>
             <p style={{ marginTop: 14, color: 'var(--text-muted)', fontSize: 13 }}>
-              Old2New is an independent app not affiliated with any pharmaceutical company or medical institution.
+              Old2New is an independent app and is not affiliated with any food brand or company.
             </p>
           </div>
         </div>

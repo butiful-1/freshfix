@@ -93,7 +93,7 @@ ${recipe}
 Transform it according to the diet preferences and return the JSON response.`
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
@@ -122,6 +122,9 @@ Transform it according to the diet preferences and return the JSON response.`
     if (err.status === 401) {
       return res.status(500).json({ error: 'Invalid API key. Check ANTHROPIC_API_KEY in Vercel environment variables.' })
     }
-    return res.status(500).json({ error: err.message || 'Failed to transform recipe. Please try again.' })
+    if (err.error?.type === 'overloaded_error' || err.status === 503) {
+      return res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
+    }
+    return res.status(500).json({ error: 'Something went wrong. Please try again!' })
   }
 }

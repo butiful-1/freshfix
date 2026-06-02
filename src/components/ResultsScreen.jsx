@@ -42,6 +42,23 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const [saved, setSaved] = useState(() => savedRecipes?.some(r => r.id === result?.id))
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState('recipe')
+  const [ingredients, setIngredients] = useState(() => result?.transformedRecipe?.ingredients || [])
+  const [newIngredient, setNewIngredient] = useState('')
+  const [ingredientsModified, setIngredientsModified] = useState(false)
+  const [userNotes, setUserNotes] = useState('')
+
+  const removeIngredient = (index) => {
+    setIngredients(prev => prev.filter((_, i) => i !== index))
+    setIngredientsModified(true)
+  }
+
+  const addIngredient = () => {
+    const text = newIngredient.trim()
+    if (!text) return
+    setIngredients(prev => [...prev, { item: text, amount: '' }])
+    setNewIngredient('')
+    setIngredientsModified(true)
+  }
 
   if (!result) return null
 
@@ -51,20 +68,35 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const calPct = caloriesBefore > 0 ? Math.round((Math.abs(calSaved) / caloriesBefore) * 100) : 0
 
   const handleSave = () => {
-    onSave()
+    onSave(ingredients)
     setSaved(true)
   }
 
+  const isSaved = saved || savedRecipes?.some(r => r.id === result?.id)
+  const shareUrl = isSaved && typeof result.id === 'string' && result.id.includes('-')
+    ? `https://old2new.app/recipe/${result.id}`
+    : null
+
   const handleShare = async () => {
-    const text = `🌿 Old2New Recipe Transformation\n\n${transformedRecipe?.name || 'Transformed Recipe'}\n${caloriesAfter} calories · ${diets?.join(', ')}\n\nTransformed with Old2New\n⚠️ Not medical advice. Consult your doctor.`
-    if (navigator.share) {
+    if (shareUrl) {
       try {
-        await navigator.share({ title: 'Old2New Recipe', text })
+        if (navigator.share) {
+          await navigator.share({ title: transformedRecipe?.name || 'Old2New Recipe', url: shareUrl })
+        } else {
+          await navigator.clipboard.writeText(shareUrl)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        }
       } catch {}
     } else {
-      await navigator.clipboard.writeText(text)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      const text = `🌿 Old2New Recipe Transformation\n\n${transformedRecipe?.name || 'Transformed Recipe'}\n${caloriesAfter} calories · ${diets?.join(', ')}\n\nTransformed with Old2New\n⚠️ Not medical advice. Consult your doctor.`
+      if (navigator.share) {
+        try { await navigator.share({ title: 'Old2New Recipe', text }) } catch {}
+      } else {
+        await navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }
     }
   }
 
@@ -72,11 +104,17 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
     <div className="animate-in">
       {/* Header */}
       <div className="screen-header">
-        <button className="back-btn" onClick={onStartOver} aria-label="Back">
-          ←
+        <button
+          className="back-btn"
+          onClick={onStartOver}
+          aria-label="Back to home"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700 }}
+        >
+          <span>←</span>
+          <span>Home</span>
         </button>
         <h1>{transformedRecipe?.name || 'Transformed Recipe'}</h1>
-        <button className="btn-icon btn" onClick={handleShare} title={copied ? 'Copied!' : 'Share'} style={{ background: 'transparent' }}>
+        <button className="btn-icon btn" onClick={handleShare} title={copied ? 'Copied!' : shareUrl ? 'Copy link' : 'Share'} style={{ background: 'transparent' }}>
           {copied ? '✓' : '↑'}
         </button>
       </div>
@@ -166,20 +204,84 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
           <div className="recipe-section">
             <p className="section-title">🛒 Ingredients</p>
             <div className="ingredient-list">
-              {transformedRecipe?.ingredients?.map((ing, i) => (
-                <div key={i} className="ingredient-item">
+              {ingredients.map((ing, i) => (
+                <div key={i} className="ingredient-item" style={{ display: 'flex', alignItems: 'flex-start' }}>
                   <div className="ingredient-dot" />
                   <span className="ingredient-amount">{ing.amount}</span>
                   <div style={{ flex: 1 }}>
                     <span className="ingredient-name">{ing.item}</span>
                     {ing.note && <div className="ingredient-note">← {ing.note}</div>}
                   </div>
+                  <button
+                    onClick={() => removeIngredient(i)}
+                    aria-label={`Remove ${ing.item}`}
+                    style={{
+                      flexShrink: 0, marginLeft: 8, width: 22, height: 22,
+                      border: 'none', borderRadius: '50%', background: 'var(--gray-200)',
+                      color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13,
+                      lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="divider" />
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <input
+                type="text"
+                value={newIngredient}
+                onChange={e => setNewIngredient(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addIngredient()}
+                placeholder="Add ingredient…"
+                style={{
+                  flex: 1, padding: '8px 12px', border: '1px solid var(--gray-200)',
+                  borderRadius: 8, fontSize: 13, fontFamily: 'var(--font)',
+                  color: 'var(--text-primary)', outline: 'none',
+                }}
+              />
+              <button
+                onClick={addIngredient}
+                disabled={!newIngredient.trim()}
+                style={{
+                  padding: '8px 14px', border: 'none', borderRadius: 8,
+                  background: 'var(--green)', color: 'white', fontSize: 13,
+                  fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font)',
+                  opacity: newIngredient.trim() ? 1 : 0.45,
+                }}
+              >
+                + Add
+              </button>
+            </div>
+
+            {ingredientsModified && (
+              <div style={{
+                marginTop: 14, padding: '12px 14px',
+                background: '#FFFBEB', border: '1px solid #FCD34D',
+                borderRadius: 10,
+              }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#92400E', marginBottom: 4 }}>
+                  📝 Heads Up!
+                </p>
+                <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, marginBottom: 10 }}>
+                  You've modified the ingredients. Remember to adjust the recipe instructions accordingly — cooking times and methods may need to change based on your substitutions.
+                </p>
+                <textarea
+                  value={userNotes}
+                  onChange={e => setUserNotes(e.target.value)}
+                  placeholder="Your notes… e.g. replaced chicken with broccoli — roast at 400°F for 20 mins"
+                  rows={3}
+                  style={{
+                    width: '100%', padding: '8px 10px', border: '1px solid #FCD34D',
+                    borderRadius: 8, fontSize: 13, fontFamily: 'var(--font)',
+                    color: 'var(--text-primary)', background: 'white',
+                    resize: 'vertical', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
           <div className="recipe-section">
             <p className="section-title">👨‍🍳 Instructions</p>
@@ -275,7 +377,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
             🛒 Shopping List
           </button>
           <button className="btn btn-outline" onClick={handleShare}>
-            {copied ? '✓ Copied!' : '↑ Share'}
+            {copied ? '✓ Copied!' : shareUrl ? '🔗 Copy Link' : '↑ Share'}
           </button>
         </div>
 

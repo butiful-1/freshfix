@@ -1,7 +1,5 @@
 import { useState } from 'react'
 
-const FREE_LIMIT = 5
-
 export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState('')
@@ -40,14 +38,14 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 32,
           }}>
-            🔒
+            🌿
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, letterSpacing: -0.5 }}>
-            Free Limit Reached
+            You've Used Your Free Fixes
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            You've used all {FREE_LIMIT} free recipe fixes this month.
-            Upgrade to keep fixing your favorite recipes!
+            You've used all 5 free recipe fixes this month.
+            Upgrade to keep turning your old favorites into healthy new meals!
           </p>
         </div>
 
@@ -68,7 +66,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             {loading === 'wellness' ? (
               <><div className="spinner" /> Redirecting…</>
             ) : (
-              <>💚 Wellness — $9.99/mo · Unlimited fixes</>
+              <>💚 Basic — $9.99/mo · 50 fixes/month</>
             )}
           </button>
 
@@ -80,15 +78,24 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             {loading === 'family' ? (
               <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Redirecting…</>
             ) : (
-              <>👨‍👩‍👧‍👦 Family — $14.99/mo · 5 profiles</>
+              <>⚡ Pro — $14.99/mo · 150 fixes/month</>
             )}
+          </button>
+
+          <button
+            className="btn btn-ghost"
+            onClick={onViewPlans}
+            disabled={!!loading}
+            style={{ width: '100%' }}
+          >
+            See all plans →
           </button>
         </div>
 
         <button
           className="btn btn-ghost"
           onClick={onClose}
-          style={{ width: '100%' }}
+          style={{ width: '100%', color: 'var(--text-muted)', fontSize: 13 }}
           disabled={!!loading}
         >
           Not now

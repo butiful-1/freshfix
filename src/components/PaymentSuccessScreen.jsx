@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
 const PLAN_LABELS = {
-  wellness: { name: 'Wellness', emoji: '💚', tagline: 'Unlimited recipe fixes unlocked!' },
-  family:   { name: 'Family',   emoji: '👨‍👩‍👧‍👦', tagline: '5 family profiles unlocked!' },
+  wellness: { name: 'Basic',  emoji: '💚', tagline: '50 recipe fixes per month unlocked!' },
+  family:   { name: 'Pro',    emoji: '⚡', tagline: '150 recipe fixes per month unlocked!' },
 }
 
 export default function PaymentSuccessScreen({ sessionId, onPlanUpdate, onContinue }) {
