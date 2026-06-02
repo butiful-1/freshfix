@@ -28,7 +28,7 @@
   "isChromeOSOnly": false,
   "isMetaQuest": false,
   "fullScopeUrl": "https://old2new.app/",
-  "minSdkVersion": 19,
+  "minSdkVersion": 21,
   "fingerprints": [],
   "signingKey": {
     "path": "./android.keystore",
