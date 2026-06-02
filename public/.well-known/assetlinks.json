@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "app.old2new.twa",
-    "sha256_cert_fingerprints": ["PLACEHOLDER_SHA256"]
+    "sha256_cert_fingerprints": ["BD:3A:6F:F9:83:FE:62:C5:3C:20:59:74:3F:86:66:1F:53:FE:EA:80:59:CA:17:88:84:7F:11:44:32:F4:D2:4C"]
   }
 }]
