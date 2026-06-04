@@ -253,6 +253,7 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
             </p>
             <a
               href="mailto:hello@old2new.app"
+              onClick={(e) => { e.preventDefault(); window.open('mailto:hello@old2new.app'); }}
               style={{
                 display: 'inline-block', marginTop: 10,
                 background: 'var(--green-pale)',
@@ -260,6 +261,7 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
                 border: '1px solid var(--green-light)',
                 borderRadius: 12, padding: '10px 20px',
                 fontSize: 15, fontWeight: 700, textDecoration: 'none',
+                cursor: 'pointer',
               }}
             >
               ✉️ hello@old2new.app
