@@ -241,6 +241,12 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
                 Sign Out
               </button>
             </div>
+            <button
+              onClick={() => window.open('https://old2new.app/delete-account.html', '_blank')}
+              style={{ marginTop: 10, background: 'none', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: 0.7 }}
+            >
+              Delete Account
+            </button>
           </div>
         )}
 
