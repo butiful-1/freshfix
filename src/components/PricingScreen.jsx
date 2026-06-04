@@ -270,10 +270,11 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
             Still have questions?
           </p>
           <a
-            href="mailto:hello@old2new.app"
-            style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)', textDecoration: 'none' }}
+            href="mailto:support@storefrontsignal.com"
+            onClick={(e) => { e.preventDefault(); window.open('mailto:support@storefrontsignal.com'); }}
+            style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-dark)', textDecoration: 'none', cursor: 'pointer' }}
           >
-            ✉️ hello@old2new.app
+            ✉️ support@storefrontsignal.com
           </a>
         </div>
       </div>
