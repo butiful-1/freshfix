@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-export const config = { maxDuration: 30 }
+export const config = { maxDuration: 55 }
 
 const ALLOWED_ORIGINS = [
   'https://freshfix.app',

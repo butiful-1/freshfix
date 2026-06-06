@@ -34,6 +34,8 @@ export default function App() {
   const appInitializedRef = useRef(false)
   const abortControllerRef = useRef(null)
   const tryAgainTimerRef = useRef(null)
+  const transformGenerationRef = useRef(0)
+  const isTimeoutRef = useRef(false)
 
   // ── Recipe state ──────────────────────────────
   const [recipeInput, setRecipeInput]     = useState('')
@@ -354,15 +356,29 @@ export default function App() {
       setShowUpgradeModal(true); return
     }
 
-    abortControllerRef.current = new AbortController()
-    setIsLoading(true); setError('')
+    // Increment generation first so any in-flight request's catch/finally sees a stale
+    // generation and bails out — prevents the old finally from killing the new overlay.
+    const generation = ++transformGenerationRef.current
+    abortControllerRef.current?.abort()
+
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+    isTimeoutRef.current = false
+    setIsLoading(true)
+    setError('')
+
+    // 25s client timeout fires before Vercel's function cutoff so we can show a real error.
+    const timeoutId = setTimeout(() => {
+      isTimeoutRef.current = true
+      controller.abort()
+    }, 25000)
 
     try {
       const res = await fetch('/api/transform', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipe: recipeInput, diets: selectedDiets, dietaryPreferences }),
-        signal: abortControllerRef.current.signal,
+        signal: controller.signal,
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to transform recipe.')
@@ -378,15 +394,26 @@ export default function App() {
         setProfile(prev => prev ? { ...prev, swaps_used: newCount } : prev)
       }
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      // Stale request — a retry is already in flight, ignore this outcome entirely.
+      if (transformGenerationRef.current !== generation) return
+      if (err.name === 'AbortError') {
+        if (isTimeoutRef.current) {
+          setError('The transformation timed out. Please check your connection and try again.')
+        }
+        // User-initiated cancel: silent — they know what they did.
+      } else {
         setError(err.message || 'Something went wrong. Please try again.')
       }
     } finally {
-      setIsLoading(false)
+      clearTimeout(timeoutId)
+      // Only the current generation closes the overlay.
+      if (transformGenerationRef.current === generation) setIsLoading(false)
     }
   }
 
   const handleCancelTransform = () => {
+    // Mark as user-initiated so the catch stays silent, then abort.
+    isTimeoutRef.current = false
     abortControllerRef.current?.abort()
   }
 
@@ -626,13 +653,13 @@ export default function App() {
           <h2>Transforming Recipe…</h2>
           <p>AI is making smart ingredient swaps for your healthy goals</p>
           <div className="loading-dots"><span /><span /><span /></div>
-          {showTryAgain && (
+          {showTryAgain ? (
             <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', margin: 0 }}>
                 Taking longer than expected…
               </p>
               <button
-                onClick={handleCancelTransform}
+                onClick={handleTransform}
                 style={{
                   background: 'white',
                   color: 'var(--green-dark)',
@@ -648,7 +675,39 @@ export default function App() {
               >
                 🔄 Try Again
               </button>
+              <button
+                onClick={handleCancelTransform}
+                style={{
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.75)',
+                  border: 'none',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                  padding: '4px 12px',
+                }}
+              >
+                ← Back to Recipe
+              </button>
             </div>
+          ) : (
+            <button
+              onClick={handleCancelTransform}
+              style={{
+                marginTop: 24,
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.5)',
+                border: 'none',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'var(--font)',
+                padding: '4px 12px',
+              }}
+            >
+              Cancel
+            </button>
           )}
         </div>
       )}
