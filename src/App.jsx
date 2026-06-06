@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+
+// Races a promise against a ms timeout; on timeout resolves with `fallback`
+// instead of rejecting so callers can proceed gracefully without re-throwing.
+const withTimeout = (promise, ms, fallback) =>
+  Promise.race([promise, new Promise(r => setTimeout(() => r(fallback), ms))])
 import SplashScreen from './components/SplashScreen'
 import SignUpScreen from './components/SignUpScreen'
 import LoginScreen from './components/LoginScreen'
@@ -55,6 +60,7 @@ export default function App() {
 
   // ── Dietary preferences ───────────────────────
   const [dietaryPreferences, setDietaryPreferences] = useState({})
+  const [showLoadingRecovery, setShowLoadingRecovery] = useState(false)
 
   // ── 15-second "Try Again" timer ───────────────
   useEffect(() => {
@@ -67,11 +73,47 @@ export default function App() {
     return () => clearTimeout(tryAgainTimerRef.current)
   }, [isLoading])
 
+  // ── Auth loading safety net ───────────────────
+  // On Android TWA, supabase.auth.getSession() can hang indefinitely when the
+  // cached session token needs a network refresh on a poor connection. After 5s
+  // show a recovery button; after 10s auto-advance so the user is never trapped.
+  useEffect(() => {
+    if (authChecked) { setShowLoadingRecovery(false); return }
+    const recoveryTimer = setTimeout(() => setShowLoadingRecovery(true), 5000)
+    const autoAdvance   = setTimeout(() => setAuthChecked(true), 10000)
+    return () => { clearTimeout(recoveryTimer); clearTimeout(autoAdvance) }
+  }, [authChecked])
+
+  // ── isLoading safety net ──────────────────────
+  // If the transform overlay somehow gets stuck (e.g. Supabase update hangs
+  // after setScreen on a poor Android connection), force-reset after 45s.
+  useEffect(() => {
+    if (!isLoading) return
+    const safety = setTimeout(() => {
+      setIsLoading(false)
+      setError('Something went wrong. Please try again.')
+    }, 45000)
+    return () => clearTimeout(safety)
+  }, [isLoading])
+
+  // ── TWA visibility safety net ─────────────────
+  // When Android backgrounds then restores the TWA, React state is preserved.
+  // If we were mid-auth-check, advance past the spinner on resume.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && !authChecked) setAuthChecked(true)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [authChecked])
+
   // ── Load Supabase profile ─────────────────────
   const loadProfile = async (userId, retries = 2) => {
     try {
-      const { data } = await supabase
-        .from('profiles').select('*').eq('id', userId).single()
+      const { data } = await withTimeout(
+        supabase.from('profiles').select('*').eq('id', userId).single(),
+        5000, { data: null }
+      )
 
       if (!data && retries > 0) {
         await new Promise(r => setTimeout(r, 600))
@@ -83,10 +125,12 @@ export default function App() {
       let p = data
 
       if (data.swaps_month !== currentMonth) {
-        const { data: updated } = await supabase
-          .from('profiles')
-          .update({ swaps_used: 0, swaps_month: currentMonth })
-          .eq('id', userId).select().single()
+        const { data: updated } = await withTimeout(
+          supabase.from('profiles')
+            .update({ swaps_used: 0, swaps_month: currentMonth })
+            .eq('id', userId).select().single(),
+          5000, { data: null }
+        )
         p = updated || { ...data, swaps_used: 0, swaps_month: currentMonth }
       }
 
@@ -102,11 +146,13 @@ export default function App() {
   // ── Load saved recipes from Supabase ─────────
   const loadSavedRecipes = async (userId) => {
     try {
-      const { data, error } = await supabase
-        .from('saved_recipes')
-        .select('id, recipe_data')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+      const { data, error } = await withTimeout(
+        supabase.from('saved_recipes')
+          .select('id, recipe_data')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false }),
+        5000, { data: null, error: null }
+      )
       if (error) throw error
       if (data) setSavedRecipes(data.map(row => ({ ...row.recipe_data, id: row.id })))
     } catch (e) {
@@ -147,7 +193,12 @@ export default function App() {
       }
 
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        // 6s timeout — on Android TWA a stale cached token triggers a network
+        // refresh that can hang indefinitely on a poor connection.
+        const { data: { session } } = await withTimeout(
+          supabase.auth.getSession(),
+          6000, { data: { session: null } }
+        )
         if (session?.user) {
           setUser(session.user)
           await loadProfile(session.user.id)
@@ -386,12 +437,19 @@ export default function App() {
       const result = { ...data, originalRecipe: recipeInput, diets: selectedDiets, id: Date.now() }
       setTransformResult(result)
       setScreen('results')
+      // Close the loading overlay NOW — before any Supabase writes.
+      // Awaiting Supabase on a poor Android/TWA connection can hang indefinitely,
+      // leaving isLoading=true on top of every screen the user navigates to.
+      if (transformGenerationRef.current === generation) setIsLoading(false)
 
       const newCount = swapUsage.count + 1
       setSwapUsage(prev => ({ ...prev, count: newCount }))
       if (user) {
-        await supabase.from('profiles').update({ swaps_used: newCount }).eq('id', user.id)
-        setProfile(prev => prev ? { ...prev, swaps_used: newCount } : prev)
+        supabase.from('profiles')
+          .update({ swaps_used: newCount })
+          .eq('id', user.id)
+          .then(() => setProfile(prev => prev ? { ...prev, swaps_used: newCount } : prev))
+          .catch(e => console.error('profile update:', e.message))
       }
     } catch (err) {
       // Stale request — a retry is already in flight, ignore this outcome entirely.
@@ -479,9 +537,23 @@ export default function App() {
   if (!authChecked) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', padding: '0 32px' }}>
           <div style={{ fontSize: 56, marginBottom: 20, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
           <div className="loading-dots"><span /><span /><span /></div>
+          {showLoadingRecovery && (
+            <div style={{ marginTop: 28 }}>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                Taking longer than expected.<br />Check your connection or tap below.
+              </p>
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: 14, padding: '10px 28px', width: 'auto' }}
+                onClick={() => setAuthChecked(true)}
+              >
+                Open App →
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
