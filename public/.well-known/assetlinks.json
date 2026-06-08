@@ -3,6 +3,9 @@
   "target": {
     "namespace": "android_app",
     "package_name": "app.old2new.twa",
-    "sha256_cert_fingerprints": ["8D:FE:A2:F5:F0:7D:5D:09:C8:02:23:BD:9D:F7:01:C7:1F:53:AC:27:49:75:0F:09:21:08:CD:BE:15:AB:19:62"]
+    "sha256_cert_fingerprints": [
+      "8D:FE:A2:F5:F0:7D:5D:09:C8:02:23:BD:9D:F7:01:C7:1F:53:AC:27:49:75:0F:09:21:08:CD:BE:15:AB:19:62",
+      "EF:DB:75:19:D5:6D:07:E7:66:D5:BA:1B:EE:F2:50:C6:C8:21:8F:7C:83:48:1E:72:FF:A8:16:04:44:79:58:FF"
+    ]
   }
 }]
