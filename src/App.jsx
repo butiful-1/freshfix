@@ -21,6 +21,7 @@ import PaymentSuccessScreen from './components/PaymentSuccessScreen'
 import PaymentCancelScreen from './components/PaymentCancelScreen'
 import RecipeShareScreen from './components/RecipeShareScreen'
 import BottomNav from './components/BottomNav'
+import WhatSoundsGoodScreen from './components/WhatSoundsGoodScreen'
 
 const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
 
@@ -540,6 +541,11 @@ export default function App() {
   const handleViewSaved  = (recipe) => { setTransformResult(recipe); setScreen('results') }
   const handleStartOver  = () => { setTransformResult(null); setError(''); setScreen('home') }
 
+  const handleSelectIdea = (idea) => {
+    setRecipeInput(`${idea.name}. ${idea.description}`)
+    setScreen('home')
+  }
+
   const handlePlanUpdate = async (newPlan) => {
     setPlan(newPlan)
     const resetUsage = { month: new Date().toISOString().slice(0, 7), count: 0 }
@@ -615,6 +621,7 @@ export default function App() {
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
             plan={plan} swapUsage={swapUsage} onUpgrade={() => setScreen('pricing')}
             transformLimit={PLAN_LIMITS[plan]} dietaryPreferences={dietaryPreferences}
+            onWhatSoundsGood={() => setScreen('suggest')}
           />
         )
       case 'results':
@@ -730,6 +737,14 @@ export default function App() {
             recipeId={sharedRecipeId}
             onSignUp={() => setScreen('signup')}
             onLogin={() => setScreen('login')}
+          />
+        )
+      case 'suggest':
+        return (
+          <WhatSoundsGoodScreen
+            dietaryPreferences={dietaryPreferences}
+            onSelectIdea={handleSelectIdea}
+            onBack={() => setScreen('home')}
           />
         )
       default:

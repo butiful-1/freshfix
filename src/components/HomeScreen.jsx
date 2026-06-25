@@ -16,7 +16,7 @@ export default function HomeScreen({
   onTransform, isLoading, error,
   savedRecipes, onViewSaved,
   plan, swapUsage, onUpgrade, transformLimit,
-  dietaryPreferences,
+  dietaryPreferences, onWhatSoundsGood,
 }) {
   const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
   const recent = savedRecipes.slice(0, 3)
@@ -151,6 +151,22 @@ export default function HomeScreen({
             </button>
           </p>
         )}
+      </div>
+
+      <div style={{ padding: '0 20px', marginBottom: 4 }}>
+        <button
+          type="button"
+          onClick={onWhatSoundsGood}
+          disabled={isLoading}
+          style={{
+            width: '100%', padding: '13px 20px', borderRadius: 14,
+            border: '1.5px solid var(--green)', background: 'var(--green-pale)',
+            color: 'var(--green-dark)', fontSize: 15, fontWeight: 700,
+            cursor: isLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font)',
+          }}
+        >
+          ✨ What Sounds Good?
+        </button>
       </div>
 
       {/* Recent swaps */}

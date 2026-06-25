@@ -3,6 +3,7 @@ import cors from 'cors'
 import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
 import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from '../api/recipeConsistency.js'
+import { generateMealIdeas, VALID_MEAL_TYPES } from '../api/suggest.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -267,6 +268,35 @@ app.post('/api/sync-recipe', async (req, res) => {
     res.json(recipe)
   } catch (err) {
     console.error('Sync-recipe error:', err.message)
+    if (err instanceof SyntaxError) {
+      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+    } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
+      res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
+    } else {
+      res.status(500).json({ error: 'Something went wrong. Please try again!' })
+    }
+  }
+})
+
+app.post('/api/suggest', async (req, res) => {
+  const { mealType, filters, dietaryPreferences } = req.body || {}
+
+  if (!mealType || !VALID_MEAL_TYPES.includes(mealType)) {
+    return res.status(400).json({ error: 'A valid meal type is required.' })
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || apiKey === 'your_api_key_here') {
+    return res.status(500).json({ error: 'API key not configured.' })
+  }
+
+  const client = new Anthropic({ apiKey })
+
+  try {
+    const ideas = await generateMealIdeas({ mealType, filters, dietaryPreferences, client })
+    res.json({ ideas })
+  } catch (err) {
+    console.error('[suggest]', err.message)
     if (err instanceof SyntaxError) {
       res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
