@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
+import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from '../api/recipeConsistency.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -67,30 +68,24 @@ Your JSON response must match this EXACT structure:
   ]
 }`
 
-function buildDietaryRestrictionLines(dietaryPreferences) {
-  const lines = []
-  if (dietaryPreferences?.noPork) lines.push('- No pork or pork-derived products (bacon, ham, lard, etc.)')
-  if (dietaryPreferences?.vegan) lines.push('- Vegan: strictly no animal products (no meat, poultry, seafood, dairy, eggs, honey)')
-  if (dietaryPreferences?.dairyFree) lines.push('- Dairy free: no milk, cheese, butter, cream, yogurt, or any dairy derivatives')
-  if (dietaryPreferences?.glutenFree) lines.push('- Gluten free: no wheat, barley, rye, or gluten-containing ingredients')
-  if (dietaryPreferences?.noNuts) lines.push('- No nuts or tree nuts (treat as allergy — safety-critical)')
-  if (dietaryPreferences?.custom?.trim()) lines.push(`- ${dietaryPreferences.custom.trim()}`)
-  return lines
-}
+const SYNC_SYSTEM_PROMPT = `You are Old2New. The user has edited the ingredient list of a recipe. Rewrite the instructions and shoppingList to match the updated ingredients exactly, following the user's dietary restrictions.
 
-function parseJsonResponse(text) {
-  let t = text.trim()
-  if (t.startsWith('```')) {
-    const match = t.match(/```(?:json)?\s*([\s\S]*?)```/)
-    if (match) t = match[1].trim()
+CRITICAL RULE: Respond ONLY with valid JSON matching this exact structure:
+{
+  "instructions": ["string - step 1", "string - step 2"],
+  "shoppingList": {
+    "produce": ["string"],
+    "protein": ["string"],
+    "dairy": ["string"],
+    "pantry": ["string"],
+    "other": ["string"]
   }
-  const start = t.indexOf('{')
-  const end = t.lastIndexOf('}')
-  if (start !== -1 && end !== -1) t = t.slice(start, end + 1)
-  return JSON.parse(t)
-}
+}`
 
 app.post('/api/transform', async (req, res) => {
+  const t0 = Date.now()
+  const elapsed = () => `+${Date.now() - t0}ms`
+  console.log(`[transform] ${elapsed()} request received, dietaryPreferences:`, JSON.stringify(req.body?.dietaryPreferences ?? null))
   const { recipe, diets, dietaryPreferences } = req.body
 
   if (!recipe || !diets || !Array.isArray(diets) || diets.length === 0) {
@@ -119,17 +114,40 @@ ${recipe}
 
 Transform it according to the diet preferences${restrictionLines.length > 0 ? ' AND dietary restrictions' : ''} and return the JSON response.`
 
+    console.log(`[transform] ${elapsed()} calling Sonnet`)
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }]
     })
+    console.log(`[transform] ${elapsed()} Sonnet complete`)
 
-    const result = parseJsonResponse(message.content[0].text)
+    let result = parseJsonResponse(message.content[0].text)
+
+    console.log(`[transform] ${elapsed()} running checkConsistency`)
+    const violations = checkConsistency(result, dietaryPreferences)
+    console.log(`[transform] ${elapsed()} checkConsistency done — violations: ${violations.length}`, violations.length ? JSON.stringify(violations) : '')
+    if (violations.length > 0) {
+      const violationDesc = violations.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
+      const isSafetyCritical = violations.some(v => v.restriction === 'noNuts')
+      try {
+        await runRepair(client, result, violationDesc, dietaryPreferences)
+        console.log(`[transform] ${elapsed()} runRepair complete`)
+      } catch (repairErr) {
+        console.error(
+          `[${isSafetyCritical ? 'CRITICAL' : 'HIGH'}] Repair call failed — dietary violation unresolved. Violations: ${violationDesc}. Error: ${repairErr.message}`
+        )
+        return res.status(500).json({
+          error: 'We detected a dietary restriction issue that could not be safely resolved. Please try again.',
+        })
+      }
+    }
+
+    console.log(`[transform] ${elapsed()} sending response`)
     res.json(result)
   } catch (err) {
-    console.error('Transform error:', err.message)
+    console.error(`[transform] ${elapsed()} error:`, err.message)
     if (err instanceof SyntaxError) {
       res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
     } else if (err.status === 401) {
@@ -181,6 +199,74 @@ Provide practical substitutes that work in this recipe and respect all dietary p
     res.json(result)
   } catch (err) {
     console.error('Substitute error:', err.message)
+    if (err instanceof SyntaxError) {
+      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+    } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
+      res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
+    } else {
+      res.status(500).json({ error: 'Something went wrong. Please try again!' })
+    }
+  }
+})
+
+app.post('/api/sync-recipe', async (req, res) => {
+  console.log('[sync-recipe] request received, dietaryPreferences:', JSON.stringify(req.body?.dietaryPreferences ?? null))
+  const { recipe, dietaryPreferences } = req.body
+
+  if (!recipe?.transformedRecipe?.ingredients?.length) {
+    return res.status(400).json({ error: 'Recipe with ingredients is required.' })
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey || apiKey === 'your_api_key_here') {
+    return res.status(500).json({ error: 'API key not configured.' })
+  }
+
+  const client = new Anthropic({ apiKey })
+
+  try {
+    const ingredientList = recipe.transformedRecipe.ingredients
+      .map(i => `${i.amount} ${i.item}`.trim())
+      .join(', ')
+
+    const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
+    const restrictionsSection = restrictionLines.length > 0
+      ? `\nDietary restrictions that MUST be followed:\n${restrictionLines.join('\n')}\n`
+      : ''
+
+    const sync = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      system: SYNC_SYSTEM_PROMPT,
+      messages: [{
+        role: 'user',
+        content: `Updated ingredient list: ${ingredientList}${restrictionsSection}\n\nRewrite the instructions and shoppingList to match these ingredients exactly.`,
+      }],
+    })
+
+    const synced = parseJsonResponse(sync.content[0].text)
+    if (synced.instructions) recipe.transformedRecipe.instructions = synced.instructions
+    if (synced.shoppingList) recipe.shoppingList = synced.shoppingList
+
+    const violations = checkConsistency(recipe, dietaryPreferences)
+    if (violations.length > 0) {
+      const violationDesc = violations.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
+      const isSafetyCritical = violations.some(v => v.restriction === 'noNuts')
+      try {
+        await runRepair(client, recipe, violationDesc, dietaryPreferences)
+      } catch (repairErr) {
+        console.error(
+          `[${isSafetyCritical ? 'CRITICAL' : 'HIGH'}] Sync-repair call failed — dietary violation unresolved. Violations: ${violationDesc}. Error: ${repairErr.message}`
+        )
+        return res.status(500).json({
+          error: 'We detected a dietary restriction issue that could not be safely resolved. Please try again.',
+        })
+      }
+    }
+
+    res.json(recipe)
+  } catch (err) {
+    console.error('Sync-recipe error:', err.message)
     if (err instanceof SyntaxError) {
       res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {

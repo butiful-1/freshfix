@@ -418,11 +418,12 @@ export default function App() {
     setIsLoading(true)
     setError('')
 
-    // 25s client timeout fires before Vercel's function cutoff so we can show a real error.
+    // 50s client timeout — Sonnet responses can take 30+ seconds under load.
+    // Vercel's function limit is 55s (set in api/transform.js config.maxDuration).
     const timeoutId = setTimeout(() => {
       isTimeoutRef.current = true
       controller.abort()
-    }, 25000)
+    }, 50000)
 
     try {
       const res = await fetch('/api/transform', {
@@ -480,21 +481,50 @@ export default function App() {
     try {
       const title = transformResult.transformedRecipe?.name || transformResult.originalName || 'Saved Recipe'
       const { id: _tempId, ...recipeToStore } = transformResult
+
+      const ingredientsChanged = currentIngredients &&
+        JSON.stringify(currentIngredients) !== JSON.stringify(transformResult.transformedRecipe?.ingredients)
+
       if (currentIngredients) {
         recipeToStore.transformedRecipe = { ...recipeToStore.transformedRecipe, ingredients: currentIngredients }
       }
+
+      if (ingredientsChanged) {
+        const syncRes = await fetch('/api/sync-recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipe: recipeToStore, dietaryPreferences }),
+        })
+        const syncBody = await syncRes.json()
+        if (!syncRes.ok) {
+          throw new Error(syncBody.error || 'Could not safely sync the updated recipe. Please try again.')
+        }
+        if (syncBody.transformedRecipe?.instructions) {
+          recipeToStore.transformedRecipe = {
+            ...recipeToStore.transformedRecipe,
+            instructions: syncBody.transformedRecipe.instructions,
+          }
+        }
+        if (syncBody.shoppingList) recipeToStore.shoppingList = syncBody.shoppingList
+      }
+
       const { data, error } = await supabase
         .from('saved_recipes')
         .insert({ user_id: user.id, title, recipe_data: recipeToStore })
         .select('id')
         .single()
       if (error) throw error
-      const savedResult = { ...transformResult, transformedRecipe: recipeToStore.transformedRecipe, id: data.id }
+      const savedResult = {
+        ...transformResult,
+        transformedRecipe: recipeToStore.transformedRecipe,
+        shoppingList: recipeToStore.shoppingList,
+        id: data.id,
+      }
       setTransformResult(savedResult)
       setSavedRecipes(prev => [savedResult, ...prev.filter(r => r.id !== transformResult.id)])
     } catch (e) {
       console.error('handleSaveRecipe:', e.message)
-      setError('Could not save recipe. Please try again.')
+      setError(e.message || 'Could not save recipe. Please try again.')
     }
   }
 

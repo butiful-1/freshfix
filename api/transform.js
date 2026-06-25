@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from './recipeConsistency.js'
 
 export const config = { maxDuration: 55 }
 
@@ -63,15 +64,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   res.setHeader('Vary', 'Origin')
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  const { recipe, diets } = req.body || {}
+  const { recipe, diets, dietaryPreferences } = req.body || {}
 
   if (!recipe || !diets || !Array.isArray(diets) || diets.length === 0) {
     return res.status(400).json({ error: 'Recipe and at least one diet preference are required.' })
@@ -85,34 +81,47 @@ export default async function handler(req, res) {
   const client = new Anthropic({ apiKey })
 
   try {
-    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.
+    const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
+    const restrictionsSection = restrictionLines.length > 0
+      ? `\nIMPORTANT dietary restrictions that MUST be strictly followed:\n${restrictionLines.join('\n')}\n`
+      : ''
+
+    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.${restrictionsSection}
 
 Recipe input:
 ${recipe}
 
-Transform it according to the diet preferences and return the JSON response.`
+Transform it according to the diet preferences${restrictionLines.length > 0 ? ' AND dietary restrictions' : ''} and return the JSON response.`
 
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: 'claude-sonnet-4-6',
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }],
     })
 
-    let responseText = message.content[0].text.trim()
+    let result = parseJsonResponse(message.content[0].text)
 
-    if (responseText.startsWith('```')) {
-      const match = responseText.match(/```(?:json)?\s*([\s\S]*?)```/)
-      if (match) responseText = match[1].trim()
+    // Deterministic consistency check — zero cost, ~1ms.
+    // Falls back to a cheap Haiku repair call only when violations are found.
+    const violations = checkConsistency(result, dietaryPreferences)
+    if (violations.length > 0) {
+      const violationDesc = violations.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
+      const isSafetyCritical = violations.some(v => v.restriction === 'noNuts')
+      try {
+        await runRepair(client, result, violationDesc, dietaryPreferences)
+      } catch (repairErr) {
+        // Never return a recipe we already know violates a dietary restriction.
+        // noNuts is CRITICAL (life-threatening); all others are HIGH.
+        console.error(
+          `[${isSafetyCritical ? 'CRITICAL' : 'HIGH'}] Repair call failed — dietary violation unresolved. Violations: ${violationDesc}. Error: ${repairErr.message}`
+        )
+        return res.status(500).json({
+          error: 'We detected a dietary restriction issue that could not be safely resolved. Please try again.',
+        })
+      }
     }
 
-    const start = responseText.indexOf('{')
-    const end = responseText.lastIndexOf('}')
-    if (start !== -1 && end !== -1) {
-      responseText = responseText.slice(start, end + 1)
-    }
-
-    const result = JSON.parse(responseText)
     return res.json(result)
   } catch (err) {
     console.error('Transform error:', err.message)
