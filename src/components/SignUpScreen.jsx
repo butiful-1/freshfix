@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import PasswordInput from './auth/PasswordInput'
 
 export default function SignUpScreen({ onLogin }) {
   const [email, setEmail]       = useState('')
@@ -117,13 +118,14 @@ export default function SignUpScreen({ onLogin }) {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
               Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="At least 8 characters"
               autoComplete="new-password"
               required
+              disabled={loading}
+              showStrength
             />
           </div>
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import PasswordInput from './auth/PasswordInput'
 
 export default function ResetPasswordScreen({ onSuccess }) {
   const [password, setPassword] = useState('')
@@ -9,7 +10,7 @@ export default function ResetPasswordScreen({ onSuccess }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (password.length < 6)  { setError('Password must be at least 6 characters.'); return }
+    if (password.length < 8)  { setError('Password must be at least 8 characters.'); return }
     if (password !== confirm)  { setError('Passwords do not match.'); return }
     setLoading(true)
     setError('')
@@ -63,14 +64,29 @@ export default function ResetPasswordScreen({ onSuccess }) {
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
               New password
             </label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="new-password" required />
+            <PasswordInput
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              autoComplete="new-password"
+              required
+              disabled={loading}
+              showStrength
+            />
           </div>
 
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>
               Confirm password
             </label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat your new password" autoComplete="new-password" required />
+            <PasswordInput
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              placeholder="Repeat your new password"
+              autoComplete="new-password"
+              required
+              disabled={loading}
+            />
           </div>
 
           <button

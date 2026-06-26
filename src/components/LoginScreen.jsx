@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import PasswordInput from './auth/PasswordInput'
 
 export default function LoginScreen({ onSignUp }) {
   const [email, setEmail]       = useState('')
@@ -137,13 +138,13 @@ export default function LoginScreen({ onSignUp }) {
                   Forgot password?
                 </button>
               </div>
-              <input
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Your password"
                 autoComplete="current-password"
                 required
+                disabled={loading}
               />
             </div>
           )}

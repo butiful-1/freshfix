@@ -37,6 +37,7 @@ export default function App() {
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [callbackStatus, setCallbackStatus] = useState('loading') // 'loading' | 'success' | 'error'
   const [callbackError,  setCallbackError]  = useState('')
+  const [callbackType,   setCallbackType]   = useState(null)     // null | 'recovery'
   const inCallbackRef = useRef(false)
   const appInitializedRef = useRef(false)
   const abortControllerRef = useRef(null)
@@ -310,6 +311,7 @@ export default function App() {
       const hashParams = hash ? new URLSearchParams(hash.replace(/^#/, '')) : null
       const type       = url.searchParams.get('type') || hashParams?.get('type') || 'signup'
       const errorParam = url.searchParams.get('error')
+      if (type === 'recovery') setCallbackType('recovery')
 
       console.log('[Old2New] Auth callback received:', {
         code: code ? `${code.slice(0,8)}…` : null,
@@ -786,12 +788,15 @@ export default function App() {
         }
         return (
           <div style={wrapStyle}>
-            <div style={{ fontSize: 56, marginBottom: 20, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
+            <div style={{ fontSize: 56, marginBottom: 16, filter: 'drop-shadow(0 6px 16px rgba(34,197,94,0.4))' }}>🌿</div>
+            <p style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5, color: 'var(--green-dark)', marginBottom: 8 }}>
+              Old2New
+            </p>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
-              Verifying your email…
+              {callbackType === 'recovery' ? 'Verifying your reset link…' : 'Verifying your email…'}
             </h2>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
-              Just a moment while we log you in.
+              {callbackType === 'recovery' ? 'Setting up your new password…' : 'Just a moment while we log you in.'}
             </p>
             <div className="loading-dots"><span /><span /><span /></div>
           </div>
