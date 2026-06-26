@@ -338,8 +338,17 @@ export default function App() {
             session = data.session
           } else if (hash && hash.includes('access_token')) {
             console.log('[Old2New] Implicit hash flow')
-            const { data } = await supabase.auth.getSession()
-            session = data?.session
+            const hp = new URLSearchParams(hash.replace(/^#/, ''))
+            const at = hp.get('access_token')
+            const rt = hp.get('refresh_token')
+            if (at && rt) {
+              const { data: sd, error: se } = await supabase.auth.setSession({ access_token: at, refresh_token: rt })
+              if (se) throw se
+              session = sd?.session
+            } else {
+              const { data } = await supabase.auth.getSession()
+              session = data?.session
+            }
           } else {
             throw new Error('No valid auth parameters found in the confirmation URL.')
           }
@@ -347,11 +356,19 @@ export default function App() {
           if (type === 'recovery') {
             localStorage.setItem('old2new_pending_reset', '1')
             console.log('[Old2New] Recovery verified, session?.user:', !!session?.user)
-            if (session?.access_token && session?.refresh_token) {
-              await supabase.auth.setSession({
+            // If the branch above didn't establish a session via setSession,
+            // try again with whatever tokens verifyOtp returned.
+            if (!session?.user && session?.access_token && session?.refresh_token) {
+              const { data: sd2 } = await supabase.auth.setSession({
                 access_token: session.access_token,
                 refresh_token: session.refresh_token,
               })
+              session = sd2?.session ?? session
+            }
+            const { data: check } = await supabase.auth.getSession()
+            console.log('[Old2New] Recovery getSession check, user:', check?.session?.user?.email ?? null)
+            if (!check?.session) {
+              throw new Error('Recovery session could not be established. Please request a new reset link.')
             }
             inCallbackRef.current = false
             setScreen('reset-password')
