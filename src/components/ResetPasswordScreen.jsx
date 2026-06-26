@@ -13,6 +13,13 @@ export default function ResetPasswordScreen({ onSuccess }) {
     if (password !== confirm)  { setError('Passwords do not match.'); return }
     setLoading(true)
     setError('')
+    const { data: sessionData } = await supabase.auth.getSession()
+    console.log('[Old2New] ResetPassword getSession:', JSON.stringify(sessionData?.session ? { user: sessionData.session.user?.email, expires_at: sessionData.session.expires_at } : null))
+    if (!sessionData?.session) {
+      setLoading(false)
+      setError('Your password reset session has expired. Please request a new reset link.')
+      return
+    }
     const { error: err } = await supabase.auth.updateUser({ password })
     setLoading(false)
     if (err) { setError(err.message); return }
