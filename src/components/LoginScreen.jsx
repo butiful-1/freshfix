@@ -33,8 +33,11 @@ export default function LoginScreen({ onSignUp }) {
     if (!email.trim()) { setError('Enter your email address first.'); return }
 
     setLoading(true); setError('')
+    const resetRedirect = window.location.hostname === 'localhost'
+      ? `${window.location.origin}/auth/callback`
+      : 'https://old2new.app/auth/callback'
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'https://old2new.app/auth/callback',
+      redirectTo: resetRedirect,
     })
     setLoading(false)
     if (err) { setError(err.message); return }

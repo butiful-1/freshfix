@@ -22,6 +22,7 @@ import PaymentCancelScreen from './components/PaymentCancelScreen'
 import RecipeShareScreen from './components/RecipeShareScreen'
 import BottomNav from './components/BottomNav'
 import WhatSoundsGoodScreen from './components/WhatSoundsGoodScreen'
+import ResetPasswordScreen from './components/ResetPasswordScreen'
 
 const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
 
@@ -205,7 +206,12 @@ export default function App() {
           await loadProfile(session.user.id)
           loadSavedRecipes(session.user.id)
           if (path !== '/success' && path !== '/cancel') {
-            goToApp()
+            if (localStorage.getItem('old2new_pending_reset')) {
+              localStorage.removeItem('old2new_pending_reset')
+              setScreen('reset-password')
+            } else {
+              goToApp()
+            }
             appInitializedRef.current = true
           }
         }
@@ -247,7 +253,10 @@ export default function App() {
             if (session?.user) {
               setUser(session.user)
               await loadProfile(session.user.id)
-              if (event === 'SIGNED_IN' && inCallbackRef.current) {
+              if (event === 'PASSWORD_RECOVERY') {
+                appInitializedRef.current = true
+                setScreen('reset-password')
+              } else if (event === 'SIGNED_IN' && inCallbackRef.current) {
                 appInitializedRef.current = true
               } else if (event === 'SIGNED_IN' && !appInitializedRef.current) {
                 loadSavedRecipes(session.user.id)
@@ -336,6 +345,9 @@ export default function App() {
           if (session?.user) {
             console.log('[Old2New] Session established — redirecting to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
+            if (type === 'recovery') {
+              localStorage.setItem('old2new_pending_reset', '1')
+            }
             setCallbackStatus('success')
             setTimeout(() => window.location.replace('/'), 1500)
           } else {
@@ -365,6 +377,10 @@ export default function App() {
     } else if (path === '/' && params.get('login') === 'verified') {
       // Arrived here after email verification succeeded but session wasn't created
       localStorage.setItem('old2new_login_hint', 'Your email has been verified. Please sign in to continue.')
+      window.history.replaceState({}, '', '/')
+      setScreen('login')
+    } else if (path === '/' && params.get('login') === 'reset') {
+      localStorage.setItem('old2new_login_hint', 'Password updated! Sign in with your new password.')
       window.history.replaceState({}, '', '/')
       setScreen('login')
     } else if (path === '/success') {
@@ -595,11 +611,11 @@ export default function App() {
     )
   }
 
-  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share'].includes(screen)
+  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
 
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
-    if (!user && !['splash', 'signup', 'login', 'callback', 'success', 'cancel', 'recipe-share'].includes(screen)) {
+    if (!user && !['splash', 'signup', 'login', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)) {
       return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
     }
 
@@ -745,6 +761,15 @@ export default function App() {
             dietaryPreferences={dietaryPreferences}
             onSelectIdea={handleSelectIdea}
             onBack={() => setScreen('home')}
+          />
+        )
+      case 'reset-password':
+        return (
+          <ResetPasswordScreen
+            onSuccess={async () => {
+              await supabase.auth.signOut()
+              window.location.replace('/?login=reset')
+            }}
           />
         )
       default:
