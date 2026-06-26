@@ -34,8 +34,8 @@ export default function LoginScreen({ onSignUp }) {
 
     setLoading(true); setError('')
     const resetRedirect = window.location.hostname === 'localhost'
-      ? `${window.location.origin}/auth/callback`
-      : 'https://old2new.app/auth/callback'
+      ? `${window.location.origin}/auth/callback?type=recovery`
+      : 'https://old2new.app/auth/callback?type=recovery'
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: resetRedirect,
     })

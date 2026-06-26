@@ -370,6 +370,7 @@ export default function App() {
             if (!check?.session) {
               throw new Error('Recovery session could not be established. Please request a new reset link.')
             }
+            appInitializedRef.current = true
             inCallbackRef.current = false
             setScreen('reset-password')
           } else if (session?.user) {
