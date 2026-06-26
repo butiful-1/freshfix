@@ -345,11 +345,16 @@ export default function App() {
           }
 
           if (type === 'recovery') {
-            // verifyOtp triggers the PASSWORD_RECOVERY onAuthStateChange event,
-            // which fires with an active session. Route there, not here —
-            // the session is not yet established at this point in the IIFE.
             localStorage.setItem('old2new_pending_reset', '1')
             console.log('[Old2New] Recovery verified, session?.user:', !!session?.user)
+            if (session?.access_token && session?.refresh_token) {
+              await supabase.auth.setSession({
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+              })
+            }
+            inCallbackRef.current = false
+            setScreen('reset-password')
           } else if (session?.user) {
             console.log('[Old2New] Session established — redirecting to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
@@ -399,7 +404,13 @@ export default function App() {
           const { data, error } = await supabase.auth.verifyOtp({ token_hash: tok, type: 'recovery' })
           if (error) throw error
           console.log('[Old2New] Root recovery verified, session?.user:', !!data?.session?.user)
-          // PASSWORD_RECOVERY event handles routing
+          if (data?.session?.access_token && data?.session?.refresh_token) {
+            await supabase.auth.setSession({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+            })
+          }
+          setScreen('reset-password')
         } catch (err) {
           console.error('[Old2New] Root recovery error:', err.message)
           localStorage.removeItem('old2new_pending_reset')
