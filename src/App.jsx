@@ -254,6 +254,7 @@ export default function App() {
               setUser(session.user)
               await loadProfile(session.user.id)
               if (event === 'PASSWORD_RECOVERY') {
+                inCallbackRef.current = false
                 appInitializedRef.current = true
                 setScreen('reset-password')
               } else if (event === 'SIGNED_IN' && inCallbackRef.current) {
@@ -344,19 +345,11 @@ export default function App() {
           }
 
           if (type === 'recovery') {
-            // Route directly to reset-password without a page reload.
-            // Supabase sometimes returns null session for recovery tokens even when
-            // the internal session is established — checking session?.user would
-            // incorrectly fall through to the login redirect. We set the flag as
-            // belt-and-suspenders for any subsequent reload.
+            // verifyOtp triggers the PASSWORD_RECOVERY onAuthStateChange event,
+            // which fires with an active session. Route there, not here —
+            // the session is not yet established at this point in the IIFE.
             localStorage.setItem('old2new_pending_reset', '1')
             console.log('[Old2New] Recovery verified, session?.user:', !!session?.user)
-            if (session?.user) {
-              setUser(session.user)
-              await loadProfile(session.user.id)
-            }
-            inCallbackRef.current = false
-            setScreen('reset-password')
           } else if (session?.user) {
             console.log('[Old2New] Session established — redirecting to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
@@ -406,7 +399,7 @@ export default function App() {
           const { data, error } = await supabase.auth.verifyOtp({ token_hash: tok, type: 'recovery' })
           if (error) throw error
           console.log('[Old2New] Root recovery verified, session?.user:', !!data?.session?.user)
-          setScreen('reset-password')
+          // PASSWORD_RECOVERY event handles routing
         } catch (err) {
           console.error('[Old2New] Root recovery error:', err.message)
           localStorage.removeItem('old2new_pending_reset')
