@@ -410,26 +410,45 @@ export default function App() {
       localStorage.setItem('old2new_login_hint', 'Password updated! Sign in with your new password.')
       window.history.replaceState({}, '', '/')
       setScreen('login')
+    } else if (path === '/' && window.location.hash.includes('access_token') && window.location.hash.includes('type=recovery')) {
+      // Supabase sent recovery tokens in hash at root (redirectTo not whitelisted → site URL fallback).
+      // detectSessionInUrl:false means Supabase will NOT auto-process this — we must setSession ourselves.
+      const hp = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const at = hp.get('access_token')
+      const rt = hp.get('refresh_token')
+      window.history.replaceState({}, '', '/')
+      localStorage.setItem('old2new_pending_reset', '1')
+      console.log('[Old2New] Recovery hash at root — access_token present:', !!at, 'refresh_token present:', !!rt)
+      ;(async () => {
+        try {
+          if (!at || !rt) throw new Error('Missing access_token or refresh_token in recovery hash')
+          const { data, error } = await supabase.auth.setSession({ access_token: at, refresh_token: rt })
+          if (error) throw error
+          console.log('[Old2New] Root hash recovery session, user:', data?.session?.user?.email ?? null)
+          if (!data?.session) throw new Error('setSession returned no session')
+          setScreen('reset-password')
+        } catch (err) {
+          console.error('[Old2New] Root hash recovery error:', err.message)
+          localStorage.removeItem('old2new_pending_reset')
+          setScreen('login')
+        }
+      })()
     } else if (path === '/' && params.get('token_hash') && params.get('type') === 'recovery') {
-      // Recovery link landed at root — redirectTo was not whitelisted or Supabase fell back
+      // Recovery link at root with query-param token_hash (older Supabase format)
       const tok = params.get('token_hash')
       window.history.replaceState({}, '', '/')
       localStorage.setItem('old2new_pending_reset', '1')
-      console.log('[Old2New] Recovery token at root path — verifying')
+      console.log('[Old2New] Recovery token_hash at root — verifying')
       ;(async () => {
         try {
           const { data, error } = await supabase.auth.verifyOtp({ token_hash: tok, type: 'recovery' })
           if (error) throw error
-          console.log('[Old2New] Root recovery verified, session?.user:', !!data?.session?.user)
-          if (data?.session?.access_token && data?.session?.refresh_token) {
-            await supabase.auth.setSession({
-              access_token: data.session.access_token,
-              refresh_token: data.session.refresh_token,
-            })
-          }
+          console.log('[Old2New] Root token_hash recovery, user:', data?.session?.user?.email ?? null)
+          if (!data?.session) throw new Error('verifyOtp returned no session')
+          await supabase.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token })
           setScreen('reset-password')
         } catch (err) {
-          console.error('[Old2New] Root recovery error:', err.message)
+          console.error('[Old2New] Root token_hash recovery error:', err.message)
           localStorage.removeItem('old2new_pending_reset')
           setScreen('login')
         }
