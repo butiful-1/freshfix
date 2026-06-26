@@ -305,8 +305,9 @@ export default function App() {
       const url        = new URL(window.location.href)
       const code       = url.searchParams.get('code')
       const token_hash = url.searchParams.get('token_hash')
-      const type       = url.searchParams.get('type') || 'signup'
       const hash       = window.location.hash
+      const hashParams = hash ? new URLSearchParams(hash.replace(/^#/, '')) : null
+      const type       = url.searchParams.get('type') || hashParams?.get('type') || 'signup'
       const errorParam = url.searchParams.get('error')
 
       console.log('[Old2New] Auth callback received:', {
@@ -342,12 +343,23 @@ export default function App() {
             throw new Error('No valid auth parameters found in the confirmation URL.')
           }
 
-          if (session?.user) {
+          if (type === 'recovery') {
+            // Route directly to reset-password without a page reload.
+            // Supabase sometimes returns null session for recovery tokens even when
+            // the internal session is established — checking session?.user would
+            // incorrectly fall through to the login redirect. We set the flag as
+            // belt-and-suspenders for any subsequent reload.
+            localStorage.setItem('old2new_pending_reset', '1')
+            console.log('[Old2New] Recovery verified, session?.user:', !!session?.user)
+            if (session?.user) {
+              setUser(session.user)
+              await loadProfile(session.user.id)
+            }
+            inCallbackRef.current = false
+            setScreen('reset-password')
+          } else if (session?.user) {
             console.log('[Old2New] Session established — redirecting to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
-            if (type === 'recovery') {
-              localStorage.setItem('old2new_pending_reset', '1')
-            }
             setCallbackStatus('success')
             setTimeout(() => window.location.replace('/'), 1500)
           } else {
@@ -383,6 +395,24 @@ export default function App() {
       localStorage.setItem('old2new_login_hint', 'Password updated! Sign in with your new password.')
       window.history.replaceState({}, '', '/')
       setScreen('login')
+    } else if (path === '/' && params.get('token_hash') && params.get('type') === 'recovery') {
+      // Recovery link landed at root — redirectTo was not whitelisted or Supabase fell back
+      const tok = params.get('token_hash')
+      window.history.replaceState({}, '', '/')
+      localStorage.setItem('old2new_pending_reset', '1')
+      console.log('[Old2New] Recovery token at root path — verifying')
+      ;(async () => {
+        try {
+          const { data, error } = await supabase.auth.verifyOtp({ token_hash: tok, type: 'recovery' })
+          if (error) throw error
+          console.log('[Old2New] Root recovery verified, session?.user:', !!data?.session?.user)
+          setScreen('reset-password')
+        } catch (err) {
+          console.error('[Old2New] Root recovery error:', err.message)
+          localStorage.removeItem('old2new_pending_reset')
+          setScreen('login')
+        }
+      })()
     } else if (path === '/success') {
       setStripeSessionId(params.get('session_id'))
       setScreen('success')
