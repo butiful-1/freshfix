@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../supabase'
 
 const G  = '#22C55E'
 const GD = '#16A34A'
@@ -84,6 +85,7 @@ function StarRow({ count }) {
 
 export default function SplashScreen({ onSignUp, onLogin }) {
   const [visible, setVisible]   = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const pricingRef = useRef(null)
 
   useEffect(() => {
@@ -93,6 +95,21 @@ export default function SplashScreen({ onSignUp, onLogin }) {
 
   const scrollToPricing = () =>
     pricingRef.current?.scrollIntoView({ behavior: 'smooth' })
+
+  function handleGoogleSignIn() {
+    setGoogleLoading(true)
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.hostname === 'localhost'
+          ? `${window.location.origin}/auth/callback`
+          : 'https://old2new.app/auth/callback'
+      }
+    }).catch(err => {
+      console.error('[Old2New] Google OAuth error:', err)
+      setGoogleLoading(false)
+    })
+  }
 
   return (
     <div style={{ background: 'white', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
@@ -134,15 +151,19 @@ export default function SplashScreen({ onSignUp, onLogin }) {
             Transform your old comfort recipes<br />into healthy new favorites
           </p>
 
-          {/* Subheadline */}
-          <p style={{ fontSize: 15, color: TM, lineHeight: 1.65, marginBottom: 32, maxWidth: 300, margin: '0 auto 32px' }}>
-            GLP-1, Keto, Mediterranean and more —<br />AI-powered recipe transformation
-          </p>
-
           {/* CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, margin: '0 auto 24px' }}>
             <button className="btn btn-primary" onClick={onSignUp} style={{ fontSize: 17, minHeight: 54 }}>
               🌿 Sign Up Free
+            </button>
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', minHeight: 52, background: 'white', border: '1.5px solid #DADCE0', borderRadius: 28, fontSize: 15, fontWeight: 600, color: '#3C4043', cursor: googleLoading ? 'not-allowed' : 'pointer', opacity: googleLoading ? 0.5 : 1 }}
+            >
+              <span style={{ fontWeight: 800, fontSize: 18 }}>G</span>
+              {googleLoading ? 'Connecting to Google…' : 'Continue with Google'}
             </button>
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-secondary" onClick={onLogin} style={{ fontSize: 15, flex: 1 }}>
