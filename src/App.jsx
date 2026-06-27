@@ -376,10 +376,15 @@ export default function App() {
             inCallbackRef.current = false
             setScreen('reset-password')
           } else if (session?.user) {
-            console.log('[Old2New] Session established — redirecting to app')
+            console.log('[Old2New] Session established — navigating to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
+            setUser(session.user)
+            await loadProfile(session.user.id)
+            loadSavedRecipes(session.user.id)
+            appInitializedRef.current = true
+            inCallbackRef.current = false
             setCallbackStatus('success')
-            setTimeout(() => window.location.replace('/'), 1500)
+            setTimeout(() => goToApp(), 1200)
           } else {
             console.warn('[Old2New] Exchange succeeded but no session — redirecting to login')
             window.location.replace('/?login=verified')
@@ -390,10 +395,15 @@ export default function App() {
           try {
             const { data } = await supabase.auth.getSession()
             if (data?.session?.user) {
-              console.log('[Old2New] Already signed in — redirecting to app')
+              console.log('[Old2New] Already signed in — navigating to app')
               localStorage.setItem('supabase-auth-complete', Date.now().toString())
+              setUser(data.session.user)
+              await loadProfile(data.session.user.id)
+              loadSavedRecipes(data.session.user.id)
+              appInitializedRef.current = true
+              inCallbackRef.current = false
               setCallbackStatus('success')
-              setTimeout(() => window.location.replace('/'), 1500)
+              setTimeout(() => goToApp(), 1200)
               return
             }
           } catch {}
