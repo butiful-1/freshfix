@@ -10,6 +10,23 @@ export default function SignUpScreen({ onLogin }) {
   const [done, setDone]         = useState(false)
   const [resent, setResent]     = useState(false)
 
+  const [googleLoading, setGoogleLoading] = useState(false)
+
+  function handleGoogleSignIn() {
+    setGoogleLoading(true)
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.hostname === 'localhost'
+          ? `${window.location.origin}/auth/callback`
+          : 'https://old2new.app/auth/callback'
+      }
+    }).catch(err => {
+      console.error('[Old2New] Google OAuth error:', err)
+      setGoogleLoading(false)
+    })
+  }
+
   async function handleSignUp(e) {
     e.preventDefault()
     if (!email.trim() || !password.trim()) { setError('Email and password are required.'); return }
@@ -98,6 +115,21 @@ export default function SignUpScreen({ onLogin }) {
             <span>{error}</span>
           </div>
         )}
+
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={googleLoading}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', minHeight: 52, background: 'white', border: '1.5px solid #DADCE0', borderRadius: 28, fontSize: 15, fontWeight: 600, color: '#3C4043', cursor: googleLoading ? 'not-allowed' : 'pointer', opacity: googleLoading ? 0.5 : 1, marginBottom: 4 }}
+        >
+          <span style={{ fontWeight: 800, fontSize: 18 }}>G</span>
+          {googleLoading ? 'Connecting to Google…' : 'Continue with Google'}
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--gray-300)' }} />
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>or</span>
+          <div style={{ flex: 1, height: 1, background: 'var(--gray-300)' }} />
+        </div>
 
         <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
