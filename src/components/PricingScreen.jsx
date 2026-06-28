@@ -11,10 +11,10 @@ const PLANS = [
     emoji: '🌱',
     color: '#6B9E6D',
     features: [
-      `${FREE_LIMIT} recipe fixes/month`,
+      `5 Recipe Upgrades Every Month`,
       'All 7 diet types',
       'Shopping list',
-      'Save up to 3 recipes',
+      'Save up to 5 recipes',
     ],
     stripeKey: null,
   },
@@ -27,10 +27,10 @@ const PLANS = [
     color: '#22C55E',
     popular: true,
     features: [
-      '50 recipe fixes/month',
+      '50 Recipe Upgrades Every Month',
       'All 7 diet types',
       'Shopping list',
-      'Unlimited saves',
+      'Save up to 50 recipes',
       'Priority AI processing',
     ],
     stripeKey: 'wellness',
@@ -43,10 +43,10 @@ const PLANS = [
     emoji: '⚡',
     color: '#16A34A',
     features: [
-      '150 recipe fixes/month',
+      '150 Recipe Upgrades Every Month',
       'All 7 diet types',
       'Shopping list',
-      'Unlimited saves',
+      'Save up to 150 recipes',
       'Priority AI processing',
       'Priority support',
     ],
@@ -61,7 +61,7 @@ const FAQ = [
   },
   {
     q: 'Is there a free trial for paid plans?',
-    a: `We offer ${FREE_LIMIT} free recipe fixes every month on the Free plan — forever. Try Old2New before you commit to anything.`,
+    a: `We offer ${FREE_LIMIT} free Recipe Upgrades every month on the Free plan — forever. Try Old2New before you commit to anything.`,
   },
   {
     q: 'What payment methods are accepted?',
@@ -69,7 +69,7 @@ const FAQ = [
   },
   {
     q: "What's the difference between Plus and Premium?",
-    a: 'Plus gives you 50 recipe fixes per month — great for most people. Premium gives you 150 fixes per month plus priority support, ideal for power users or households cooking multiple diet types.',
+    a: 'Plus gives you 50 Recipe Upgrades per month — great for most people. Premium gives you 150 Recipe Upgrades per month plus priority support, ideal for power users or households cooking multiple diet types.',
   },
   {
     q: 'Can I switch between plans?',
@@ -152,7 +152,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
           Fix Recipes Without Limits
         </h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Upgrade for more monthly fixes, saves, and more.
+          Upgrade for more monthly Recipe Upgrades and saved recipes.
         </p>
 
         {plan === 'free' && (
@@ -164,10 +164,10 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
             borderRadius: 20, padding: '6px 14px',
             fontSize: 13, fontWeight: 600, marginTop: 12,
           }}>
-            {swapsLeft === 0 ? '⚠️' : '💡'}
+            {swapsLeft === 0 ? '⚠️' : '✨'}
             {swapsLeft === 0
-              ? `You've used all ${FREE_LIMIT} free fixes this month`
-              : `${swapsLeft} of ${FREE_LIMIT} free fixes remaining this month`}
+              ? `You've used all ${FREE_LIMIT} Recipe Upgrades this month`
+              : `${swapsLeft} of ${FREE_LIMIT} Recipe Upgrades Remaining This Month`}
           </div>
         )}
       </div>

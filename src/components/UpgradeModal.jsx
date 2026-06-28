@@ -41,11 +41,10 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             🌿
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8, letterSpacing: -0.5 }}>
-            You've Used Your Free Fixes
+            You've Used All 5 Recipe Upgrades
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            You've used all 5 free recipe fixes this month.
-            Upgrade to keep turning your old favorites into healthy new meals!
+            You've used all 5 Recipe Upgrades this month. Upgrade for more monthly Recipe Upgrades, or come back next month for 5 more free Recipe Upgrades.
           </p>
         </div>
 
@@ -66,7 +65,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             {loading === 'wellness' ? (
               <><div className="spinner" /> Redirecting…</>
             ) : (
-              <>💚 Basic — $9.99/mo · 50 fixes/month</>
+              <>💚 Plus — $14.99/mo · 50 Recipe Upgrades/month</>
             )}
           </button>
 
@@ -78,7 +77,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
             {loading === 'family' ? (
               <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Redirecting…</>
             ) : (
-              <>⚡ Pro — $14.99/mo · 150 fixes/month</>
+              <>⭐ Premium — $24.99/mo · 150 Recipe Upgrades/month</>
             )}
           </button>
 

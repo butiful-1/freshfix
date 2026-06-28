@@ -103,10 +103,8 @@ export default function HomeScreen({
               <span style={{ fontSize: 16 }}>{atLimit ? '🔒' : '💡'}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: atLimit ? 'var(--red)' : 'var(--green-dark)' }}>
                 {atLimit
-                  ? isLifetime ? 'Free fixes used up' : 'Monthly limit reached'
-                  : isLifetime
-                    ? `${swapsLeft} of ${transformLimit} free lifetime fix${swapsLeft !== 1 ? 'es' : ''} remaining`
-                    : `${swapsLeft} of ${transformLimit} fix${swapsLeft !== 1 ? 'es' : ''} left this month`
+                  ? `0 of ${transformLimit} Recipe Upgrades Remaining This Month`
+                  : `${swapsLeft} of ${transformLimit} Recipe Upgrade${swapsLeft !== 1 ? 's' : ''} Remaining This Month`
                 }
               </span>
             </div>
@@ -145,7 +143,7 @@ export default function HomeScreen({
         )}
         {atLimit && (
           <p style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginTop: 6 }}>
-            {isLifetime ? 'Upgrade to keep transforming recipes →' : 'Upgrade for more fixes →'}{' '}
+            {'Upgrade for more Recipe Upgrades →'}{' '}
             <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>
               View plans
             </button>
@@ -172,13 +170,13 @@ export default function HomeScreen({
       {/* Recent swaps */}
       <div className="recent-section">
         <div className="recent-header">
-          <span className="recent-title">Recent Swaps</span>
+          <span className="recent-title">Recent Recipe Upgrades</span>
         </div>
 
         {recent.length === 0 ? (
           <div className="empty-recent">
             <div className="empty-recent-icon">🍽️</div>
-            <p>Your transformed recipes will appear here.<br />Try your first swap above!</p>
+            <p>Your transformed recipes will appear here.<br />Try your first Recipe Upgrade above!</p>
           </div>
         ) : (
           recent.map(recipe => (
