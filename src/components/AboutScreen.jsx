@@ -258,8 +258,8 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
               Questions, feedback, or partnership inquiries?
             </p>
             <a
-              href="mailto:support@storefrontsignal.com"
-              onClick={(e) => { e.preventDefault(); window.open('mailto:support@storefrontsignal.com'); }}
+              href="mailto:admin@old2new.app"
+              onClick={(e) => { e.preventDefault(); window.open('mailto:admin@old2new.app'); }}
               style={{
                 display: 'inline-block', marginTop: 10,
                 background: 'var(--green-pale)',
@@ -270,7 +270,7 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
                 cursor: 'pointer',
               }}
             >
-              ✉️ support@storefrontsignal.com
+              ✉️ admin@old2new.app
             </a>
             <p style={{ marginTop: 14, color: 'var(--text-muted)', fontSize: 13 }}>
               Old2New is an independent app and is not affiliated with any food brand or company.

@@ -357,7 +357,7 @@ export default function SplashScreen({ onSignUp, onLogin }) {
           Always consult your physician before changing your diet.
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <a href="mailto:support@storefrontsignal.com" onClick={(e) => { e.preventDefault(); window.open('mailto:support@storefrontsignal.com'); }} style={{ fontSize: 12, color: G, textDecoration: 'none', cursor: 'pointer' }}>Contact</a>
+          <a href="mailto:admin@old2new.app" onClick={(e) => { e.preventDefault(); window.open('mailto:admin@old2new.app'); }} style={{ fontSize: 12, color: G, textDecoration: 'none', cursor: 'pointer' }}>Contact</a>
           <span style={{ color: '#2D4D2E', fontSize: 12 }}>·</span>
           <span style={{ fontSize: 12, color: '#4B7A4D' }}>old2new.app</span>
         </div>
