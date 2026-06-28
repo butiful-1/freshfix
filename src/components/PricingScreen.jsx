@@ -114,7 +114,7 @@ function FaqItem({ q, a }) {
   )
 }
 
-export default function PricingScreen({ plan, swapUsage, onBack }) {
+export default function PricingScreen({ plan, swapUsage, onBack, user }) {
   const [loading, setLoading] = useState(null)
   const [error, setError]     = useState('')
 
@@ -127,7 +127,7 @@ export default function PricingScreen({ plan, swapUsage, onBack }) {
       const res = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planKey }),
+        body: JSON.stringify({ plan: planKey, ...(user?.id ? { userId: user.id } : {}) }),
       })
       const data = await res.json()
       if (data.url) { window.location.href = data.url; return }

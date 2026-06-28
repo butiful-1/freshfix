@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { createClient } from '@supabase/supabase-js'
 
 export const config = {maxDuration: 10}
 
@@ -9,6 +10,10 @@ async function getRawBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)))
     req.on('error', reject)
   })
+}
+
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 }
 
 export default async function handler(req, res) {
@@ -24,7 +29,6 @@ export default async function handler(req, res) {
       const sig = req.headers['stripe-signature']
       event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret)
     } else {
-      // No secret set — accept without verification (dev only)
       event = req.body
     }
   } catch (err) {
@@ -37,7 +41,22 @@ export default async function handler(req, res) {
   switch (event?.type) {
     case 'checkout.session.completed': {
       const session = event.data.object
-      console.log(`Subscription started — plan: ${session.metadata?.plan}, customer: ${session.customer}`)
+      const plan = session.metadata?.plan
+      const userId = session.client_reference_id
+      if (userId && plan && ['wellness', 'family'].includes(plan)) {
+        try {
+          const { error } = await getSupabase()
+            .from('profiles')
+            .update({ plan, swaps_used: 0 })
+            .eq('id', userId)
+          if (error) throw error
+          console.log(`Plan upgraded — userId: ${userId}, plan: ${plan}`)
+        } catch (err) {
+          console.error('Webhook plan upgrade error:', err.message)
+        }
+      } else {
+        console.log(`checkout.session.completed — plan: ${plan}, userId: ${userId || 'none'}`)
+      }
       break
     }
     case 'customer.subscription.updated': {
@@ -47,7 +66,25 @@ export default async function handler(req, res) {
     }
     case 'customer.subscription.deleted': {
       const sub = event.data.object
-      console.log(`Subscription cancelled — id: ${sub.id}`)
+      // Retrieve customer email from Stripe, look up user, downgrade to free
+      try {
+        const customer = await stripe.customers.retrieve(sub.customer)
+        const email = customer.email
+        if (email) {
+          const supabase = getSupabase()
+          const { data: { users }, error } = await supabase.auth.admin.listUsers()
+          if (error) throw error
+          const user = users.find(u => u.email === email)
+          if (user) {
+            await supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id)
+            console.log(`Plan downgraded — email: ${email}, plan: free`)
+          } else {
+            console.log(`Subscription deleted but no user found for email: ${email}`)
+          }
+        }
+      } catch (err) {
+        console.error('Webhook plan downgrade error:', err.message)
+      }
       break
     }
     case 'invoice.payment_failed': {

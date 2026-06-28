@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({error: 'Method not allowed'})
 
-  const {plan} = req.body || {}
+  const {plan, userId} = req.body || {}
   if (!['wellness', 'family'].includes(plan)) {
     return res.status(400).json({error: 'Invalid plan. Must be wellness or family.'})
   }
@@ -46,6 +46,7 @@ export default async function handler(req, res) {
       success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cancel`,
       metadata: {plan},
+      ...(userId ? {client_reference_id: userId} : {}),
     })
     return res.json({url: session.url})
   } catch (err) {

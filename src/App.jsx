@@ -760,7 +760,7 @@ export default function App() {
       case 'saved':
         return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} />
       case 'pricing':
-        return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} />
+        return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user} />
       case 'callback': {
         const wrapStyle = {
           display: 'flex', flexDirection: 'column', alignItems: 'center',
