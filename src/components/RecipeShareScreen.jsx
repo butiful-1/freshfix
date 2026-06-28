@@ -238,8 +238,11 @@ export default function RecipeShareScreen({ recipeId, onSignUp, onLogin }) {
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
         <button className="btn btn-primary" onClick={onSignUp} style={{ fontSize: 15 }}>
-          💾 Sign Up Free to Save This Recipe →
+          ✨ Create Your Own Healthier Recipe →
         </button>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
+          Free to try • Transform up to 5 recipes
+        </p>
         <button
           onClick={onLogin}
           style={{ background: 'none', border: 'none', fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600 }}
