@@ -20,8 +20,8 @@ const PLANS = [
   },
   {
     id: 'wellness',
-    name: 'Basic',
-    price: '$9.99',
+    name: 'Plus',
+    price: '$14.99',
     period: '/mo',
     emoji: '💚',
     color: '#22C55E',
@@ -37,8 +37,8 @@ const PLANS = [
   },
   {
     id: 'family',
-    name: 'Pro',
-    price: '$14.99',
+    name: 'Premium',
+    price: '$24.99',
     period: '/mo',
     emoji: '⚡',
     color: '#16A34A',
@@ -68,8 +68,8 @@ const FAQ = [
     a: 'All major credit and debit cards via Stripe\'s secure checkout. Apple Pay and Google Pay are available where supported.',
   },
   {
-    q: "What's included in the Family plan?",
-    a: 'Everything in Wellness, plus up to 5 separate family profiles — each with their own diet preferences, saved recipes, and swap history.',
+    q: "What's the difference between Plus and Premium?",
+    a: 'Plus gives you 50 recipe fixes per month — great for most people. Premium gives you 150 fixes per month plus priority support, ideal for power users or households cooking multiple diet types.',
   },
   {
     q: 'Can I switch between plans?',

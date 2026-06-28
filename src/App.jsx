@@ -543,6 +543,29 @@ export default function App() {
       // leaving isLoading=true on top of every screen the user navigates to.
       if (transformGenerationRef.current === generation) setIsLoading(false)
 
+      // Fire image generation asynchronously — recipe is visible, image loads in background
+      if (result.imagePrompt) {
+        fetch('/api/generate-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imagePrompt: result.imagePrompt }),
+        })
+          .then(r => r.ok ? r.json() : null)
+          .then(img => {
+            if (!img?.imageUrl) return
+            setTransformResult(prev => {
+              if (!prev || prev.id !== result.id) return prev
+              const updated = { ...prev, imageUrl: img.imageUrl, imagePrompt: img.imagePrompt, imageModel: img.imageModel, imageGeneratedAt: img.imageGeneratedAt }
+              // If the recipe was already saved (Supabase UUID), silently backfill the image
+              if (typeof prev.id === 'string' && prev.id.includes('-')) {
+                supabase.from('saved_recipes').update({ recipe_data: updated }).eq('id', prev.id).catch(() => {})
+              }
+              return updated
+            })
+          })
+          .catch(err => console.error('[Old2New] Image error:', err.message))
+      }
+
       const newCount = swapUsage.count + 1
       setSwapUsage(prev => ({ ...prev, count: newCount }))
       if (user) {

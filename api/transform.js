@@ -52,7 +52,8 @@ Your JSON response must match this EXACT structure:
     "pantry": ["string"],
     "other": ["string"]
   },
-  "encouragement": "string - 1-2 sentence motivating message about this transformation"
+  "encouragement": "string - 1-2 sentence motivating message about this transformation",
+  "imagePrompt": "Describe only the finished plated dish. Include visible ingredients, colors, textures, garnishes, serving vessel, and portion size. Do not describe lighting, camera angles, photography style, or artistic effects."
 }`
 
 export default async function handler(req, res) {

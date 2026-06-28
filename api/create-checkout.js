@@ -3,11 +3,11 @@ import Stripe from 'stripe'
 export const config = {maxDuration: 10}
 
 const ALLOWED_ORIGINS = [
-  'https://freshfix.app',
-  'https://www.freshfix.app',
-  'https://freshfix-app.vercel.app',
+  'https://old2new.app',
+  'https://www.old2new.app',
   'http://localhost:5174',
   'http://localhost:5173',
+  'http://localhost:4173',
 ]
 
 const PLAN_PRICES = {
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-  const baseUrl = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://freshfix.app'
+  const baseUrl = ALLOWED_ORIGINS.includes(origin) ? origin : 'https://old2new.app'
 
   try {
     const session = await stripe.checkout.sessions.create({

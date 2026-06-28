@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const MACRO_COLORS = {
   protein: '#22C55E',
@@ -46,6 +46,10 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const [newIngredient, setNewIngredient] = useState('')
   const [ingredientsModified, setIngredientsModified] = useState(false)
   const [userNotes, setUserNotes] = useState('')
+  const [imageReady, setImageReady] = useState(false)
+
+  // Reset image state when a new recipe loads
+  useEffect(() => { setImageReady(false) }, [result?.id])
 
   const removeIngredient = (index) => {
     setIngredients(prev => prev.filter((_, i) => i !== index))
@@ -118,6 +122,37 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
           {copied ? '✓' : '↑'}
         </button>
       </div>
+
+      {/* Hero image — skeleton while generating, fades in when ready */}
+      {result.imagePrompt && (
+        <div style={{ position: 'relative', width: '100%', height: 260, overflow: 'hidden', background: 'var(--gray-100)' }}>
+          {(!result.imageUrl || !imageReady) && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <div style={{ fontSize: 36 }}>🍽️</div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+                {result.imageUrl ? 'Loading image…' : 'Generating recipe image…'}
+              </p>
+              <div className="loading-dots" style={{ transform: 'scale(0.65)' }}><span /><span /><span /></div>
+            </div>
+          )}
+          {result.imageUrl && (
+            <>
+              <img
+                key={result.imageUrl}
+                src={result.imageUrl}
+                alt={transformedRecipe?.name}
+                onLoad={() => setImageReady(true)}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: imageReady ? 1 : 0, transition: 'opacity 0.5s ease' }}
+              />
+              {imageReady && (
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '28px 12px 10px', background: 'linear-gradient(transparent, rgba(0,0,0,0.45))', fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 500, textAlign: 'center', letterSpacing: 0.4 }}>
+                  🌿 Created with Old2New
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* Encouragement */}
       {encouragement && (

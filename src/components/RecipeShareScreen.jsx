@@ -105,6 +105,16 @@ export default function RecipeShareScreen({ recipeId, onSignUp, onLogin }) {
         )}
       </div>
 
+      {/* Hero image */}
+      {recipe.imageUrl && (
+        <div style={{ position: 'relative', width: '100%', height: 260, overflow: 'hidden' }}>
+          <img src={recipe.imageUrl} alt={transformedRecipe?.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '28px 12px 10px', background: 'linear-gradient(transparent, rgba(0,0,0,0.45))', fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 500, textAlign: 'center', letterSpacing: 0.4 }}>
+            🌿 Created with Old2New
+          </div>
+        </div>
+      )}
+
       {/* Before / After */}
       <div className="results-comparison">
         <div className="compare-card before">

@@ -57,8 +57,8 @@ const PLANS = [
     planKey: null,
   },
   {
-    name: 'Basic',
-    price: '$9.99',
+    name: 'Plus',
+    price: '$14.99',
     period: '/mo',
     perks: '50 fixes/month · Unlimited saves',
     color: G,
@@ -66,8 +66,8 @@ const PLANS = [
     planKey: 'wellness',
   },
   {
-    name: 'Pro',
-    price: '$14.99',
+    name: 'Premium',
+    price: '$24.99',
     period: '/mo',
     perks: '150 fixes/month · Priority AI',
     color: GD,
