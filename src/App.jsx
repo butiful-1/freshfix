@@ -717,6 +717,11 @@ export default function App() {
     )
   }
 
+  // Render the homepage outside the mobile app shell so it fills the full browser width
+  if (screen === 'splash') {
+    return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
+
   const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
 
   const renderScreen = () => {

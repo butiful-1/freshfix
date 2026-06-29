@@ -1,100 +1,171 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 
-const G  = '#22C55E'
-const GD = '#16A34A'
-const GP = '#DCFCE7'
-const GB = '#F0FDF4'
-const T  = '#1A2E1B'
-const TM = '#7A9A7C'
+// ── Brand tokens ──────────────────────────────────────────────────────────────
+const G   = '#22C55E'
+const GD  = '#16A34A'
+const T   = '#111827'
+const TM  = '#6B7280'
+const CRM = '#F8F3EB'   // warm linen
+const IPH = '#E8E3DA'   // image placeholder neutral
+const SF  = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+const SRF = 'Georgia, "Times New Roman", serif'
 
-const FEATURES = [
+// ── Data ──────────────────────────────────────────────────────────────────────
+const RECIPES = [
+  { title: 'Lighter Protein Pizza',     file: 'recipe-pizza.jpg'    },
+  { title: 'Creamy Lighter Alfredo',    file: 'recipe-alfredo.jpg'  },
+  { title: 'Protein Cookie Bites',      file: 'recipe-cookies.jpg'  },
+  { title: 'Better Burger Bowl',        file: 'recipe-burger.jpg'   },
+]
+
+const STEPS = [
+  { num: '01', title: 'Choose a recipe you love'  },
+  { num: '02', title: 'Pick your cooking goal'    },
+  { num: '03', title: 'Get a fresh new version'   },
+  { num: '04', title: 'Save and cook'             },
+]
+
+const FAQ = [
   {
-    icon: '🤖',
-    title: 'AI-Powered Swaps',
-    desc: 'Claude AI analyzes your recipe and makes smart, personalized ingredient substitutions tailored to your exact diet.',
+    q: 'What is Old2New?',
+    a: 'A recipe companion that turns your favorite dishes into healthier versions — complete with ingredient swaps and a shopping list.',
   },
   {
-    icon: '🎯',
-    title: '7 Diet Types Supported',
-    desc: 'GLP-1, Keto, Mediterranean, High Protein, Low Sugar, Low Calorie, and Diabetic Friendly — all in one app.',
+    q: 'Is this a diet app?',
+    a: 'Not at all. No calorie counting, no meal plans. Just better versions of the meals you already cook.',
   },
   {
-    icon: '⚡',
-    title: 'Instant Results',
-    desc: 'Full transformed recipe + calorie comparison + shopping list in seconds. Save, share, and cook immediately.',
+    q: 'Can I use family recipes?',
+    a: 'Yes. Paste in any recipe — a handwritten card, a dish name, or something from memory — and get a fresh new version.',
+  },
+  {
+    q: 'Will it work with comfort food?',
+    a: 'Comfort food is our specialty. Mac & cheese, lasagna, fried chicken — if you love it, we can help you feel good about eating it.',
+  },
+  {
+    q: 'How many recipes can I save for free?',
+    a: 'Free accounts include 5 Recipe Upgrades and 5 saved recipes per month. Upgrade to Plus or Premium for more.',
   },
 ]
 
-const TESTIMONIALS = [
-  {
-    name: 'Sarah M.',
-    badge: '💊 GLP-1 Friendly',
-    quote: 'Old2New keeps me on track with my Ozempic journey. The pasta alternatives are incredible and actually taste amazing!',
-    stars: 5,
-  },
-  {
-    name: 'Mike T.',
-    badge: '🥑 Keto',
-    quote: 'Finally keto recipes my whole family loves. The pizza fix alone made upgrading worth every penny.',
-    stars: 5,
-  },
-  {
-    name: 'Jennifer K.',
-    badge: '🫒 Mediterranean',
-    quote: 'Saving 200+ calories per meal without losing any flavor. This app completely changed how I cook.',
-    stars: 5,
-  },
-]
-
-const PLANS = [
-  {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    perks: '5 Recipe Upgrades/month · All diet types',
-    color: '#6B9E6D',
-    planKey: null,
-  },
-  {
-    name: 'Plus',
-    price: '$14.99',
-    period: '/mo',
-    perks: '50 Recipe Upgrades/month · Save up to 50 recipes',
-    color: G,
-    popular: true,
-    planKey: 'wellness',
-  },
-  {
-    name: 'Premium',
-    price: '$24.99',
-    period: '/mo',
-    perks: '150 Recipe Upgrades/month · Priority AI',
-    color: GD,
-    planKey: 'family',
-  },
-]
-
-function StarRow({ count }) {
+// ── Neutral image placeholder ─────────────────────────────────────────────────
+// Replace <ImgPh> with <img src={`/images/${file}`} ... /> when photos are ready
+function ImgPh({ file, className, style }) {
   return (
-    <div style={{ fontSize: 15, marginBottom: 10, color: '#F59E0B', letterSpacing: 1 }}>
-      {'★'.repeat(count)}
+    <div
+      className={className}
+      aria-hidden="true"
+      style={{
+        background: IPH,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        ...style,
+      }}
+    >
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.22 }}>
+        <rect x="3" y="3" width="18" height="18" rx="2" stroke="#5C4D3A" strokeWidth="1.4" />
+        <circle cx="8.5" cy="8.5" r="1.5" fill="#5C4D3A" />
+        <path d="M3 16l5-5 4 4 3-3 6 6" stroke="#5C4D3A" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span style={{ fontSize: 10, color: '#B8AFA3', letterSpacing: 1.8, textTransform: 'uppercase', fontFamily: SF }}>
+        {file}
+      </span>
     </div>
   )
 }
 
+// ── FAQ accordion ─────────────────────────────────────────────────────────────
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ borderBottom: '1px solid #E8E4DE' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: 'none', border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '22px 0', cursor: 'pointer', textAlign: 'left', gap: 16,
+          fontFamily: SF,
+        }}
+      >
+        <span style={{ fontSize: 16, fontWeight: 600, color: T, lineHeight: 1.4, fontFamily: SF }}>{q}</span>
+        <span style={{
+          fontSize: 20, color: GD, flexShrink: 0, display: 'inline-block',
+          transform: open ? 'rotate(45deg)' : 'none',
+          transition: 'transform 0.2s ease',
+          fontFamily: SF,
+        }}>+</span>
+      </button>
+      {open && (
+        <p style={{ fontSize: 15, color: TM, lineHeight: 1.8, paddingBottom: 22, marginTop: -4, fontFamily: SF }}>
+          {a}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ── Fade-in on scroll ─────────────────────────────────────────────────────────
+function FadeIn({ children, style, className, delay = 0 }) {
+  const ref = useRef(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); obs.disconnect() }
+    }, { threshold: 0.08 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'none' : 'translateY(22px)',
+        transition: `opacity 0.6s ease ${delay}s, transform 0.6s ease ${delay}s`,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ── Google SVG ────────────────────────────────────────────────────────────────
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 export default function SplashScreen({ onSignUp, onLogin }) {
-  const [visible, setVisible]   = useState(false)
+  const [navScrolled, setNavScrolled] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const pricingRef = useRef(null)
+
+  const recipesRef = useRef(null)
+  const howRef     = useRef(null)
+  const faqRef     = useRef(null)
 
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 80)
-    return () => clearTimeout(t)
+    const fn = () => setNavScrolled(window.scrollY > 24)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  const scrollToPricing = () =>
-    pricingRef.current?.scrollIntoView({ behavior: 'smooth' })
+  const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   function handleGoogleSignIn() {
     setGoogleLoading(true)
@@ -103,8 +174,8 @@ export default function SplashScreen({ onSignUp, onLogin }) {
       options: {
         redirectTo: window.location.hostname === 'localhost'
           ? `${window.location.origin}/auth/callback`
-          : 'https://old2new.app/auth/callback'
-      }
+          : 'https://old2new.app/auth/callback',
+      },
     }).catch(err => {
       console.error('[Old2New] Google OAuth error:', err)
       setGoogleLoading(false)
@@ -112,254 +183,310 @@ export default function SplashScreen({ onSignUp, onLogin }) {
   }
 
   return (
-    <div style={{ background: 'white', minHeight: '100vh', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+    <div style={{ background: 'white', minHeight: '100vh', fontFamily: SF, overflowX: 'hidden' }}>
 
-      {/* ── HERO ───────────────────────────────────── */}
-      <section style={{
-        background: `linear-gradient(160deg, ${GP} 0%, ${GB} 40%, white 100%)`,
-        padding: '60px 24px 52px',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+      {/* ── NAVIGATION ──────────────────────────────────────────────────── */}
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100,
+        background: navScrolled ? 'rgba(255,255,255,0.96)' : 'white',
+        backdropFilter: navScrolled ? 'blur(12px)' : 'none',
+        WebkitBackdropFilter: navScrolled ? 'blur(12px)' : 'none',
+        borderBottom: '1px solid #EDE8E1',
+        boxShadow: navScrolled ? '0 1px 16px rgba(0,0,0,0.05)' : 'none',
+        transition: 'box-shadow 0.3s, background 0.3s',
       }}>
-        <div style={{ position: 'absolute', top: -80, right: -80, width: 240, height: 240, borderRadius: '50%', background: `radial-gradient(circle, ${GP}AA, transparent 70%)`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -40, left: -60, width: 180, height: 180, borderRadius: '50%', background: `radial-gradient(circle, ${GB}EE, transparent 70%)`, pointerEvents: 'none' }} />
-
         <div style={{
-          opacity: visible ? 1 : 0,
-          transform: visible ? 'translateY(0)' : 'translateY(24px)',
-          transition: 'opacity 0.5s ease, transform 0.5s ease',
-          position: 'relative',
+          maxWidth: 1320, margin: '0 auto', padding: '0 40px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 68,
         }}>
+
           {/* Logo */}
-          <div style={{
-            width: 92, height: 92, borderRadius: 26, background: G,
-            margin: '0 auto 22px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 48, boxShadow: `0 16px 48px ${G}44`,
-          }}>
-            🌿
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Old2New — back to top"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 9 }}
+          >
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🌿</div>
+            <span style={{ fontSize: 19, fontWeight: 700, color: T, letterSpacing: -0.5, fontFamily: SF }}>
+              Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
+            </span>
+          </button>
+
+          {/* Desktop nav */}
+          <div className="hp-desktop-nav" style={{ alignItems: 'center', gap: 4 }}>
+            {[
+              { label: 'Recipes',      action: () => scrollTo(recipesRef) },
+              { label: 'How It Works', action: () => scrollTo(howRef) },
+              { label: 'FAQ',          action: () => scrollTo(faqRef) },
+            ].map(({ label, action }) => (
+              <button key={label} onClick={action}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = T}
+                onMouseLeave={e => e.currentTarget.style.color = TM}
+              >{label}</button>
+            ))}
+            <button onClick={onLogin}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, marginLeft: 4, transition: 'color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.color = T}
+              onMouseLeave={e => e.currentTarget.style.color = TM}
+            >Sign In</button>
+            <button onClick={onSignUp}
+              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: SF, marginLeft: 8, transition: 'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = GD}
+              onMouseLeave={e => e.currentTarget.style.background = G}
+            >Get Started</button>
           </div>
 
-          {/* App name */}
-          <h1 style={{ fontSize: 48, fontWeight: 800, color: T, letterSpacing: -2, marginBottom: 16, lineHeight: 1 }}>
-            Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
-          </h1>
+          {/* Mobile CTA */}
+          <button className="hp-mobile-cta" onClick={onSignUp}
+            style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: SF }}
+          >Get Started</button>
+        </div>
+      </nav>
 
-          {/* Headline */}
-          <p style={{ fontSize: 22, fontWeight: 700, color: T, lineHeight: 1.35, marginBottom: 12, letterSpacing: -0.5 }}>
-            Transform your old comfort recipes<br />into healthy new favorites
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      {/*
+        hp-hero: 2-column on desktop (image left 58%, text right 42%)
+                 stacked on mobile (image top, text below)
+      */}
+      <section className="hp-hero" style={{ background: CRM }}>
+
+        {/*
+          Replace <ImgPh> with:
+          <img
+            src="/images/hero-food.jpg"
+            alt="Beautiful fresh healthy meal on a bright kitchen counter"
+            className="hp-hero-img"
+            style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+          />
+          Recommended: 1400×900px · warm natural light · wide-angle food photography
+        */}
+        <ImgPh file="hero-food.jpg" className="hp-hero-img" />
+
+        <div className="hp-hero-text">
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#7D8E7F', textTransform: 'uppercase', marginBottom: 28, fontFamily: SF }}>
+            Recipe Transformation
           </p>
+          <h1 style={{ fontFamily: SRF, fontSize: 'clamp(40px, 5vw, 68px)', fontWeight: 700, color: T, letterSpacing: -2, lineHeight: 1.02, marginBottom: 18 }}>
+            Eat What You Love.
+          </h1>
+          <h2 style={{ fontFamily: SRF, fontSize: 'clamp(24px, 3vw, 42px)', fontWeight: 400, color: '#3D6B3F', letterSpacing: -0.5, lineHeight: 1.2, marginBottom: 48, fontStyle: 'italic' }}>
+            Just a Little Healthier.
+          </h2>
+          <div className="hp-hero-btns">
+            <button onClick={onSignUp}
+              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '15px 38px', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: SF, transition: 'background 0.15s', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => e.currentTarget.style.background = GD}
+              onMouseLeave={e => e.currentTarget.style.background = G}
+            >Start Free</button>
+            <button onClick={() => scrollTo(recipesRef)}
+              style={{ background: 'transparent', color: T, border: '1.5px solid #C2BAB0', borderRadius: 4, padding: '14px 32px', fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: SF, transition: 'border-color 0.15s', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T}
+              onMouseLeave={e => e.currentTarget.style.borderColor = '#C2BAB0'}
+            >Browse Recipes</button>
+          </div>
+        </div>
+      </section>
 
-          {/* CTAs */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 320, margin: '0 auto 24px' }}>
-            <button className="btn btn-primary" onClick={onSignUp} style={{ fontSize: 17, minHeight: 54 }}>
-              🌿 Sign Up Free
-            </button>
+      {/* ── RECIPE GALLERY ──────────────────────────────────────────────── */}
+      <section ref={recipesRef} style={{ padding: '108px 40px', background: 'white' }}>
+        <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 72 }}>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(30px, 4vw, 52px)', fontWeight: 700, color: T, letterSpacing: -1.5, lineHeight: 1.05 }}>
+              Old Favorites. Fresh New Twists.
+            </h2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="hp-recipes-grid">
+              {RECIPES.map((r, i) => (
+                <figure key={i} style={{ margin: 0 }}>
+                  {/*
+                    Replace <ImgPh> with:
+                    <img
+                      src={`/images/${r.file}`}
+                      alt={r.title}
+                      style={{ width:'100%', aspectRatio:'4/3', objectFit:'cover', display:'block', borderRadius: 3 }}
+                    />
+                    Recommended: 800×600px per card · warm food photography
+                  */}
+                  <ImgPh file={r.file} style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 3 }} />
+                  <figcaption style={{
+                    fontSize: 15, fontWeight: 600, color: T,
+                    marginTop: 16, lineHeight: 1.4, fontFamily: SF,
+                  }}>
+                    {r.title}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
+      <section ref={howRef} style={{ padding: '108px 40px', background: CRM }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 80 }}>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2 }}>
+              Four Easy Steps
+            </h2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="hp-steps">
+              {STEPS.map((step, i) => (
+                <div key={i} style={{ borderTop: `2.5px solid ${G}`, paddingTop: 28 }}>
+                  <div style={{
+                    fontSize: 'clamp(40px, 5vw, 60px)', fontWeight: 800,
+                    color: '#D5EBDA', letterSpacing: -3, lineHeight: 1,
+                    marginBottom: 20, fontFamily: SF,
+                  }}>
+                    {step.num}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: T, lineHeight: 1.45, fontFamily: SF }}>
+                    {step.title}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── EDITORIAL SPLIT ─────────────────────────────────────────────── */}
+      {/*
+        hp-editorial: image left 56%, text right 44% on desktop
+                      stacked on mobile
+      */}
+      <section className="hp-editorial" style={{ background: 'white' }}>
+
+        {/*
+          Replace <ImgPh> with:
+          <img
+            src="/images/story-kitchen.jpg"
+            alt="A warm home kitchen with fresh ingredients on the counter"
+            className="hp-editorial-img"
+            style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+          />
+          Recommended: 1400×900px · warm kitchen/cooking scene · natural light
+        */}
+        <ImgPh file="story-kitchen.jpg" className="hp-editorial-img" />
+
+        <FadeIn className="hp-editorial-text">
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#7D8E7F', textTransform: 'uppercase', marginBottom: 24, fontFamily: SF }}>
+              Our Story
+            </p>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(26px, 3.5vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2, lineHeight: 1.15, marginBottom: 24 }}>
+              Your favorite comfort foods. Just a little better.
+            </h2>
+            <p style={{ fontSize: 16, color: TM, lineHeight: 1.85, marginBottom: 40, fontFamily: SF }}>
+              Healthy eating should feel happy. Old2New helps you discover fresh new ways to enjoy the meals you already love.
+            </p>
+            <button onClick={onSignUp}
+              style={{
+                background: 'transparent', color: GD,
+                border: '1.5px solid #22C55E', borderRadius: 4,
+                padding: '13px 30px', fontSize: 15, fontWeight: 600,
+                cursor: 'pointer', fontFamily: SF, transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = G; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = G }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = GD; e.currentTarget.style.borderColor = '#22C55E' }}
+            >Start Cooking</button>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ── FAQ ─────────────────────────────────────────────────────────── */}
+      <section ref={faqRef} style={{ padding: '108px 40px', background: '#FAFAF8' }}>
+        <FadeIn style={{ maxWidth: 740, margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: SRF, fontSize: 'clamp(26px, 4vw, 40px)',
+            fontWeight: 700, color: T, textAlign: 'center',
+            letterSpacing: -1.2, marginBottom: 56,
+          }}>
+            Common Questions
+          </h2>
+          <div style={{ background: 'white', borderRadius: 6, padding: '4px 44px 20px', boxShadow: '0 2px 24px rgba(0,0,0,0.05)' }}>
+            {FAQ.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ── FINAL CTA ───────────────────────────────────────────────────── */}
+      <section style={{ padding: '120px 40px', background: CRM, textAlign: 'center', borderTop: '1px solid #EDE8E1' }}>
+        <FadeIn style={{ maxWidth: 560, margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: SRF,
+            fontSize: 'clamp(28px, 4vw, 48px)',
+            fontWeight: 700, color: T, letterSpacing: -1.5,
+            lineHeight: 1.1, marginBottom: 52,
+          }}>
+            Ready to rediscover your favorite meals?
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
+            <button onClick={onSignUp}
+              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '18px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer', fontFamily: SF, transition: 'background 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = GD}
+              onMouseLeave={e => e.currentTarget.style.background = G}
+            >Start Free</button>
             <button
-              type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', minHeight: 52, background: 'white', border: '1.5px solid #DADCE0', borderRadius: 28, fontSize: 15, fontWeight: 600, color: '#3C4043', cursor: googleLoading ? 'not-allowed' : 'pointer', opacity: googleLoading ? 0.5 : 1 }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', padding: '15px 24px', background: 'white', border: '1.5px solid #DADCE0', borderRadius: 4, fontSize: 15, fontWeight: 500, color: '#3C4043', cursor: googleLoading ? 'not-allowed' : 'pointer', opacity: googleLoading ? 0.6 : 1, fontFamily: SF, transition: 'border-color 0.15s' }}
+              onMouseEnter={e => { if (!googleLoading) e.currentTarget.style.borderColor = '#BDBDBD' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#DADCE0' }}
             >
-              <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style={{ flexShrink: 0 }}><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-              {googleLoading ? 'Connecting to Google…' : 'Continue with Google'}
+              <GoogleIcon />
+              {googleLoading ? 'Connecting…' : 'Continue with Google'}
             </button>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-secondary" onClick={onLogin} style={{ fontSize: 15, flex: 1 }}>
-                Sign In
-              </button>
-              <button className="btn btn-secondary" onClick={scrollToPricing} style={{ fontSize: 15, flex: 1 }}>
-                Pricing →
-              </button>
-            </div>
+            <button onClick={onLogin}
+              style={{ background: 'none', border: 'none', color: TM, fontSize: 14, cursor: 'pointer', fontFamily: SF, padding: '8px 0' }}
+            >
+              Already have an account?{' '}
+              <span style={{ color: GD, fontWeight: 600 }}>Sign In</span>
+            </button>
           </div>
+        </FadeIn>
+      </section>
 
-          {/* Diet badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, justifyContent: 'center' }}>
-            {['💊 GLP-1', '🥑 Keto', '🫒 Mediterranean', '💪 High Protein', '❤️ Diabetic Friendly', '🔥 Low Calorie'].map(d => (
-              <span key={d} className="badge badge-green" style={{ fontSize: 12 }}>{d}</span>
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      <footer style={{ padding: '52px 40px', background: '#F2EDE5', borderTop: '1px solid #EDE8E1' }}>
+        <div style={{ maxWidth: 1320, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            aria-label="Back to top"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}
+          >
+            <div style={{ width: 32, height: 32, borderRadius: 7, background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>🌿</div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: T, letterSpacing: -0.5, fontFamily: SF }}>
+              Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
+            </span>
+          </button>
+
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {[
+              { label: 'Recipes',      action: () => scrollTo(recipesRef) },
+              { label: 'How It Works', action: () => scrollTo(howRef) },
+              { label: 'FAQ',          action: () => scrollTo(faqRef) },
+            ].map(({ label, action }) => (
+              <button key={label} onClick={action}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: TM, fontFamily: SF, padding: '4px 10px', borderRadius: 4 }}
+                onMouseEnter={e => e.currentTarget.style.color = T}
+                onMouseLeave={e => e.currentTarget.style.color = TM}
+              >{label}</button>
             ))}
+            <span style={{ color: '#D1C9BE', fontSize: 13, display: 'flex', alignItems: 'center' }}>·</span>
+            <a href="/privacy.html" style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Privacy</a>
+            <a href="/terms.html"   style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Terms</a>
+            <a href="mailto:admin@old2new.app" style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Contact</a>
           </div>
-        </div>
-      </section>
 
-      {/* ── FEATURES ───────────────────────────────── */}
-      <section style={{ padding: '48px 20px', background: 'white' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: T, textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 }}>
-          Why Old2New?
-        </h2>
-        <p style={{ fontSize: 14, color: TM, textAlign: 'center', marginBottom: 28 }}>
-          Smart recipe transformation in seconds
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {FEATURES.map((f, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 16,
-              padding: '18px 20px',
-              background: i === 1 ? GP : '#FAFAFA',
-              borderRadius: 20,
-              border: `1px solid ${i === 1 ? '#BBF7D0' : '#E8E8E8'}`,
-              boxShadow: i === 1 ? `0 4px 16px ${G}1A` : 'none',
-            }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 16,
-                background: i === 1 ? G : 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, flexShrink: 0,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-              }}>
-                {f.icon}
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T, marginBottom: 5 }}>{f.title}</div>
-                <div style={{ fontSize: 13, color: '#4B7A4D', lineHeight: 1.55 }}>{f.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ───────────────────────────── */}
-      <section style={{ padding: '44px 0 52px', background: '#FAFAFA', borderTop: '1px solid #E8E8E8', borderBottom: '1px solid #E8E8E8' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: T, textAlign: 'center', letterSpacing: -0.5, marginBottom: 4, padding: '0 20px' }}>
-          What People Are Saying
-        </h2>
-        <p style={{ fontSize: 14, color: TM, textAlign: 'center', marginBottom: 26, padding: '0 20px' }}>
-          Join thousands fixing their favorite recipes
-        </p>
-
-        {/* Horizontal scroll row */}
-        <div style={{ display: 'flex', gap: 14, overflowX: 'auto', padding: '4px 20px 8px', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-          {TESTIMONIALS.map((t, i) => (
-            <div key={i} style={{
-              flexShrink: 0, width: 268,
-              background: 'white', borderRadius: 20,
-              padding: '22px 20px',
-              border: '1px solid #E8E8E8',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-            }}>
-              <StarRow count={t.stars} />
-              <p style={{ fontSize: 14, color: '#3D5C3E', lineHeight: 1.65, marginBottom: 16, fontStyle: 'italic' }}>
-                "{t.quote}"
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: GP, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
-                  {t.badge.slice(0, 2)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T }}>{t.name}</div>
-                  <div style={{ fontSize: 11, color: TM }}>{t.badge}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── PRICING PREVIEW ────────────────────────── */}
-      <section ref={pricingRef} style={{ padding: '52px 20px 44px', background: 'white' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: T, textAlign: 'center', letterSpacing: -0.5, marginBottom: 6 }}>
-          Simple Pricing
-        </h2>
-        <p style={{ fontSize: 14, color: TM, textAlign: 'center', marginBottom: 28 }}>
-          Start free. Upgrade when you're ready.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {PLANS.map((p) => (
-            <div key={p.name} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '16px 18px',
-              background: p.popular ? GP : '#FAFAFA',
-              borderRadius: 18,
-              border: `2px solid ${p.popular ? G : '#E0E0E0'}`,
-              boxShadow: p.popular ? `0 4px 20px ${G}22` : 'none',
-              position: 'relative',
-            }}>
-              {p.popular && (
-                <div style={{
-                  position: 'absolute', top: -11, left: 14,
-                  background: G, color: 'white',
-                  fontSize: 10, fontWeight: 700,
-                  padding: '3px 10px', borderRadius: 10, letterSpacing: 0.5,
-                }}>
-                  MOST POPULAR
-                </div>
-              )}
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: T }}>{p.name}</div>
-                <div style={{ fontSize: 12, color: TM, marginTop: 3 }}>{p.perks}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: p.color }}>{p.price}</span>
-                  <span style={{ fontSize: 11, color: TM }}>{p.period}</span>
-                </div>
-                <button
-                  onClick={onSignUp}
-                  style={{
-                    background: p.color, color: 'white',
-                    border: 'none', borderRadius: 12, padding: '8px 14px',
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    whiteSpace: 'nowrap', minWidth: 68,
-                  }}
-                >
-                  {p.planKey ? 'Start →' : 'Free →'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <p style={{ textAlign: 'center', fontSize: 12, color: TM, marginTop: 16 }}>
-          Cancel anytime · No hidden fees · Powered by Stripe
-        </p>
-      </section>
-
-      {/* ── FINAL CTA ──────────────────────────────── */}
-      <section style={{
-        padding: '44px 24px 36px',
-        background: `linear-gradient(160deg, ${GP}, white)`,
-        textAlign: 'center',
-        borderTop: '1px solid #BBF7D0',
-      }}>
-        <div style={{ fontSize: 44, marginBottom: 18 }}>🌿</div>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: T, letterSpacing: -0.5, marginBottom: 10 }}>
-          Ready to fix your recipes?
-        </h2>
-        <p style={{ fontSize: 15, color: TM, lineHeight: 1.65, marginBottom: 28, maxWidth: 280, margin: '0 auto 28px' }}>
-          Join thousands eating healthier without giving up their favorite foods.
-        </p>
-        <button
-          className="btn btn-primary"
-          onClick={onSignUp}
-          style={{ maxWidth: 320, width: '100%', fontSize: 17, minHeight: 54 }}
-        >
-          🌿 Sign Up Free →
-        </button>
-        <button
-          onClick={onLogin}
-          style={{ background: 'none', border: 'none', color: 'var(--green-dark)', fontWeight: 600, fontSize: 14, cursor: 'pointer', marginTop: 10 }}
-        >
-          Already have an account? Sign In →
-        </button>
-      </section>
-
-      {/* ── FOOTER ─────────────────────────────────── */}
-      <footer style={{ padding: '24px 24px 36px', background: T, textAlign: 'center' }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: 'white', marginBottom: 6, letterSpacing: -0.5 }}>
-          Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
-        </div>
-        <p style={{ fontSize: 11, color: '#4B7A4D', lineHeight: 1.6, marginBottom: 14 }}>
-          Old2New is for informational purposes only. Not medical advice.<br />
-          Always consult your physician before changing your diet.
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <a href="mailto:admin@old2new.app" onClick={(e) => { e.preventDefault(); window.open('mailto:admin@old2new.app'); }} style={{ fontSize: 12, color: G, textDecoration: 'none', cursor: 'pointer' }}>Contact</a>
-          <span style={{ color: '#2D4D2E', fontSize: 12 }}>·</span>
-          <span style={{ fontSize: 12, color: '#4B7A4D' }}>old2new.app</span>
+          <div style={{ fontSize: 12, color: '#A89E93', textAlign: 'center', lineHeight: 1.8, fontFamily: SF }}>
+            <a href="mailto:admin@old2new.app" style={{ color: '#A89E93', textDecoration: 'none' }}>admin@old2new.app</a>
+            <br />
+            Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.
+          </div>
         </div>
       </footer>
     </div>

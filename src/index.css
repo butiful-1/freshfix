@@ -1245,3 +1245,55 @@ textarea::placeholder { color: var(--text-muted); }
 
 /* scrollbar hide */
 ::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ─────────────────────────────────────────────────── */
+/* HOMEPAGE RESPONSIVE NAV                             */
+/* ─────────────────────────────────────────────────── */
+.hp-desktop-nav { display: none; }
+.hp-mobile-cta  { display: block; }
+@media (min-width: 680px) {
+  .hp-desktop-nav { display: flex; }
+  .hp-mobile-cta  { display: none; }
+}
+
+/* ─────────────────────────────────────────────────── */
+/* HOMEPAGE: HERO SPLIT                               */
+/* ─────────────────────────────────────────────────── */
+.hp-hero           { display: flex; flex-direction: column; }
+.hp-hero-img       { min-height: 360px; }
+.hp-hero-text      { padding: 64px 28px 72px; }
+.hp-hero-btns      { display: flex; flex-direction: column; gap: 12px; }
+@media (min-width: 900px) {
+  .hp-hero         { flex-direction: row; min-height: 680px; }
+  .hp-hero-img     { flex: 0 0 58%; min-height: unset; order: -1; }
+  .hp-hero-text    { flex: 1; padding: 0 80px; display: flex; flex-direction: column; justify-content: center; }
+  .hp-hero-btns    { flex-direction: row; gap: 16px; }
+}
+
+/* ─────────────────────────────────────────────────── */
+/* HOMEPAGE: RECIPE GRID                              */
+/* ─────────────────────────────────────────────────── */
+.hp-recipes-grid  { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
+@media (min-width: 700px) {
+  .hp-recipes-grid { grid-template-columns: repeat(4, 1fr); gap: 40px; }
+}
+
+/* ─────────────────────────────────────────────────── */
+/* HOMEPAGE: HOW IT WORKS STEPS                       */
+/* ─────────────────────────────────────────────────── */
+.hp-steps          { display: grid; grid-template-columns: repeat(2, 1fr); gap: 44px 28px; }
+@media (min-width: 700px) {
+  .hp-steps        { grid-template-columns: repeat(4, 1fr); gap: 48px 36px; }
+}
+
+/* ─────────────────────────────────────────────────── */
+/* HOMEPAGE: EDITORIAL SPLIT                          */
+/* ─────────────────────────────────────────────────── */
+.hp-editorial      { display: flex; flex-direction: column; }
+.hp-editorial-img  { min-height: 360px; }
+.hp-editorial-text { padding: 64px 28px 72px; }
+@media (min-width: 900px) {
+  .hp-editorial      { flex-direction: row; min-height: 580px; }
+  .hp-editorial-img  { flex: 0 0 56%; min-height: unset; }
+  .hp-editorial-text { flex: 1; display: flex; align-items: center; padding: 80px 88px; }
+}
