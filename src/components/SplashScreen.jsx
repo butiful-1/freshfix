@@ -20,10 +20,51 @@ const RECIPES = [
 ]
 
 const STEPS = [
-  { num: '01', title: 'Choose a recipe you love'  },
-  { num: '02', title: 'Pick your cooking goal'    },
-  { num: '03', title: 'Get a fresh new version'   },
-  { num: '04', title: 'Save and cook'             },
+  { num: 1, title: 'Transform a Recipe',    desc: 'Paste a recipe or simply type the meal you love.',                                                                          file: 'app-step-1.jpg' },
+  { num: 2, title: 'See Your New Recipe',   desc: 'Old2New instantly creates a healthier version while keeping the flavors you love.',                                         file: 'app-step-2.jpg' },
+  { num: 3, title: 'Compare the Nutrition', desc: 'See calories, protein, carbs, fat and fiber before and after your transformation.',                                         file: 'app-step-3.jpg' },
+  { num: 4, title: 'Save Your Favorites',   desc: 'Build your own collection of healthier recipes and return to them anytime.',                                                file: 'app-step-4.jpg' },
+]
+
+const TRUST = [
+  {
+    title: 'Made for real kitchens',
+    paragraphs: [
+      'Everyday meals.\nBusy weeknights.\nFamily favorites.',
+      "Healthy cooking shouldn't feel complicated.",
+    ],
+  },
+  {
+    title: 'No guilt. No strict plans.',
+    paragraphs: [
+      'Keep the meals you already love.',
+      'Simply discover fresh ways to make them a little lighter and more balanced.',
+    ],
+  },
+  {
+    title: 'Save what you love',
+    paragraphs: [
+      'Build your own collection of favorite recipes.',
+      'Return to them anytime.',
+    ],
+  },
+]
+
+// ── Testimonials ──────────────────────────────────────────────────────────────
+// Placeholder names — replace with real verified user testimonials before launch
+const TESTIMONIALS = [
+  {
+    quote: "I made the healthier chicken Alfredo and my husband asked for seconds.",
+    author: "Sarah T.",
+  },
+  {
+    quote: "I never thought I could make a lighter version of my mom's lasagna taste this good.",
+    author: "Rachel M.",
+  },
+  {
+    quote: "Old2New made it so easy to find a healthier version of our Friday pizza night.",
+    author: "Tom R.",
+  },
 ]
 
 // ── Social links ─────────────────────────────────────────────────────────────
@@ -118,6 +159,23 @@ function ImgPh({ file, className, style }) {
         {file}
       </span>
     </div>
+  )
+}
+
+// ── Editorial background texture ──────────────────────────────────────────────
+// Layers a blurred, desaturated food photo behind a warm semi-transparent overlay.
+// Sections show warm base color until the matching /images/bg-*.jpg is dropped in.
+function BgTex({ file, blur = 1, pos = 'center', size = 'cover' }) {
+  return (
+    <div aria-hidden="true" style={{
+      position: 'absolute', inset: 0, zIndex: 0,
+      backgroundImage: `url(/images/${file})`,
+      backgroundSize: size,
+      backgroundPosition: pos,
+      filter: `blur(${blur}px) saturate(0.85) brightness(0.95)`,
+      transform: 'scale(1.06)',
+      pointerEvents: 'none',
+    }} />
   )
 }
 
@@ -292,19 +350,16 @@ export default function SplashScreen({ onSignUp, onLogin }) {
         hp-hero: 2-column on desktop (image left 58%, text right 42%)
                  stacked on mobile (image top, text below)
       */}
-      <section className="hp-hero" style={{ background: CRM }}>
-
-        {/*
-          Replace <ImgPh> with:
+      {/*
+        Background texture: bg-herbs.jpg — Freshness · herbs on marble · 8% opacity
+      */}
+      <section className="hp-hero">
+        <div className="hp-hero-image">
           <img
-            src="/images/hero-food.jpg"
-            alt="Beautiful fresh healthy meal on a bright kitchen counter"
-            className="hp-hero-img"
-            style={{ objectFit: 'cover', width: '100%', height: '100%', display: 'block' }}
+            src="/images/hero-shrimp.jpg"
+            alt="Fresh healthy shrimp dish prepared at home"
           />
-          Recommended: 1400×900px · warm natural light · wide-angle food photography
-        */}
-        <ImgPh file="hero-food.jpg" className="hp-hero-img" />
+        </div>
 
         <div className="hp-hero-text">
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#7D8E7F', textTransform: 'uppercase', marginBottom: 28, fontFamily: SF }}>
@@ -332,8 +387,9 @@ export default function SplashScreen({ onSignUp, onLogin }) {
       </section>
 
       {/* ── RECIPE GALLERY ──────────────────────────────────────────────── */}
-      <section ref={recipesRef} style={{ padding: '108px 40px', background: 'white' }}>
-        <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+      <section ref={recipesRef} style={{ padding: '108px 40px', background: 'white', position: 'relative', overflow: 'hidden' }}>
+        <BgTex file="bg-herbs-top.jpg" pos="center top" />
+        <div style={{ maxWidth: 1240, margin: '0 auto', position: 'relative', zIndex: 2 }}>
           <FadeIn style={{ textAlign: 'center', marginBottom: 72 }}>
             <h2 style={{ fontFamily: SRF, fontSize: 'clamp(30px, 4vw, 52px)', fontWeight: 700, color: T, letterSpacing: -1.5, lineHeight: 1.05 }}>
               Old Favorites. Fresh New Twists.
@@ -352,7 +408,11 @@ export default function SplashScreen({ onSignUp, onLogin }) {
                     />
                     Recommended: 800×600px per card · warm food photography
                   */}
-                  <ImgPh file={r.file} style={{ width: '100%', aspectRatio: '4 / 3', borderRadius: 3 }} />
+                  <img
+                    src={`/images/${r.file}`}
+                    alt={r.title}
+                    style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 3, display: 'block' }}
+                  />
                   <figcaption style={{
                     fontSize: 15, fontWeight: 600, color: T,
                     marginTop: 16, lineHeight: 1.4, fontFamily: SF,
@@ -367,32 +427,23 @@ export default function SplashScreen({ onSignUp, onLogin }) {
       </section>
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-      <section ref={howRef} style={{ padding: '108px 40px', background: CRM }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <FadeIn style={{ textAlign: 'center', marginBottom: 80 }}>
-            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2 }}>
-              Four Easy Steps
-            </h2>
-          </FadeIn>
-          <FadeIn delay={0.1}>
-            <div className="hp-steps">
-              {STEPS.map((step, i) => (
-                <div key={i} style={{ borderTop: `2.5px solid ${G}`, paddingTop: 28 }}>
-                  <div style={{
-                    fontSize: 'clamp(40px, 5vw, 60px)', fontWeight: 800,
-                    color: '#D5EBDA', letterSpacing: -3, lineHeight: 1,
-                    marginBottom: 20, fontFamily: SF,
-                  }}>
-                    {step.num}
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: T, lineHeight: 1.45, fontFamily: SF }}>
-                    {step.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </FadeIn>
-        </div>
+      <section ref={howRef} style={{ padding: '100px 32px 110px', background: CRM, position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-cuttingboard.jpg" pos="center" />
+        <FadeIn style={{ maxWidth: 1175, margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          <img
+            src="/images/4-easy-steps.png"
+            alt="Four Easy Steps: Transform a Recipe, See Your New Recipe, Compare the Nutrition, Save Your Favorites"
+            style={{
+              width: '100%',
+              maxWidth: 1175,
+              height: 'auto',
+              display: 'block',
+              margin: '0 auto',
+              borderRadius: 20,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.12)',
+            }}
+          />
+        </FadeIn>
       </section>
 
       {/* ── EDITORIAL SPLIT ─────────────────────────────────────────────── */}
@@ -400,7 +451,11 @@ export default function SplashScreen({ onSignUp, onLogin }) {
         hp-editorial: image left 56%, text right 44% on desktop
                       stacked on mobile
       */}
-      <section className="hp-editorial" style={{ background: 'white' }}>
+      {/*
+        Background texture: bg-harvest.jpg — Seasonal · garden harvest at edges · 15% opacity
+      */}
+      <section className="hp-editorial" style={{ background: 'white', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-harvest.jpg" />
 
         {/*
           Replace <ImgPh> with:
@@ -412,9 +467,14 @@ export default function SplashScreen({ onSignUp, onLogin }) {
           />
           Recommended: 1400×900px · warm kitchen/cooking scene · natural light
         */}
-        <ImgPh file="story-kitchen.jpg" className="hp-editorial-img" />
+        <div className="hp-editorial-img" style={{ position: 'relative', zIndex: 2 }}>
+          <img
+            src="/images/story-kitchen.jpg"
+            alt="A warm home kitchen with fresh ingredients on the counter"
+          />
+        </div>
 
-        <FadeIn className="hp-editorial-text">
+        <FadeIn className="hp-editorial-text" style={{ position: 'relative', zIndex: 2, background: 'rgba(255,252,246,0.96)' }}>
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#7D8E7F', textTransform: 'uppercase', marginBottom: 24, fontFamily: SF }}>
               Our Story
@@ -439,117 +499,214 @@ export default function SplashScreen({ onSignUp, onLogin }) {
         </FadeIn>
       </section>
 
+      {/* ── WHY PEOPLE LOVE OLD2NEW ──────────────────────────────────── */}
+      <section style={{ padding: '112px 40px', background: 'white', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-kitchen.jpg" pos="center" />
+        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 80 }}>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2 }}>
+              Why People Love Old2New
+            </h2>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="hp-trust">
+              {TRUST.map((item, i) => (
+                <div key={i} style={{ background: 'rgba(255,252,246,0.94)', borderRadius: 16, padding: '40px 36px', boxShadow: '0 8px 32px rgba(0,0,0,0.07)', border: '1px solid rgba(80,60,40,0.07)' }}>
+                  <div style={{ width: 28, height: 2, background: G, marginBottom: 32 }} />
+                  <h3 style={{ fontFamily: SRF, fontSize: 22, fontWeight: 700, color: T, marginBottom: 22, lineHeight: 1.25, letterSpacing: -0.5 }}>
+                    {item.title}
+                  </h3>
+                  {item.paragraphs.map((p, j) => (
+                    <p key={j} style={{
+                      fontSize: 15, color: TM, lineHeight: 1.95, fontFamily: SF,
+                      whiteSpace: 'pre-line',
+                      marginBottom: j < item.paragraphs.length - 1 ? 18 : 0,
+                    }}>
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── FROM OUR COMMUNITY ───────────────────────────────────────── */}
+      <section style={{ padding: '112px 40px', background: CRM, position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-community.jpg" pos="center bottom" />
+        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 64 }}>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2, marginBottom: 18 }}>
+              From Our Community
+            </h2>
+            <p style={{ fontSize: 16, color: TM, lineHeight: 1.75, maxWidth: 500, margin: '0 auto', fontFamily: SF }}>
+              Real feedback from people discovering healthier ways to cook the meals they already love.
+            </p>
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="hp-testimonials">
+              {TESTIMONIALS.map((t, i) => (
+                <div key={i} style={{
+                  background: 'rgba(255,252,246,0.97)',
+                  borderRadius: 14,
+                  padding: '40px 36px',
+                  boxShadow: '0 8px 36px rgba(0,0,0,0.10)',
+                  border: '1px solid rgba(80,60,40,0.07)',
+                }}>
+                  <div style={{ fontSize: 13, color: '#F59E0B', letterSpacing: 3, marginBottom: 24 }}>★★★★★</div>
+                  <p style={{ fontFamily: SRF, fontSize: 17, fontStyle: 'italic', color: T, lineHeight: 1.75, marginBottom: 28 }}>
+                    "{t.quote}"
+                  </p>
+                  <p style={{ fontSize: 11, color: TM, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: SF }}>
+                    — {t.author}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
-      <section ref={faqRef} style={{ padding: '108px 40px', background: '#FAFAF8' }}>
-        <FadeIn style={{ maxWidth: 740, margin: '0 auto' }}>
-          <h2 style={{
-            fontFamily: SRF, fontSize: 'clamp(26px, 4vw, 40px)',
-            fontWeight: 700, color: T, textAlign: 'center',
-            letterSpacing: -1.2, marginBottom: 56,
-          }}>
-            Common Questions
-          </h2>
-          <div style={{ background: 'white', borderRadius: 6, padding: '4px 44px 20px', boxShadow: '0 2px 24px rgba(0,0,0,0.05)' }}>
-            {FAQ.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+      <section ref={faqRef} style={{ padding: '88px 40px', background: 'white', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-kitchen.jpg" pos="center" />
+        <FadeIn style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
+          <div className="hp-faq" style={{ background: 'rgba(255,252,246,0.93)', borderRadius: 18, padding: 'clamp(40px, 5vw, 72px)', boxShadow: '0 16px 45px rgba(0,0,0,0.08)', border: '1px solid rgba(80,60,40,0.08)' }}>
+
+            {/* Left: editorial intro */}
+            <div className="hp-faq-intro">
+              <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2.5, color: '#7D8E7F', textTransform: 'uppercase', marginBottom: 20, fontFamily: SF }}>
+                Questions
+              </p>
+              <h2 style={{ fontFamily: SRF, fontSize: 'clamp(24px, 3vw, 36px)', fontWeight: 700, color: T, letterSpacing: -1, lineHeight: 1.2, marginBottom: 20 }}>
+                Questions before you start?
+              </h2>
+              <p style={{ fontSize: 15, color: TM, lineHeight: 1.85, fontFamily: SF, marginBottom: 16 }}>
+                Old2New is simple, flexible, and made for real-life cooking.
+              </p>
+              <p style={{ fontSize: 15, color: TM, lineHeight: 1.85, fontFamily: SF }}>
+                Whether you're making small changes or starting fresh, we're here to help you enjoy the meals you already love.
+              </p>
+            </div>
+
+            {/* Right: accordion */}
+            <div style={{ flex: 1 }}>
+              {FAQ.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+            </div>
+
           </div>
         </FadeIn>
       </section>
 
-      {/* ── FINAL CTA ───────────────────────────────────────────────────── */}
-      <section style={{ padding: '120px 40px', background: CRM, textAlign: 'center', borderTop: '1px solid #EDE8E1' }}>
-        <FadeIn style={{ maxWidth: 560, margin: '0 auto' }}>
+      {/* ── FINAL CTA ────────────────────────────────────────────────── */}
+      <section style={{
+        position: 'relative',
+        overflow: 'hidden',
+        minHeight: 580,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundImage: 'url(/images/bg-cta.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        marginTop: -10,
+      }}>
+        {/* Dark warm overlay for text readability over the lifestyle photo */}
+        <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'rgba(16,10,4,0.58)', zIndex: 1, pointerEvents: 'none' }} />
+
+        <FadeIn style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '116px 40px', maxWidth: 560, width: '100%' }}>
           <h2 style={{
-            fontFamily: SRF,
-            fontSize: 'clamp(28px, 4vw, 48px)',
-            fontWeight: 700, color: T, letterSpacing: -1.5,
-            lineHeight: 1.1, marginBottom: 52,
+            fontFamily: SRF, fontSize: 'clamp(30px, 4vw, 52px)', fontWeight: 700,
+            color: 'white', letterSpacing: -1.5, lineHeight: 1.07, marginBottom: 20,
           }}>
             Ready to rediscover your favorite meals?
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.72)', lineHeight: 1.7, marginBottom: 48, fontFamily: SF }}>
+            Start with one recipe you already love.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 300, margin: '0 auto' }}>
             <button onClick={onSignUp}
-              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '18px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer', fontFamily: SF, transition: 'background 0.15s' }}
+              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '17px 36px', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: SF, transition: 'background 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.background = GD}
               onMouseLeave={e => e.currentTarget.style.background = G}
             >Start Free</button>
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={googleLoading}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, width: '100%', padding: '15px 24px', background: 'white', border: '1.5px solid #DADCE0', borderRadius: 4, fontSize: 15, fontWeight: 500, color: '#3C4043', cursor: googleLoading ? 'not-allowed' : 'pointer', opacity: googleLoading ? 0.6 : 1, fontFamily: SF, transition: 'border-color 0.15s' }}
-              onMouseEnter={e => { if (!googleLoading) e.currentTarget.style.borderColor = '#BDBDBD' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#DADCE0' }}
-            >
-              <GoogleIcon />
-              {googleLoading ? 'Connecting…' : 'Continue with Google'}
-            </button>
             <button onClick={onLogin}
-              style={{ background: 'none', border: 'none', color: TM, fontSize: 14, cursor: 'pointer', fontFamily: SF, padding: '8px 0' }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 14, cursor: 'pointer', fontFamily: SF, padding: '6px 0' }}
             >
               Already have an account?{' '}
-              <span style={{ color: GD, fontWeight: 600 }}>Sign In</span>
+              <span style={{ color: 'white', fontWeight: 600 }}>Sign In</span>
             </button>
           </div>
         </FadeIn>
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer style={{ padding: '52px 40px', background: '#F2EDE5', borderTop: '1px solid #EDE8E1' }}>
-        <div style={{ maxWidth: 1320, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+      <footer style={{ background: '#F2EDE5', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+        <BgTex file="bg-footer.jpg" pos="center top" />
+        <div style={{ maxWidth: 1320, margin: '0 auto', padding: '56px 40px 44px', position: 'relative', zIndex: 2 }}>
 
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            aria-label="Back to top"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}
-          >
-            <div style={{ width: 32, height: 32, borderRadius: 7, background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17 }}>🌿</div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: T, letterSpacing: -0.5, fontFamily: SF }}>
-              Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
-            </span>
-          </button>
-
-          {/* Social links */}
-          <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-            {SOCIALS.map(({ label, href, icon }) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#B8AFA3', display: 'flex', transition: 'color 0.18s' }}
-                onMouseEnter={e => e.currentTarget.style.color = T}
-                onMouseLeave={e => e.currentTarget.style.color = '#B8AFA3'}
+          {/* Top row: Logo + tagline | Social icons */}
+          <div className="hp-footer-top" style={{ marginBottom: 40 }}>
+            <div>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                aria-label="Back to top"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}
               >
-                {icon}
-              </a>
-            ))}
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: G, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 23 }}>🌿</div>
+                <span style={{ fontSize: 25, fontWeight: 700, color: T, letterSpacing: -0.5, fontFamily: SF }}>
+                  Old<span style={{ color: '#F59E0B' }}>2</span><span style={{ color: G }}>New</span>
+                </span>
+              </button>
+              <p style={{ fontSize: 15, color: '#5A5A5A', fontFamily: SF, paddingLeft: 54 }}>
+                Your favorite recipes, a little better.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+              {SOCIALS.map(({ label, href, icon }) => (
+                <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer"
+                  style={{ color: '#2B2B2B', display: 'flex', transition: 'color 0.18s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = G}
+                  onMouseLeave={e => e.currentTarget.style.color = '#2B2B2B'}
+                >{icon}</a>
+              ))}
+            </div>
           </div>
 
-          <div style={{ width: '100%', maxWidth: 320, borderTop: '1px solid #E3DDD6', margin: '0 auto' }} />
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid rgba(80,60,40,0.12)', marginBottom: 28 }} />
 
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {/* Links row: all centered */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 32 }}>
             {[
               { label: 'Recipes',      action: () => scrollTo(recipesRef) },
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
             ].map(({ label, action }) => (
               <button key={label} onClick={action}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: TM, fontFamily: SF, padding: '4px 10px', borderRadius: 4 }}
-                onMouseEnter={e => e.currentTarget.style.color = T}
-                onMouseLeave={e => e.currentTarget.style.color = TM}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4 }}
+                onMouseEnter={e => e.currentTarget.style.color = G}
+                onMouseLeave={e => e.currentTarget.style.color = '#2B2B2B'}
               >{label}</button>
             ))}
-            <span style={{ color: '#D1C9BE', fontSize: 13, display: 'flex', alignItems: 'center' }}>·</span>
-            <a href="/privacy.html" style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Privacy</a>
-            <a href="/terms.html"   style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Terms</a>
-            <a href="mailto:admin@old2new.app" style={{ fontSize: 13, color: TM, textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = T} onMouseLeave={e => e.target.style.color = TM}>Contact</a>
+            <span style={{ color: '#D1C9BE', fontSize: 13, padding: '0 2px' }}>·</span>
+            <a href="/privacy.html" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Privacy</a>
+            <a href="/terms.html"   style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Terms</a>
+            <a href="mailto:admin@old2new.app" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Contact</a>
+            <span style={{ color: '#D1C9BE', fontSize: 13, padding: '0 2px' }}>·</span>
+            <a href="mailto:admin@old2new.app"
+              style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', fontFamily: SF, padding: '4px 10px' }}
+              onMouseEnter={e => e.target.style.color = G}
+              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+            >admin@old2new.app</a>
           </div>
 
-          <div style={{ fontSize: 12, color: '#A89E93', textAlign: 'center', lineHeight: 1.8, fontFamily: SF }}>
-            <a href="mailto:admin@old2new.app" style={{ color: '#A89E93', textDecoration: 'none' }}>admin@old2new.app</a>
-            <br />
+          {/* Legal */}
+          <p style={{ fontSize: 11, color: '#666666', textAlign: 'center', lineHeight: 1.8, fontFamily: SF }}>
             Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.
-          </div>
+          </p>
+
         </div>
       </footer>
     </div>
