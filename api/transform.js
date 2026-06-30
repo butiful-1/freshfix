@@ -127,7 +127,7 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
   } catch (err) {
     console.error('Transform error:', err.message)
     if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      return res.status(500).json({ error: 'Something went wrong. Please try again.' })
     }
     if (err.status === 401) {
       return res.status(500).json({ error: 'Invalid API key. Check ANTHROPIC_API_KEY in Vercel environment variables.' })

@@ -166,7 +166,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('[suggest] error:', err.message)
     if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      return res.status(500).json({ error: 'Something went wrong. Please try again.' })
     }
     if (err.error?.type === 'overloaded_error' || err.status === 503) {
       return res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })

@@ -907,7 +907,7 @@ export default function App() {
         <div className="loading-overlay">
           <div className="loading-overlay-icon">🌿</div>
           <h2>Transforming Recipe…</h2>
-          <p>AI is making smart ingredient swaps for your healthy goals</p>
+          <p>Old2New is making smart ingredient swaps for your healthy goals</p>
           <div className="loading-dots"><span /><span /><span /></div>
           {showTryAgain ? (
             <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>

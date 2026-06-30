@@ -130,7 +130,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <div style={{ fontSize: 36 }}>🍽️</div>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
-                {result.imageUrl ? 'Loading image…' : 'Generating recipe image…'}
+                {result.imageUrl ? 'Loading image…' : 'Preparing your recipe image…'}
               </p>
               <div className="loading-dots" style={{ transform: 'scale(0.65)' }}><span /><span /><span /></div>
             </div>

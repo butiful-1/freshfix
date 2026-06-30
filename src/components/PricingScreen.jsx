@@ -31,7 +31,7 @@ const PLANS = [
       'All 7 diet types',
       'Shopping list',
       'Save up to 50 recipes',
-      'Priority AI processing',
+      'Priority Transformations',
     ],
     stripeKey: 'wellness',
   },
@@ -47,7 +47,7 @@ const PLANS = [
       'All 7 diet types',
       'Shopping list',
       'Save up to 150 recipes',
-      'Priority AI processing',
+      'Priority Transformations',
       'Priority support',
     ],
     stripeKey: 'family',
@@ -149,7 +149,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
       <div style={{ padding: '24px 16px 8px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 10 }}>🌿</div>
         <h2 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.8, marginBottom: 8 }}>
-          Fix Recipes Without Limits
+          More Monthly Recipe Transformations
         </h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           Upgrade for more monthly Recipe Upgrades and saved recipes.

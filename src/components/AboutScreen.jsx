@@ -128,7 +128,7 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
       <div className="about-hero">
         <div className="about-logo">🌿</div>
         <div className="about-name">Old<span style={{color:'var(--amber)'}}>2</span><span style={{color:'var(--green)'}}>New</span></div>
-        <div className="about-version">Version 1.0 · Powered by Claude AI</div>
+        <div className="about-version">Version 1.0</div>
       </div>
 
       <div className="about-content">
@@ -137,8 +137,7 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
         <div className="about-section">
           <h3>What is Old2New?</h3>
           <p>
-            Old2New is an AI-powered recipe transformation app that takes your favorite recipes and
-            makes them healthier — without losing the flavor or comfort you love.
+            Old2New is a recipe transformation app that helps transform your favorite recipes into healthier versions — without losing the flavor or comfort you love.
           </p>
           <p style={{ marginTop: 10 }}>
             Whether you're managing a GLP-1 medication like Ozempic or Wegovy, following a keto lifestyle,

@@ -96,7 +96,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('Sync-recipe error:', err.message)
     if (err instanceof SyntaxError) {
-      return res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      return res.status(500).json({ error: 'Something went wrong. Please try again.' })
     }
     if (err.status === 401) {
       return res.status(500).json({ error: 'Invalid API key.' })

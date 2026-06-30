@@ -38,7 +38,7 @@ export default async function middleware(request) {
   const recipeId = match[1]
   const recipeUrl = `${SITE_URL}/recipe/${recipeId}`
   let title = 'Healthy Recipe — Old2New'
-  let description = 'Transform old comfort recipes into healthy new favorites with AI.'
+  let description = 'Transform old comfort recipes into healthy new favorites.'
   let imageUrl = FALLBACK_IMAGE
 
   try {
@@ -58,7 +58,7 @@ export default async function middleware(request) {
           const diets = Array.isArray(r?.diets) ? r.diets.join(', ') : ''
           const cals = r?.caloriesAfter ? `${r.caloriesAfter} cal` : ''
           const parts = [cals, diets].filter(Boolean)
-          if (parts.length) description = `${parts.join(' · ')} · AI-transformed recipe on Old2New`
+          if (parts.length) description = `${parts.join(' · ')} · Healthier version on Old2New`
           if (r?.imageUrl && r.imageUrl.startsWith('https://')) imageUrl = r.imageUrl
         }
       }

@@ -150,7 +150,7 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
   } catch (err) {
     console.error(`[transform] ${elapsed()} error:`, err.message)
     if (err instanceof SyntaxError) {
-      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      res.status(500).json({ error: 'Something went wrong. Please try again.' })
     } else if (err.status === 401) {
       res.status(500).json({ error: 'Invalid API key. Please check your ANTHROPIC_API_KEY in .env.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
@@ -201,7 +201,7 @@ Provide practical substitutes that work in this recipe and respect all dietary p
   } catch (err) {
     console.error('Substitute error:', err.message)
     if (err instanceof SyntaxError) {
-      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      res.status(500).json({ error: 'Something went wrong. Please try again.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
       res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
     } else {
@@ -269,7 +269,7 @@ app.post('/api/sync-recipe', async (req, res) => {
   } catch (err) {
     console.error('Sync-recipe error:', err.message)
     if (err instanceof SyntaxError) {
-      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      res.status(500).json({ error: 'Something went wrong. Please try again.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
       res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
     } else {
@@ -298,7 +298,7 @@ app.post('/api/suggest', async (req, res) => {
   } catch (err) {
     console.error('[suggest]', err.message)
     if (err instanceof SyntaxError) {
-      res.status(500).json({ error: 'The AI returned an unexpected format. Please try again.' })
+      res.status(500).json({ error: 'Something went wrong. Please try again.' })
     } else if (err.error?.type === 'overloaded_error' || err.status === 503) {
       res.status(503).json({ error: '🌿 Our kitchen is a little busy right now. Please try again in a moment!' })
     } else {

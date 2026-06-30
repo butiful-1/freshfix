@@ -1,7 +1,7 @@
 {
   "name": "Old2New",
   "short_name": "Old2New",
-  "description": "Transform your old comfort recipes into healthy new favorites with AI",
+  "description": "Transform your old comfort recipes into healthy new favorites",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

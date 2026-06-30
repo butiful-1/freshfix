@@ -240,7 +240,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
           padding: '12px 20px 8px', background: 'white', borderTop: '1px solid #F3F4F6',
         }}>
           <button className="btn btn-primary" onClick={() => handleGenerate()} style={{ width: '100%' }}>
-            ✨ Generate Ideas
+            ✨ Show Me Ideas
           </button>
           <button
             type="button"
@@ -372,7 +372,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
               fontFamily: 'var(--font)', padding: '8px 0', textAlign: 'center',
             }}
           >
-            🔁 Generate new ideas
+            🔁 Show Me More
           </button>
         )}
       </div>
