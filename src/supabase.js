@@ -18,7 +18,7 @@ if (!supabaseUrl || !supabaseAnon) {
 export const supabase = createClient(
   supabaseUrl  || 'https://placeholder.supabase.co',
   supabaseAnon || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJwbGFjZWhvbGRlciJ9.placeholder',
-  { auth: { detectSessionInUrl: false } }
+  { auth: { detectSessionInUrl: false, flowType: 'pkce', skipAutoInitialize: true } }
 )
 
 export const isSupabaseReady = Boolean(supabaseUrl && supabaseAnon)

@@ -13,7 +13,15 @@ const VEGAN_PROTEINS = new Set(['Chicken','Beef','Fish','Shrimp','Pork','Lamb','
 const ALL_PROTEINS   = ['Chicken','Beef','Fish','Shrimp','Pork','Lamb','Turkey','Tofu','Eggs']
 const CUISINES       = ['Italian','Asian','Mexican','Mediterranean','American','Indian','Japanese','Thai','French','Middle Eastern']
 const COOKING_TIMES  = ['Under 15 mins','15–30 mins','30–60 mins','1+ hrs']
-const BUDGETS        = ['Budget-friendly','Mid-range','Treat yourself']
+const DESSERT_TYPES = ['Cookies','Cake','Brownies','Pudding','Pie','Muffins','Bars','Ice Cream','Cheesecake','Fruit Dessert']
+
+const MEAL_TYPE_FILTERS = {
+  Breakfast: { proteins: ALL_PROTEINS, cuisineLabel: 'Cuisine', cuisines: CUISINES, cookingTimes: COOKING_TIMES },
+  Lunch:     { proteins: ALL_PROTEINS, cuisineLabel: 'Cuisine', cuisines: CUISINES, cookingTimes: COOKING_TIMES },
+  Dinner:    { proteins: ALL_PROTEINS, cuisineLabel: 'Cuisine', cuisines: CUISINES, cookingTimes: COOKING_TIMES },
+  Snack:     { proteins: [],           cuisineLabel: 'Cuisine', cuisines: CUISINES, cookingTimes: COOKING_TIMES },
+  Dessert:   { proteins: [],           cuisineLabel: 'Dessert Type', cuisines: DESSERT_TYPES, cookingTimes: COOKING_TIMES },
+}
 
 function getAvailableProteins(dietaryPreferences) {
   return ALL_PROTEINS.filter(p => {
@@ -78,7 +86,7 @@ function IdeaCard({ idea, onTransform }) {
 export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea, onBack }) {
   const [step,      setStep]      = useState(1)
   const [mealType,  setMealType]  = useState(null)
-  const [filters,   setFilters]   = useState({ protein: null, cuisine: null, cookingTime: null, budget: null })
+  const [filters,   setFilters]   = useState({ protein: null, cuisine: null, cookingTime: null })
   const [ideas,     setIdeas]     = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error,     setError]     = useState('')
@@ -114,7 +122,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
 
   const handleSelectMealType = (id) => {
     setMealType(id)
-    setFilters({ protein: null, cuisine: null, cookingTime: null, budget: null })
+    setFilters({ protein: null, cuisine: null, cookingTime: null })
     setStep(2)
   }
 
@@ -124,7 +132,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
     else setStep(2)
   }
 
-  const EMPTY_FILTERS = { protein: null, cuisine: null, cookingTime: null, budget: null }
+  const EMPTY_FILTERS = { protein: null, cuisine: null, cookingTime: null }
 
   const headerStyle = {
     display: 'flex', alignItems: 'center',
@@ -187,6 +195,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
 
   // ── Step 2: Filters ───────────────────────────────────────────────────────
   if (step === 2) {
+    const categoryFilters = MEAL_TYPE_FILTERS[mealType]
     return (
       <div className="animate-in">
         <div style={headerStyle}>
@@ -198,7 +207,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
         </div>
 
         <div style={{ padding: '20px 20px 120px', overflowY: 'auto' }}>
-          {availableProteins.length > 0 && (
+          {categoryFilters.proteins.length > 0 && availableProteins.length > 0 && (
             <>
               <p style={sectionLabelStyle}>Protein</p>
               <div style={chipRowStyle}>
@@ -210,9 +219,9 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
             </>
           )}
 
-          <p style={sectionLabelStyle}>Cuisine</p>
+          <p style={sectionLabelStyle}>{categoryFilters.cuisineLabel}</p>
           <div style={chipRowStyle}>
-            {CUISINES.map(c => (
+            {categoryFilters.cuisines.map(c => (
               <FilterChip key={c} label={c} selected={filters.cuisine === c}
                 onClick={() => toggleFilter('cuisine', c)} />
             ))}
@@ -226,13 +235,6 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
             ))}
           </div>
 
-          <p style={sectionLabelStyle}>Budget</p>
-          <div style={chipRowStyle}>
-            {BUDGETS.map(b => (
-              <FilterChip key={b} label={b} selected={filters.budget === b}
-                onClick={() => toggleFilter('budget', b)} />
-            ))}
-          </div>
         </div>
 
         <div style={{

@@ -12,7 +12,7 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#ffffff",
   "enableNotifications": false,
-  "startUrl": "/",
+  "startUrl": "/?src=twa",
   "iconUrl": "https://old2new.app/icon-512.png",
   "maskableIconUrl": "https://old2new.app/icon-512.png",
   "monochromeIconUrl": "",
@@ -29,7 +29,7 @@
   "isMetaQuest": false,
   "fullScopeUrl": "https://old2new.app/",
   "minSdkVersion": 21,
-  "fingerprints": [],
+  "fingerprints": ["8D:FE:A2:F5:F0:7D:5D:09:C8:02:23:BD:9D:F7:01:C7:1F:53:AC:27:49:75:0F:09:21:08:CD:BE:15:AB:19:62"],
   "signingKey": {
     "path": "./android.keystore",
     "alias": "old2new"

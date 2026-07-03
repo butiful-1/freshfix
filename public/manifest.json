@@ -2,7 +2,7 @@
   "name": "Old2New",
   "short_name": "Old2New",
   "description": "Transform your old comfort recipes into healthy new favorites",
-  "start_url": "/",
+  "start_url": "/?src=twa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#22C55E",

@@ -7,14 +7,15 @@ const NAV_ITEMS = [
   { id: 'about',   label: 'About',   icon: 'ℹ️', activeIcon: 'ℹ️' },
 ]
 
-export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, swapUsage }) {
+export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, swapUsage, isTWA }) {
   const activeBase = ['results', 'shopping'].includes(activeScreen) ? 'home' : activeScreen
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
   const atLimit = plan === 'free' && swapsLeft === 0
+  const visibleItems = isTWA ? NAV_ITEMS.filter(i => i.id !== 'pricing') : NAV_ITEMS
 
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Main navigation">
-      {NAV_ITEMS.map(item => {
+      {visibleItems.map(item => {
         const isActive = activeBase === item.id
         return (
           <button

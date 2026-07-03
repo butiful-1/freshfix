@@ -30,14 +30,34 @@ export default function App() {
   // ── Auth ──────────────────────────────────────
   const [user, setUser]           = useState(null)
   const [profile, setProfile]     = useState(null)
-  const [authChecked, setAuthChecked] = useState(false)
+  const [authChecked, setAuthChecked] = useState(() => {
+    const p = window.location.pathname
+    return p === '/auth/callback' || p.startsWith('/recipe/') || (p === '/' && !!new URLSearchParams(window.location.search).get('code'))
+  })
 
   // ── Navigation ────────────────────────────────
-  const [screen, setScreen]             = useState('splash')
+  const [screen, setScreen] = useState(() => {
+    const p = window.location.pathname
+    if (p === '/auth/callback') return 'callback'
+    if (p === '/' && new URLSearchParams(window.location.search).get('code')) return 'callback'
+    if (p.startsWith('/recipe/')) return 'recipe-share'
+    if (p === '/success') return 'success'
+    if (p === '/cancel') return 'cancel'
+    return 'splash'
+  })
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [callbackStatus, setCallbackStatus] = useState('loading') // 'loading' | 'success' | 'error'
   const [callbackError,  setCallbackError]  = useState('')
-  const [callbackType,   setCallbackType]   = useState(null)     // null | 'recovery'
+  const [callbackType, setCallbackType] = useState(() => {
+    const p = window.location.pathname
+    const s = new URLSearchParams(window.location.search)
+    if (p === '/auth/callback') {
+      if (s.get('type') === 'recovery') return 'recovery'
+      if (s.get('code') || window.location.hash.includes('access_token')) return 'oauth'
+    }
+    if (p === '/' && s.get('code')) return 'oauth'
+    return null
+  })                                                              // null | 'recovery' | 'oauth'
   const inCallbackRef = useRef(false)
   const appInitializedRef = useRef(false)
   const abortControllerRef = useRef(null)
@@ -60,6 +80,16 @@ export default function App() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [stripeSessionId, setStripeSessionId]   = useState(null)
   const [sharedRecipeId, setSharedRecipeId]     = useState(null)
+
+  // ── TWA (Android app) detection ───────────────
+  // Persisted to sessionStorage so in-app navigation doesn't lose it.
+  const [isTWA] = useState(() => {
+    if (new URLSearchParams(window.location.search).get('src') === 'twa') {
+      sessionStorage.setItem('twa', '1')
+      return true
+    }
+    return sessionStorage.getItem('twa') === '1'
+  })
 
   // ── Dietary preferences ───────────────────────
   const [dietaryPreferences, setDietaryPreferences] = useState({})
@@ -180,22 +210,16 @@ export default function App() {
     const init = async () => {
       const path = window.location.pathname
 
-      // On the callback route, skip the network session check entirely.
-      // verifyOtp/exchangeCodeForSession handle auth here — blocking on getSession()
-      // causes an indefinite spinner on mobile (slow networks / Safari ITP).
-      if (path === '/auth/callback') {
-        setAuthChecked(true)
-        return
-      }
-
-      // Recipe share links are fully public — skip all auth/session loading
-      // to guarantee zero session bleed from any logged-in account.
-      if (path.startsWith('/recipe/')) {
-        setAuthChecked(true)
-        return
-      }
+      // Callback, recipe-share, and root-with-OAuth-code paths set authChecked=true via
+      // useState initializer; getSession() must not run — the URL routing effect owns those.
+      // skipAutoInitialize:true on the Supabase client prevents _recoverAndRefresh() from
+      // running automatically and blocking exchangeCodeForSession on callback paths.
+      if (path === '/auth/callback' || path.startsWith('/recipe/') || (path === '/' && new URLSearchParams(window.location.search).get('code'))) return
 
       try {
+        // Manually initialize here (non-callback paths only) so _recoverAndRefresh()
+        // loads the returning user's session from localStorage before getSession() reads it.
+        await supabase.auth.initialize()
         // 6s timeout — on Android TWA a stale cached token triggers a network
         // refresh that can hang indefinitely on a poor connection.
         const { data: { session } } = await withTimeout(
@@ -302,6 +326,7 @@ export default function App() {
     if (path === '/auth/callback') {
       setScreen('callback')
       inCallbackRef.current = true
+      console.log('[Old2New] OAuth Path Used: CALLBACK')
 
       // Capture the full URL BEFORE replaceState wipes it, then clear immediately
       const url        = new URL(window.location.href)
@@ -312,12 +337,14 @@ export default function App() {
       const type       = url.searchParams.get('type') || hashParams?.get('type') || 'signup'
       const errorParam = url.searchParams.get('error')
       if (type === 'recovery') setCallbackType('recovery')
+      else if (code || (hash && hash.includes('access_token'))) setCallbackType('oauth')
 
       console.log('[Old2New] Auth callback received:', {
-        code: code ? `${code.slice(0,8)}…` : null,
-        token_hash: token_hash ? `${token_hash.slice(0,8)}…` : null,
-        type, hash: hash.slice(0,60), errorParam,
-        fullUrl: url.href,
+        hasCode: !!code,
+        hasTokenHash: !!token_hash,
+        type,
+        hasHashToken: hash.includes('access_token'),
+        errorParam,
       })
 
       window.history.replaceState({}, '', '/');
@@ -379,12 +406,16 @@ export default function App() {
             console.log('[Old2New] Session established — navigating to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
             setUser(session.user)
-            await loadProfile(session.user.id)
+            loadProfile(session.user.id)
             loadSavedRecipes(session.user.id)
             appInitializedRef.current = true
             inCallbackRef.current = false
-            setCallbackStatus('success')
-            setTimeout(() => goToApp(), 1200)
+            if (code || (hash && hash.includes('access_token'))) {
+              goToApp()
+            } else {
+              setCallbackStatus('success')
+              setTimeout(() => goToApp(), 400)
+            }
           } else {
             console.warn('[Old2New] Exchange succeeded but no session — redirecting to login')
             window.location.replace('/?login=verified')
@@ -398,12 +429,16 @@ export default function App() {
               console.log('[Old2New] Already signed in — navigating to app')
               localStorage.setItem('supabase-auth-complete', Date.now().toString())
               setUser(data.session.user)
-              await loadProfile(data.session.user.id)
+              loadProfile(data.session.user.id)
               loadSavedRecipes(data.session.user.id)
               appInitializedRef.current = true
               inCallbackRef.current = false
-              setCallbackStatus('success')
-              setTimeout(() => goToApp(), 1200)
+              if (code || (hash && hash.includes('access_token'))) {
+                goToApp()
+              } else {
+                setCallbackStatus('success')
+                setTimeout(() => goToApp(), 400)
+              }
               return
             }
           } catch {}
@@ -466,6 +501,55 @@ export default function App() {
           setScreen('login')
         }
       })()
+    } else if (path === '/' && params.get('code')) {
+      // OAuth code arrived at root instead of /auth/callback.
+      // Covers: TWA WebView not receiving the deep-link redirect on first attempt,
+      // or Supabase falling back to Site URL because /auth/callback isn't in the
+      // allowed redirect URL list. detectSessionInUrl:false means Supabase won't
+      // auto-process this — handle it the same way as the /auth/callback code branch.
+      const code = params.get('code')
+      window.history.replaceState({}, '', '/')
+      setScreen('callback')
+      inCallbackRef.current = true
+      setCallbackType('oauth')
+      console.log('[Old2New] OAuth Path Used: ROOT FALLBACK')
+      ;(async () => {
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+          const session = data.session
+          if (!session?.user) throw new Error('No session returned from code exchange.')
+          console.log('[Old2New] Root OAuth code fallback — session established')
+          localStorage.setItem('supabase-auth-complete', Date.now().toString())
+          setUser(session.user)
+          loadProfile(session.user.id)
+          loadSavedRecipes(session.user.id)
+          appInitializedRef.current = true
+          inCallbackRef.current = false
+          goToApp()
+        } catch (err) {
+          console.error('[Old2New] Root OAuth code fallback error:', err.message)
+          try {
+            const { data } = await supabase.auth.getSession()
+            if (data?.session?.user) {
+              console.log('[Old2New] Root OAuth code fallback — already signed in')
+              localStorage.setItem('supabase-auth-complete', Date.now().toString())
+              setUser(data.session.user)
+              loadProfile(data.session.user.id)
+              loadSavedRecipes(data.session.user.id)
+              appInitializedRef.current = true
+              inCallbackRef.current = false
+              goToApp()
+              return
+            }
+          } catch {}
+          const expired = err.message.toLowerCase().includes('expired') || err.message.toLowerCase().includes('invalid')
+          setCallbackError(expired
+            ? 'This sign-in link has expired or was already used. Please try signing in again.'
+            : `Sign-in failed: ${err.message}`)
+          setCallbackStatus('error')
+        }
+      })()
     } else if (path === '/success') {
       setStripeSessionId(params.get('session_id'))
       setScreen('success')
@@ -477,6 +561,8 @@ export default function App() {
         setSharedRecipeId(recipeId)
         setScreen('recipe-share')
       }
+    } else {
+      console.log('[Old2New] OAuth Path Used: HOMEPAGE (NO CODE)')
     }
   }, [])
 
@@ -647,7 +733,7 @@ export default function App() {
       setSavedRecipes(prev => [savedResult, ...prev.filter(r => r.id !== transformResult.id)])
     } catch (e) {
       console.error('handleSaveRecipe:', e.message)
-      setError(e.message || 'Could not save recipe. Please try again.')
+      throw e
     }
   }
 
@@ -746,7 +832,7 @@ export default function App() {
             selectedDiets={selectedDiets} onDietToggle={handleDietToggle}
             onTransform={handleTransform} isLoading={isLoading} error={error}
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
-            plan={plan} swapUsage={swapUsage} onUpgrade={() => setScreen('pricing')}
+            plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA) setScreen('pricing') }}
             transformLimit={PLAN_LIMITS[plan]} dietaryPreferences={dietaryPreferences}
             onWhatSoundsGood={() => setScreen('suggest')}
           />
@@ -763,8 +849,9 @@ export default function App() {
       case 'shopping':
         return <ShoppingListScreen result={transformResult} onBack={() => setScreen('results')} />
       case 'saved':
-        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} />
+        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} plan={plan} />
       case 'pricing':
+        if (isTWA) { setTimeout(() => setScreen('home'), 0); return null }
         return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user} />
       case 'callback': {
         const wrapStyle = {
@@ -787,7 +874,7 @@ export default function App() {
                 <button
                   className="btn btn-primary"
                   style={{ width: '100%' }}
-                  onClick={() => window.location.replace('/')}
+                  onClick={goToApp}
                 >
                   Continue to Old2New →
                 </button>
@@ -831,10 +918,10 @@ export default function App() {
               Old2New
             </p>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>
-              {callbackType === 'recovery' ? 'Verifying your reset link…' : 'Verifying your email…'}
+              {callbackType === 'recovery' ? 'Verifying your reset link…' : callbackType === 'oauth' ? 'Signing you in…' : 'Verifying your email…'}
             </h2>
             <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>
-              {callbackType === 'recovery' ? 'Setting up your new password…' : 'Just a moment while we log you in.'}
+              {callbackType === 'recovery' ? 'Setting up your new password…' : callbackType === 'oauth' ? 'Preparing your cookbook…' : 'Just a moment while we log you in.'}
             </p>
             <div className="loading-dots"><span /><span /><span /></div>
           </div>
@@ -898,6 +985,7 @@ export default function App() {
       {showUpgradeModal && (
         <UpgradeModal
           swapUsage={swapUsage}
+          isTWA={isTWA}
           onClose={() => setShowUpgradeModal(false)}
           onViewPlans={() => { setShowUpgradeModal(false); setScreen('pricing') }}
         />
@@ -976,8 +1064,10 @@ export default function App() {
         <BottomNav
           activeScreen={screen} onNavigate={setScreen}
           savedCount={savedRecipes.length} plan={plan} swapUsage={swapUsage}
+          isTWA={isTWA}
         />
       )}
+
     </div>
   )
 }

@@ -40,6 +40,8 @@ function MacroBar({ label, before, after, color }) {
 
 export default function ResultsScreen({ result, onSave, onShoppingList, onStartOver, savedRecipes }) {
   const [saved, setSaved] = useState(() => savedRecipes?.some(r => r.id === result?.id))
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState('recipe')
   const [ingredients, setIngredients] = useState(() => result?.transformedRecipe?.ingredients || [])
@@ -71,9 +73,17 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const calSaved = caloriesBefore - caloriesAfter
   const calPct = caloriesBefore > 0 ? Math.round((Math.abs(calSaved) / caloriesBefore) * 100) : 0
 
-  const handleSave = () => {
-    onSave(ingredients)
-    setSaved(true)
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      await onSave(ingredients)
+      setSaved(true)
+    } catch (e) {
+      setSaveError(e.message || 'Could not save recipe. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const isSaved = saved || savedRecipes?.some(r => r.id === result?.id)
@@ -399,12 +409,18 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
 
       {/* Action buttons */}
       <div className="action-buttons">
+        {saveError && (
+          <div className="error-msg" style={{ marginBottom: 10 }}>
+            <span className="error-icon">⚠️</span>
+            <span>{saveError}</span>
+          </div>
+        )}
         <button
           className={`btn ${saved ? 'btn-secondary' : 'btn-primary'}`}
           onClick={handleSave}
-          disabled={saved}
+          disabled={saved || saving}
         >
-          {saved ? '✓ Recipe Saved' : '💾 Save Recipe'}
+          {saving ? <><div className="spinner" /> Saving…</> : saved ? '✓ Recipe Saved' : '💾 Save Recipe'}
         </button>
 
         <div className="btn-row">

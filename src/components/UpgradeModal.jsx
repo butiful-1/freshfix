@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
+export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA }) {
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState('')
 
@@ -55,50 +55,62 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage }) {
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+        {isTWA ? (
           <button
             className="btn btn-primary"
-            onClick={() => handleSubscribe('wellness')}
-            disabled={!!loading}
-            style={{ position: 'relative' }}
-          >
-            {loading === 'wellness' ? (
-              <><div className="spinner" /> Redirecting…</>
-            ) : (
-              <>💚 Plus — $14.99/mo · 50 Recipe Upgrades/month</>
-            )}
-          </button>
-
-          <button
-            className="btn btn-outline"
-            onClick={() => handleSubscribe('family')}
-            disabled={!!loading}
-          >
-            {loading === 'family' ? (
-              <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Redirecting…</>
-            ) : (
-              <>⭐ Premium — $24.99/mo · 150 Recipe Upgrades/month</>
-            )}
-          </button>
-
-          <button
-            className="btn btn-ghost"
-            onClick={onViewPlans}
-            disabled={!!loading}
+            onClick={onClose}
             style={{ width: '100%' }}
           >
-            See all plans →
+            OK
           </button>
-        </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => handleSubscribe('wellness')}
+                disabled={!!loading}
+                style={{ position: 'relative' }}
+              >
+                {loading === 'wellness' ? (
+                  <><div className="spinner" /> Redirecting…</>
+                ) : (
+                  <>💚 Plus — $14.99/mo · 50 Recipe Upgrades/month</>
+                )}
+              </button>
 
-        <button
-          className="btn btn-ghost"
-          onClick={onClose}
-          style={{ width: '100%', color: 'var(--text-muted)', fontSize: 13 }}
-          disabled={!!loading}
-        >
-          Not now
-        </button>
+              <button
+                className="btn btn-outline"
+                onClick={() => handleSubscribe('family')}
+                disabled={!!loading}
+              >
+                {loading === 'family' ? (
+                  <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Redirecting…</>
+                ) : (
+                  <>⭐ Premium — $24.99/mo · 150 Recipe Upgrades/month</>
+                )}
+              </button>
+
+              <button
+                className="btn btn-ghost"
+                onClick={onViewPlans}
+                disabled={!!loading}
+                style={{ width: '100%' }}
+              >
+                See all plans →
+              </button>
+            </div>
+
+            <button
+              className="btn btn-ghost"
+              onClick={onClose}
+              style={{ width: '100%', color: 'var(--text-muted)', fontSize: 13 }}
+              disabled={!!loading}
+            >
+              Not now
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

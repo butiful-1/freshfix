@@ -14,8 +14,39 @@ const BG_GRADIENTS = [
   'linear-gradient(135deg, #F1F8E9, #DCEDC8)',
 ]
 
-export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
-  const [copiedId, setCopiedId] = useState(null)
+export default function SavedRecipesScreen({ recipes, onView, onDelete, plan }) {
+  const [copiedId,    setCopiedId]    = useState(null)
+  const [downloading, setDownloading] = useState(false)
+  const [downloadErr, setDownloadErr] = useState('')
+
+  const isPaid = plan === 'wellness' || plan === 'family'
+
+  const handleDownload = async () => {
+    if (!isPaid || downloading || recipes.length === 0) return
+    setDownloading(true)
+    setDownloadErr('')
+    try {
+      const [{ pdf }, { default: CookbookPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./CookbookPDF'),
+      ])
+      const date = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      const blob = await pdf(<CookbookPDF recipes={recipes} generatedDate={date} />).toBlob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = 'my-old2new-cookbook.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('[Old2New] Cookbook download failed:', e)
+      setDownloadErr('Download failed. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   const handleShare = async (recipe, e) => {
     e.stopPropagation()
@@ -71,6 +102,46 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete }) {
         <p style={{ fontSize: 14, color: 'var(--text-muted)', marginTop: 4 }}>
           Tap to view your transformed recipes
         </p>
+      </div>
+
+      {/* Download My Cookbook */}
+      <div style={{ padding: '0 16px 16px' }}>
+        {isPaid ? (
+          <div>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="btn btn-primary"
+              style={{ width: '100%', gap: 8, background: downloading ? 'var(--gray-300)' : undefined }}
+            >
+              {downloading
+                ? <><div className="spinner" /> Generating PDF…</>
+                : <>📖 Download My Cookbook</>}
+            </button>
+            {downloadErr && (
+              <p style={{ fontSize: 13, color: 'var(--red, #EF4444)', marginTop: 6, textAlign: 'center' }}>
+                {downloadErr}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: 'var(--gray-50)', border: '1.5px solid var(--gray-200)',
+            borderRadius: 14, padding: '13px 16px',
+          }}>
+            <span style={{ fontSize: 20 }}>📖</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 1 }}>
+                Download My Cookbook
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                Plus or Premium plan required
+              </p>
+            </div>
+            <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>🔒</span>
+          </div>
+        )}
       </div>
 
       <div className="saved-grid">
