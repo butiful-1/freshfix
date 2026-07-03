@@ -834,7 +834,7 @@ export default function App() {
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
             plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA) setScreen('pricing') }}
             transformLimit={PLAN_LIMITS[plan]} dietaryPreferences={dietaryPreferences}
-            onWhatSoundsGood={() => setScreen('suggest')}
+            onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA}
           />
         )
       case 'results':
@@ -849,7 +849,7 @@ export default function App() {
       case 'shopping':
         return <ShoppingListScreen result={transformResult} onBack={() => setScreen('results')} />
       case 'saved':
-        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} plan={plan} />
+        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} plan={plan} isTWA={isTWA} />
       case 'pricing':
         if (isTWA) { setTimeout(() => setScreen('home'), 0); return null }
         return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user} />

@@ -16,7 +16,7 @@ export default function HomeScreen({
   onTransform, isLoading, error,
   savedRecipes, onViewSaved,
   plan, swapUsage, onUpgrade, transformLimit,
-  dietaryPreferences, onWhatSoundsGood,
+  dietaryPreferences, onWhatSoundsGood, isTWA,
 }) {
   const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
   const recent = savedRecipes.slice(0, 3)
@@ -108,16 +108,18 @@ export default function HomeScreen({
                 }
               </span>
             </div>
-            <button
-              onClick={onUpgrade}
-              style={{
-                fontSize: 12, fontWeight: 700, color: 'white',
-                background: atLimit ? 'var(--red)' : 'var(--green)',
-                border: 'none', borderRadius: 10, padding: '4px 10px', cursor: 'pointer',
-              }}
-            >
-              Upgrade
-            </button>
+            {!isTWA && (
+              <button
+                onClick={onUpgrade}
+                style={{
+                  fontSize: 12, fontWeight: 700, color: 'white',
+                  background: atLimit ? 'var(--red)' : 'var(--green)',
+                  border: 'none', borderRadius: 10, padding: '4px 10px', cursor: 'pointer',
+                }}
+              >
+                Upgrade
+              </button>
+            )}
           </div>
         )}
 
@@ -141,7 +143,7 @@ export default function HomeScreen({
             Select at least one diet above to continue
           </p>
         )}
-        {atLimit && (
+        {atLimit && !isTWA && (
           <p style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginTop: 6 }}>
             {'Upgrade for more Recipe Upgrades →'}{' '}
             <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>

@@ -14,7 +14,7 @@ const BG_GRADIENTS = [
   'linear-gradient(135deg, #F1F8E9, #DCEDC8)',
 ]
 
-export default function SavedRecipesScreen({ recipes, onView, onDelete, plan }) {
+export default function SavedRecipesScreen({ recipes, onView, onDelete, plan, isTWA }) {
   const [copiedId,    setCopiedId]    = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadErr, setDownloadErr] = useState('')
@@ -124,7 +124,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, plan }) 
               </p>
             )}
           </div>
-        ) : (
+        ) : !isTWA ? (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--gray-50)', border: '1.5px solid var(--gray-200)',
@@ -141,7 +141,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, plan }) 
             </div>
             <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>🔒</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="saved-grid">

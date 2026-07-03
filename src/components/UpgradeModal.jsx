@@ -44,7 +44,9 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA })
             You've Used All 5 Recipe Upgrades
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            You've used all 5 Recipe Upgrades this month. Upgrade for more monthly Recipe Upgrades, or come back next month for 5 more free Recipe Upgrades.
+            {isTWA
+              ? "You've used all 5 Recipe Upgrades this month. Come back next month for 5 more free Recipe Upgrades."
+              : "You've used all 5 Recipe Upgrades this month. Upgrade for more monthly Recipe Upgrades, or come back next month for 5 more free Recipe Upgrades."}
           </p>
         </div>
 
