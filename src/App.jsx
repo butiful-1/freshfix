@@ -805,7 +805,7 @@ export default function App() {
 
   // Render the homepage outside the mobile app shell so it fills the full browser width
   if (screen === 'splash') {
-    return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+    return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
   }
 
   const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
@@ -813,12 +813,12 @@ export default function App() {
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
     if (!user && !['splash', 'signup', 'login', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)) {
-      return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+      return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
     }
 
     switch (screen) {
       case 'splash':
-        return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+        return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
       case 'signup':
         return <SignUpScreen onLogin={() => setScreen('login')} />
       case 'login':

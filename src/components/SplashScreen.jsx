@@ -252,7 +252,7 @@ function GoogleIcon() {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function SplashScreen({ onSignUp, onLogin }) {
+export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
   const [navScrolled, setNavScrolled] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
@@ -592,7 +592,12 @@ export default function SplashScreen({ onSignUp, onLogin }) {
 
             {/* Right: accordion */}
             <div style={{ flex: 1 }}>
-              {FAQ.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
+              {FAQ.map(item => {
+                const a = (isTWA && item.q === 'How many recipes can I save for free?')
+                  ? 'Free accounts include 5 Recipe Upgrades and 5 saved recipes per month.'
+                  : item.a
+                return <FaqItem key={item.q} q={item.q} a={a} />
+              })}
             </div>
 
           </div>
