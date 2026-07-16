@@ -198,6 +198,11 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
         </div>
       </div>
 
+      {/* AI notice */}
+      <p style={{ padding: '0 16px 10px', fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        AI-generated recipe. Please review ingredients, nutrition, allergens, and cooking instructions before preparing.
+      </p>
+
       {/* Diet badges */}
       {diets?.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '0 16px 16px' }}>
