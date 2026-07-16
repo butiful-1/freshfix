@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import ReportRecipeModal from './ReportRecipeModal.jsx'
 
 const MACRO_COLORS = {
   protein: '#22C55E',
@@ -49,6 +50,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const [ingredientsModified, setIngredientsModified] = useState(false)
   const [userNotes, setUserNotes] = useState('')
   const [imageReady, setImageReady] = useState(false)
+  const [showReport, setShowReport] = useState(false)
 
   // Reset image state when a new recipe loads
   useEffect(() => { setImageReady(false) }, [result?.id])
@@ -440,7 +442,23 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
         <button className="btn btn-ghost" onClick={onStartOver}>
           ← Transform Another Recipe
         </button>
+
+        <button
+          className="btn btn-ghost"
+          onClick={() => setShowReport(true)}
+          style={{ color: 'var(--text-muted)', fontSize: 13 }}
+        >
+          ⚠️ Report this Recipe
+        </button>
       </div>
+
+      {showReport && (
+        <ReportRecipeModal
+          recipeName={transformedRecipe?.name || 'Transformed Recipe'}
+          recipeId={result?.id != null ? String(result.id) : ''}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
       <div className="footer-disclaimer">
         <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
