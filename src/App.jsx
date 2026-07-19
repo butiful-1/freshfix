@@ -69,6 +69,7 @@ export default function App() {
   // ── Recipe state ──────────────────────────────
   const [recipeInput, setRecipeInput]     = useState('')
   const [selectedDiets, setSelectedDiets] = useState([])
+  const [healthGoal, setHealthGoal] = useState('')
   const [transformResult, setTransformResult] = useState(null)
   const [savedRecipes, setSavedRecipes]   = useState([])
   const [isLoading, setIsLoading]         = useState(false)
@@ -616,7 +617,7 @@ export default function App() {
       const res = await fetch('/api/transform', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe: recipeInput, diets: selectedDiets, dietaryPreferences }),
+        body: JSON.stringify({ recipe: recipeInput, diets: selectedDiets, dietaryPreferences, healthGoal }),
         signal: controller.signal,
       })
       const data = await res.json()
@@ -831,6 +832,7 @@ export default function App() {
           <HomeScreen
             recipeInput={recipeInput} onRecipeChange={setRecipeInput}
             selectedDiets={selectedDiets} onDietToggle={handleDietToggle}
+            healthGoal={healthGoal} onHealthGoalChange={setHealthGoal}
             onTransform={handleTransform} isLoading={isLoading} error={error}
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
             plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA) setScreen('pricing') }}

@@ -108,7 +108,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { recipe, diets, dietaryPreferences } = req.body || {}
+  const { recipe, diets, dietaryPreferences, healthGoal } = req.body || {}
 
   if (!recipe || !diets || !Array.isArray(diets) || diets.length === 0) {
     return res.status(400).json({ error: 'Recipe and at least one diet preference are required.' })
@@ -127,7 +127,12 @@ export default async function handler(req, res) {
       ? `\nIMPORTANT dietary restrictions that MUST be strictly followed:\n${restrictionLines.join('\n')}\n`
       : ''
 
-    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.${restrictionsSection}
+    const trimmedGoal = typeof healthGoal === 'string' ? healthGoal.trim() : ''
+    const healthGoalSection = trimmedGoal
+      ? `\nAdditional health goal or dietary preference: ${trimmedGoal}`
+      : ''
+
+    const userMessage = `Please transform this recipe for the following diet preferences: ${diets.join(', ')}.${restrictionsSection}${healthGoalSection}
 
 Recipe input:
 ${recipe}

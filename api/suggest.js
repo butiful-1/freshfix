@@ -33,12 +33,14 @@ function resolveFilters(filters, dietaryPreferences) {
   return resolved
 }
 
-function buildUserMessage(mealType, filters, restrictionLines) {
+function buildUserMessage(mealType, filters, restrictionLines, healthGoal) {
+  const trimmedGoal = typeof healthGoal === 'string' ? healthGoal.trim() : ''
   const parts = [`Meal type: ${mealType}`]
   if (filters.protein)     parts.push(`Preferred protein: ${filters.protein}`)
   if (filters.cuisine)     parts.push(`Cuisine style: ${filters.cuisine}`)
   if (filters.cookingTime) parts.push(`Max cooking time: ${filters.cookingTime}`)
   if (filters.budget)      parts.push(`Budget level: ${filters.budget}`)
+  if (trimmedGoal)         parts.push(`Additional health goal or dietary preference: ${trimmedGoal}`)
 
   const restrictionsSection = restrictionLines.length > 0
     ? `\nDietary restrictions (STRICTLY required — do not suggest anything containing these):\n${restrictionLines.join('\n')}\n`
@@ -79,10 +81,10 @@ function checkIdeaConsistency(idea, dietaryPreferences) {
 // Resolves conflicting filters internally so callers pass raw user input.
 // Throws only on API failure — consistency failures are handled by returning
 // fewer than 5 ideas (never returning a violating one).
-export async function generateMealIdeas({ mealType, filters: rawFilters, dietaryPreferences, client }) {
+export async function generateMealIdeas({ mealType, filters: rawFilters, dietaryPreferences, healthGoal, client }) {
   const filters = resolveFilters(rawFilters, dietaryPreferences)
   const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
-  const userMessage = buildUserMessage(mealType, filters, restrictionLines)
+  const userMessage = buildUserMessage(mealType, filters, restrictionLines, healthGoal)
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -147,7 +149,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { mealType, filters, dietaryPreferences } = req.body || {}
+  const { mealType, filters, dietaryPreferences, healthGoal } = req.body || {}
 
   if (!mealType || !VALID_MEAL_TYPES.includes(mealType)) {
     return res.status(400).json({ error: 'A valid meal type is required.' })
@@ -161,7 +163,7 @@ export default async function handler(req, res) {
   const client = new Anthropic({ apiKey })
 
   try {
-    const ideas = await generateMealIdeas({ mealType, filters, dietaryPreferences, client })
+    const ideas = await generateMealIdeas({ mealType, filters, dietaryPreferences, healthGoal, client })
     return res.json({ ideas })
   } catch (err) {
     console.error('[suggest] error:', err.message)

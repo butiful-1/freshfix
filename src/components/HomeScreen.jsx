@@ -17,6 +17,7 @@ export default function HomeScreen({
   savedRecipes, onViewSaved,
   plan, swapUsage, onUpgrade, transformLimit,
   dietaryPreferences, onWhatSoundsGood, isTWA,
+  healthGoal, onHealthGoalChange,
 }) {
   const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
   const recent = savedRecipes.slice(0, 3)
@@ -52,7 +53,7 @@ export default function HomeScreen({
         />
 
         <p className="diet-section-label">
-          <span>🎯</span> Select diet preference(s)
+          <span>🎯</span> How would you like to transform your recipe?
         </p>
 
         <div className="home-diet-grid">
@@ -69,6 +70,19 @@ export default function HomeScreen({
             </button>
           ))}
         </div>
+
+        <label className="diet-section-label" htmlFor="health-goal-input">
+          Health Goal or Dietary Preference (Optional)
+        </label>
+        <input
+          id="health-goal-input"
+          type="text"
+          placeholder="e.g. Anti-Inflammatory, Vegan, Vegetarian, Gluten-Free, Heart Healthy"
+          value={healthGoal}
+          onChange={e => onHealthGoalChange(e.target.value)}
+          disabled={isLoading}
+          style={{ marginBottom: 12 }}
+        />
 
         {activePrefCount > 0 && (
           <div style={{

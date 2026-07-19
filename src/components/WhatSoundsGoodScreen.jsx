@@ -87,6 +87,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
   const [step,      setStep]      = useState(1)
   const [mealType,  setMealType]  = useState(null)
   const [filters,   setFilters]   = useState({ protein: null, cuisine: null, cookingTime: null })
+  const [healthGoal, setHealthGoal] = useState('')
   const [ideas,     setIdeas]     = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error,     setError]     = useState('')
@@ -108,7 +109,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealType, filters: activeFilters, dietaryPreferences }),
+        body: JSON.stringify({ mealType, filters: activeFilters, dietaryPreferences, healthGoal }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to get ideas.')
@@ -234,6 +235,14 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
                 onClick={() => toggleFilter('cookingTime', t)} />
             ))}
           </div>
+
+          <p style={sectionLabelStyle}>Health Goal or Dietary Preference (Optional)</p>
+          <input
+            type="text"
+            placeholder="e.g. Anti-Inflammatory, Vegan, Vegetarian, Gluten-Free, Heart Healthy"
+            value={healthGoal}
+            onChange={e => setHealthGoal(e.target.value)}
+          />
 
         </div>
 
