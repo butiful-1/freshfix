@@ -207,7 +207,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
           </div>
         </div>
 
-        <div style={{ padding: '20px 20px 120px', overflowY: 'auto' }}>
+        <div style={{ padding: '20px 20px 200px', overflowY: 'auto' }}>
           {categoryFilters.proteins.length > 0 && availableProteins.length > 0 && (
             <>
               <p style={sectionLabelStyle}>Protein</p>

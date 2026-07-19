@@ -588,7 +588,7 @@ export default function App() {
 
   const handleTransform = async () => {
     if (!recipeInput.trim()) { setError('Please enter a recipe or dish name.'); return }
-    if (selectedDiets.length === 0) { setError('Please select at least one diet preference.'); return }
+    if (selectedDiets.length === 0 && !healthGoal.trim()) { setError('Please select a diet preference or enter a health goal.'); return }
 
     const limit = PLAN_LIMITS[plan]
     if (limit !== undefined && swapUsage.count >= limit) {

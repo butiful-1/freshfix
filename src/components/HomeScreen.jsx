@@ -19,7 +19,7 @@ export default function HomeScreen({
   dietaryPreferences, onWhatSoundsGood, isTWA,
   healthGoal, onHealthGoalChange,
 }) {
-  const canTransform = recipeInput.trim().length > 0 && selectedDiets.length > 0 && !isLoading
+  const canTransform = recipeInput.trim().length > 0 && (selectedDiets.length > 0 || healthGoal.trim().length > 0) && !isLoading
   const recent = savedRecipes.slice(0, 3)
   const swapsUsed = swapUsage?.count || 0
   const activePrefCount = Object.entries(dietaryPreferences || {}).filter(([k, v]) =>
@@ -152,9 +152,9 @@ export default function HomeScreen({
           )}
         </button>
 
-        {selectedDiets.length === 0 && recipeInput.trim().length > 0 && (
+        {selectedDiets.length === 0 && healthGoal.trim().length === 0 && recipeInput.trim().length > 0 && (
           <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: 6 }}>
-            Select at least one diet above to continue
+            Select a preference above or enter one below to continue
           </p>
         )}
         {atLimit && !isTWA && (
