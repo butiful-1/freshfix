@@ -1311,14 +1311,6 @@ textarea::placeholder { color: var(--text-muted); }
 }
 
 /* ─────────────────────────────────────────────────── */
-/* HOMEPAGE: TESTIMONIALS GRID                        */
-/* ─────────────────────────────────────────────────── */
-.hp-testimonials   { display: grid; grid-template-columns: 1fr; gap: 24px; }
-@media (min-width: 700px) {
-  .hp-testimonials { grid-template-columns: repeat(3, 1fr); gap: 28px; }
-}
-
-/* ─────────────────────────────────────────────────── */
 /* HOMEPAGE: FAQ TWO-COLUMN                           */
 /* ─────────────────────────────────────────────────── */
 .hp-faq            { display: flex; flex-direction: column; gap: 52px; }

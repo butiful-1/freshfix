@@ -43,23 +43,6 @@ const TRUST = [
   },
 ]
 
-// ── Testimonials ──────────────────────────────────────────────────────────────
-// Placeholder names — replace with real verified user testimonials before launch
-const TESTIMONIALS = [
-  {
-    quote: "I made the healthier chicken Alfredo and my husband asked for seconds.",
-    author: "Sarah T.",
-  },
-  {
-    quote: "I never thought I could make a lighter version of my mom's lasagna taste this good.",
-    author: "Rachel M.",
-  },
-  {
-    quote: "Old2New made it so easy to find a healthier version of our Friday pizza night.",
-    author: "Tom R.",
-  },
-]
-
 // ── Social links ─────────────────────────────────────────────────────────────
 const SOCIALS_LIVE = true
 const SOCIALS = [
@@ -596,36 +579,26 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
         </div>
       </section>
 
-      {/* ── FROM OUR COMMUNITY ───────────────────────────────────────── */}
-      <section style={{ padding: '112px 40px', background: CRM, position: 'relative', overflow: 'hidden', marginTop: -10 }}>
-        <BgTex file="bg-community.jpg" pos="center bottom" />
-        <div style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          <FadeIn style={{ textAlign: 'center', marginBottom: 64 }}>
+      {/* ── FOOD SHOWCASE ───────────────────────────────────────────── */}
+      <section style={{ padding: '112px 40px', background: CRM, marginTop: -10 }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 56 }}>
             <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1.2, marginBottom: 18 }}>
-              From Our Community
+              Real Food, Real Transformations
             </h2>
             <p style={{ fontSize: 16, color: TM, lineHeight: 1.75, maxWidth: 500, margin: '0 auto', fontFamily: SF }}>
-              Real feedback from people discovering healthier ways to cook the meals they already love.
+              Every dish here started as an old favorite — just made a little lighter.
             </p>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div className="hp-testimonials">
-              {TESTIMONIALS.map((t, i) => (
-                <div key={i} style={{
-                  background: 'rgba(255,252,246,0.97)',
-                  borderRadius: 14,
-                  padding: '40px 36px',
-                  boxShadow: '0 8px 36px rgba(0,0,0,0.10)',
-                  border: '1px solid rgba(80,60,40,0.07)',
-                }}>
-                  <div style={{ fontSize: 13, color: '#F59E0B', letterSpacing: 3, marginBottom: 24 }}>★★★★★</div>
-                  <p style={{ fontFamily: SRF, fontSize: 17, fontStyle: 'italic', color: T, lineHeight: 1.75, marginBottom: 28 }}>
-                    "{t.quote}"
-                  </p>
-                  <p style={{ fontSize: 11, color: TM, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: SF }}>
-                    — {t.author}
-                  </p>
-                </div>
+            <div className="hp-recipes-grid">
+              {PUBLIC_RECIPES.map(r => (
+                <img
+                  key={r.slug}
+                  src={r.heroImage}
+                  alt={r.heroImageAlt}
+                  style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 12, display: 'block' }}
+                />
               ))}
             </div>
           </FadeIn>
