@@ -1250,10 +1250,12 @@ textarea::placeholder { color: var(--text-muted); }
 /* HOMEPAGE RESPONSIVE NAV                             */
 /* ─────────────────────────────────────────────────── */
 .hp-desktop-nav { display: none; }
-.hp-mobile-cta  { display: block; }
+.hp-mobile-cta  { display: flex; }
+.hp-mobile-menu { display: block; }
 @media (min-width: 680px) {
   .hp-desktop-nav { display: flex; }
   .hp-mobile-cta  { display: none; }
+  .hp-mobile-menu { display: none; }
 }
 
 /* ─────────────────────────────────────────────────── */

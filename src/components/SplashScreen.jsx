@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
+import { PUBLIC_RECIPES } from '../data/publicRecipes'
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const G   = '#22C55E'
@@ -10,14 +11,6 @@ const CRM = '#F8F3EB'   // warm linen
 const IPH = '#E8E3DA'   // image placeholder neutral
 const SF  = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 const SRF = 'Georgia, "Times New Roman", serif'
-
-// ── Data ──────────────────────────────────────────────────────────────────────
-const RECIPES = [
-  { title: 'Lighter Protein Pizza',     file: 'recipe-pizza.jpg'    },
-  { title: 'Creamy Lighter Alfredo',    file: 'recipe-alfredo.jpg'  },
-  { title: 'Protein Cookie Bites',      file: 'recipe-cookies.jpg'  },
-  { title: 'Better Burger Bowl',        file: 'recipe-burger.jpg'   },
-]
 
 const STEPS = [
   { num: 1, title: 'Transform a Recipe',    desc: 'Paste a recipe or simply type the meal you love.',                                                                          file: 'app-step-1.jpg' },
@@ -68,11 +61,11 @@ const TESTIMONIALS = [
 ]
 
 // ── Social links ─────────────────────────────────────────────────────────────
-// Replace href="#" values with real profile URLs before launch
+const SOCIALS_LIVE = true
 const SOCIALS = [
   {
     label: 'TikTok',
-    href: '#', // https://www.tiktok.com/@yourhandle
+    href: 'https://www.tiktok.com/@old2new6',
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.21a8.16 8.16 0 004.78 1.52V7.27a4.85 4.85 0 01-1.01-.58z" />
@@ -81,7 +74,7 @@ const SOCIALS = [
   },
   {
     label: 'Instagram',
-    href: '#', // https://www.instagram.com/yourhandle
+    href: 'https://www.instagram.com/old2newhealthyrecipes/',
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="2" y="2" width="20" height="20" rx="5" />
@@ -92,7 +85,7 @@ const SOCIALS = [
   },
   {
     label: 'Facebook',
-    href: '#', // https://www.facebook.com/yourpage
+    href: 'https://www.facebook.com/Old2NewHealthyRecipes',
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
@@ -101,7 +94,7 @@ const SOCIALS = [
   },
   {
     label: 'Pinterest',
-    href: '#', // https://www.pinterest.com/yourprofile
+    href: 'https://www.pinterest.com/Old2Newrecipes',
     icon: (
       <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146 1.124.347 2.317.535 3.554.535 6.627 0 12-5.373 12-12S18.627 0 12 0z" />
@@ -255,6 +248,7 @@ function GoogleIcon() {
 export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
   const [navScrolled, setNavScrolled] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const recipesRef = useRef(null)
   const howRef     = useRef(null)
@@ -266,7 +260,22 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
+  useEffect(() => {
+    const fn = () => { if (window.innerWidth >= 680) setMobileMenuOpen(false) }
+    window.addEventListener('resize', fn)
+    return () => window.removeEventListener('resize', fn)
+  }, [])
+
   const scrollTo = (ref) => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  // Closes the mobile dropdown first and waits for that layout shift to paint
+  // before computing the scroll target — otherwise scrollIntoView measures the
+  // section position while the 211px-tall menu is still open, then overshoots
+  // by that same amount once the menu collapses out from under it.
+  const closeMenuAndScrollTo = (ref) => {
+    setMobileMenuOpen(false)
+    requestAnimationFrame(() => requestAnimationFrame(() => scrollTo(ref)))
+  }
 
   function handleGoogleSignIn() {
     setGoogleLoading(true)
@@ -315,8 +324,12 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
           {/* Desktop nav */}
           <div className="hp-desktop-nav" style={{ alignItems: 'center', gap: 4 }}>
+            <a href="/recipes"
+              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+              onMouseEnter={e => e.currentTarget.style.color = T}
+              onMouseLeave={e => e.currentTarget.style.color = TM}
+            >Recipes</a>
             {[
-              { label: 'Recipes',      action: () => scrollTo(recipesRef) },
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
             ].map(({ label, action }) => (
@@ -338,11 +351,45 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             >Get Started</button>
           </div>
 
-          {/* Mobile CTA */}
-          <button className="hp-mobile-cta" onClick={onSignUp}
-            style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: SF }}
-          >Get Started</button>
+          {/* Mobile controls: hamburger + CTA */}
+          <div className="hp-mobile-cta" style={{ alignItems: 'center', gap: 10 }}>
+            <button
+              onClick={() => setMobileMenuOpen(o => !o)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={T} strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                {mobileMenuOpen ? (
+                  <path d="M6 6l12 12M18 6L6 18" />
+                ) : (
+                  <path d="M4 7h16M4 12h16M4 17h16" />
+                )}
+              </svg>
+            </button>
+            <button onClick={onSignUp}
+              style={{ background: G, color: 'white', border: 'none', borderRadius: 4, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: SF }}
+            >Get Started</button>
+          </div>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="hp-mobile-menu" style={{ borderTop: '1px solid #EDE8E1', background: 'white' }}>
+            <a href="/recipes"
+              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+            >Recipes</a>
+            <button onClick={() => closeMenuAndScrollTo(howRef)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, borderBottom: '1px solid #F3EFE9' }}
+            >How It Works</button>
+            <button onClick={() => closeMenuAndScrollTo(faqRef)}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, borderBottom: '1px solid #F3EFE9' }}
+            >FAQ</button>
+            <button onClick={() => { setMobileMenuOpen(false); onLogin() }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF }}
+            >Sign In</button>
+          </div>
+        )}
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
@@ -390,38 +437,55 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
       <section ref={recipesRef} style={{ padding: '108px 40px', background: 'white', position: 'relative', overflow: 'hidden' }}>
         <BgTex file="bg-herbs-top.jpg" pos="center top" />
         <div style={{ maxWidth: 1240, margin: '0 auto', position: 'relative', zIndex: 2 }}>
-          <FadeIn style={{ textAlign: 'center', marginBottom: 72 }}>
+          <FadeIn style={{ textAlign: 'center', marginBottom: 20 }}>
             <h2 style={{ fontFamily: SRF, fontSize: 'clamp(30px, 4vw, 52px)', fontWeight: 700, color: T, letterSpacing: -1.5, lineHeight: 1.05 }}>
               Old Favorites. Fresh New Twists.
             </h2>
           </FadeIn>
+          <FadeIn delay={0.05} style={{ textAlign: 'center', marginBottom: 72 }}>
+            <p style={{ fontSize: 17, color: TM, lineHeight: 1.7, maxWidth: 560, margin: '0 auto', fontFamily: SF }}>
+              Explore real recipe transformations created with Old2New.
+            </p>
+          </FadeIn>
           <FadeIn delay={0.1}>
-            <div className="hp-recipes-grid">
-              {RECIPES.map((r, i) => (
-                <figure key={i} style={{ margin: 0 }}>
-                  {/*
-                    Replace <ImgPh> with:
-                    <img
-                      src={`/images/${r.file}`}
-                      alt={r.title}
-                      style={{ width:'100%', aspectRatio:'4/3', objectFit:'cover', display:'block', borderRadius: 3 }}
-                    />
-                    Recommended: 800×600px per card · warm food photography
-                  */}
-                  <img
-                    src={`/images/${r.file}`}
-                    alt={r.title}
-                    style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 3, display: 'block' }}
-                  />
-                  <figcaption style={{
-                    fontSize: 15, fontWeight: 600, color: T,
-                    marginTop: 16, lineHeight: 1.4, fontFamily: SF,
-                  }}>
-                    {r.title}
-                  </figcaption>
-                </figure>
+            <ul className="hp-recipes-grid" style={{ listStyle: 'none' }}>
+              {PUBLIC_RECIPES.map(r => (
+                <li key={r.slug} style={{ margin: 0 }}>
+                  <a
+                    href={`/recipes/${r.slug}`}
+                    style={{ display: 'block', textDecoration: 'none', color: 'inherit', borderRadius: 4 }}
+                  >
+                    <figure style={{ margin: 0 }}>
+                      <img
+                        src={r.heroImage}
+                        alt={r.heroImageAlt}
+                        style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 3, display: 'block' }}
+                      />
+                      <figcaption style={{
+                        fontSize: 15, fontWeight: 600, color: T,
+                        marginTop: 16, lineHeight: 1.4, fontFamily: SF,
+                      }}>
+                        {r.title}
+                      </figcaption>
+                    </figure>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
+          </FadeIn>
+          <FadeIn delay={0.15} style={{ textAlign: 'center', marginTop: 56 }}>
+            <a href="/recipes"
+              style={{
+                display: 'inline-block', background: 'transparent', color: T,
+                border: '1.5px solid #C2BAB0', borderRadius: 4, padding: '14px 32px',
+                fontSize: 15, fontWeight: 500, fontFamily: SF, textDecoration: 'none',
+                transition: 'border-color 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T}
+              onMouseLeave={e => e.currentTarget.style.borderColor = '#C2BAB0'}
+            >
+              Explore All Recipe Transformations
+            </a>
           </FadeIn>
         </div>
       </section>
@@ -668,15 +732,17 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
                 Your favorite recipes, a little better.
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-              {SOCIALS.map(({ label, href, icon }) => (
-                <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer"
-                  style={{ color: '#2B2B2B', display: 'flex', transition: 'color 0.18s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = G}
-                  onMouseLeave={e => e.currentTarget.style.color = '#2B2B2B'}
-                >{icon}</a>
-              ))}
-            </div>
+            {SOCIALS_LIVE && (
+              <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                {SOCIALS.map(({ label, href, icon }) => (
+                  <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer"
+                    style={{ color: '#2B2B2B', display: 'flex', transition: 'color 0.18s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = G}
+                    onMouseLeave={e => e.currentTarget.style.color = '#2B2B2B'}
+                  >{icon}</a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Divider */}
@@ -684,8 +750,12 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
           {/* Links row: all centered */}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 32 }}>
+            <a href="/recipes"
+              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = G}
+              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+            >Recipes</a>
             {[
-              { label: 'Recipes',      action: () => scrollTo(recipesRef) },
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
             ].map(({ label, action }) => (
