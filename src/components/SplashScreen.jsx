@@ -19,6 +19,29 @@ const STEPS = [
   { num: 4, title: 'Save Your Favorites',   desc: 'Build your own collection of healthier recipes and return to them anytime.',                                                file: 'app-step-4.jpg' },
 ]
 
+// ── Food showcase (homepage, below "Old Favorites") ──────────────────────────
+// Real dish photography, approved for use. Deliberately distinct from the four
+// "Old Favorites" hero images above so nothing repeats on the page — the panna
+// cotta photo is the actual hero image from a real Old2New transformation
+// (Supabase-hosted); the flatbread and banana ice cream photos are professional
+// food photography from the approved content library that isn't tied to a
+// specific saved transformation, used here as pure visual showcase — not
+// attributed to any customer or claimed as a specific saved recipe.
+const FOOD_SHOWCASE = [
+  {
+    src: '/images/showcase-chicken-flatbread.png',
+    alt: 'A grilled chicken flatbread with lettuce, tomato, avocado, and cucumber slices on the side',
+  },
+  {
+    src: 'https://hjtwpyauadgfhdurbmdr.supabase.co/storage/v1/object/public/recipe-images/a728fc9b-41ac-4b91-949d-47793e25bd3c.png',
+    alt: 'Four lemon lavender panna cotta desserts topped with fresh blueberries and raspberries',
+  },
+  {
+    src: '/images/showcase-banana-ice-cream.png',
+    alt: 'Two bowls of GLP-1 friendly banana ice cream topped with cinnamon, served with fresh banana and chia seeds',
+  },
+]
+
 const TRUST = [
   {
     title: 'Made for real kitchens',
@@ -591,12 +614,12 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             </p>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div className="hp-recipes-grid">
-              {PUBLIC_RECIPES.map(r => (
+            <div className="hp-recipes-grid-3">
+              {FOOD_SHOWCASE.map(img => (
                 <img
-                  key={r.slug}
-                  src={r.heroImage}
-                  alt={r.heroImageAlt}
+                  key={img.src}
+                  src={img.src}
+                  alt={img.alt}
                   style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: 12, display: 'block' }}
                 />
               ))}
