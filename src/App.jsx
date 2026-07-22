@@ -97,6 +97,11 @@ export default function App() {
   const [dietaryPreferences, setDietaryPreferences] = useState({})
   const [showLoadingRecovery, setShowLoadingRecovery] = useState(false)
 
+  // ── Post-logout confirmation toast ────────────
+  // Purely additive UI feedback — does not affect the sign-out call, the
+  // auth-state redirect, or its timing (handled by onAuthStateChange below).
+  const [justSignedOut, setJustSignedOut] = useState(false)
+
   // ── 15-second "Try Again" timer ───────────────
   useEffect(() => {
     if (isLoading) {
@@ -130,6 +135,13 @@ export default function App() {
     }, 45000)
     return () => clearTimeout(safety)
   }, [isLoading])
+
+  // ── Post-logout toast auto-dismiss ────────────
+  useEffect(() => {
+    if (!justSignedOut) return
+    const t = setTimeout(() => setJustSignedOut(false), 3000)
+    return () => clearTimeout(t)
+  }, [justSignedOut])
 
   // ── TWA visibility safety net ─────────────────
   // When Android backgrounds then restores the TWA, React state is preserved.
@@ -777,7 +789,14 @@ export default function App() {
     }
   }
 
-  const handleLogout = () => supabase.auth.signOut()
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setJustSignedOut(true)
+    } catch (e) {
+      console.error('[Old2New] Sign out error:', e.message)
+    }
+  }
 
   // ── Auth loading screen ───────────────────────
   if (!authChecked) {
@@ -807,7 +826,26 @@ export default function App() {
 
   // Render the homepage outside the mobile app shell so it fills the full browser width
   if (screen === 'splash') {
-    return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
+    return (
+      <>
+        <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
+        {justSignedOut && (
+          <div
+            role="status"
+            style={{
+              position: 'fixed', left: '50%', bottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
+              transform: 'translateX(-50%)', zIndex: 1000,
+              background: 'var(--text-primary)', color: 'white',
+              padding: '12px 22px', borderRadius: 24, fontSize: 14, fontWeight: 600,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.22)', whiteSpace: 'nowrap',
+              animation: 'fadeIn 0.2s ease',
+            }}
+          >
+            Signed out successfully
+          </div>
+        )}
+      </>
+    )
   }
 
   const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
