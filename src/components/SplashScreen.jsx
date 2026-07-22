@@ -708,7 +708,10 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             {SOCIALS_LIVE && (
               <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
                 {SOCIALS.map(({ label, href, icon }) => (
-                  <a key={label} href={href} aria-label={label} target="_blank" rel="noopener noreferrer"
+                  // target="_blank" opens a new tab correctly on the regular website, but
+                  // inside the Android TWA (no tab UI) it can bounce back into the app instead
+                  // of handing off to a browser/native app — so skip it there.
+                  <a key={label} href={href} aria-label={label} {...(!isTWA && { target: '_blank', rel: 'noopener noreferrer' })}
                     style={{ color: '#2B2B2B', display: 'flex', transition: 'color 0.18s' }}
                     onMouseEnter={e => e.currentTarget.style.color = G}
                     onMouseLeave={e => e.currentTarget.style.color = '#2B2B2B'}
