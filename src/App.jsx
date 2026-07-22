@@ -139,7 +139,7 @@ export default function App() {
   // ── Post-logout toast auto-dismiss ────────────
   useEffect(() => {
     if (!justSignedOut) return
-    const t = setTimeout(() => setJustSignedOut(false), 3000)
+    const t = setTimeout(() => setJustSignedOut(false), 5000)
     return () => clearTimeout(t)
   }, [justSignedOut])
 
