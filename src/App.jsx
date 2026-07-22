@@ -23,6 +23,8 @@ import RecipeShareScreen from './components/RecipeShareScreen'
 import BottomNav from './components/BottomNav'
 import WhatSoundsGoodScreen from './components/WhatSoundsGoodScreen'
 import ResetPasswordScreen from './components/ResetPasswordScreen'
+import PublicRecipesIndex from './components/PublicRecipesIndex'
+import PublicRecipePage from './components/PublicRecipePage'
 
 // Temporary for Google Play closed testing — revert to 5 after July 30, 2026
 const PLAN_LIMITS = { free: 30, wellness: 50, family: 150 }
@@ -42,9 +44,17 @@ export default function App() {
     if (p === '/auth/callback') return 'callback'
     if (p === '/' && new URLSearchParams(window.location.search).get('code')) return 'callback'
     if (p.startsWith('/recipe/')) return 'recipe-share'
+    if (p === '/recipes') return 'recipes-index'
+    if (p.startsWith('/recipes/')) return 'recipe-public'
     if (p === '/success') return 'success'
     if (p === '/cancel') return 'cancel'
     return 'splash'
+  })
+  // Public /recipes/:slug — set synchronously from the initial URL so the
+  // first render (before the URL-routing effect runs) already has it.
+  const [publicRecipeSlug] = useState(() => {
+    const p = window.location.pathname
+    return p.startsWith('/recipes/') ? p.split('/recipes/')[1]?.split('?')[0] : null
   })
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [callbackStatus, setCallbackStatus] = useState('loading') // 'loading' | 'success' | 'error'
@@ -575,6 +585,10 @@ export default function App() {
         setSharedRecipeId(recipeId)
         setScreen('recipe-share')
       }
+    } else if (path === '/recipes') {
+      setScreen('recipes-index')
+    } else if (path.startsWith('/recipes/')) {
+      setScreen('recipe-public')
     } else {
       console.log('[Old2New] OAuth Path Used: HOMEPAGE (NO CODE)')
     }
@@ -846,6 +860,16 @@ export default function App() {
         )}
       </>
     )
+  }
+
+  // Public, no-auth-required marketing/SEO pages — rendered outside the
+  // mobile app shell (same pattern as splash) so they fill the full browser
+  // width. No user data, no authenticated actions.
+  if (screen === 'recipes-index') {
+    return <PublicRecipesIndex onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
+  if (screen === 'recipe-public') {
+    return <PublicRecipePage slug={publicRecipeSlug} onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
   }
 
   const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
