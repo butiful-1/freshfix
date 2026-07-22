@@ -19,7 +19,10 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, plan, is
   const [downloading, setDownloading] = useState(false)
   const [downloadErr, setDownloadErr] = useState('')
 
-  const isPaid = plan === 'wellness' || plan === 'family'
+  // Temporary for Google Play closed testing — free testers get cookbook downloads
+  // through July 31, 2026, then this automatically reverts to the paid-plan-only check.
+  const cookbookTestingWindowOpen = new Date() < new Date('2026-08-01T00:00:00Z')
+  const isPaid = plan === 'wellness' || plan === 'family' || cookbookTestingWindowOpen
 
   const handleDownload = async () => {
     if (!isPaid || downloading || recipes.length === 0) return
