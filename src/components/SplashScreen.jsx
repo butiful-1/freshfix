@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { PUBLIC_RECIPES } from '../data/publicRecipes'
 import RecipeQuickViewModal from './RecipeQuickViewModal'
@@ -275,12 +275,16 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
     setQuickViewSlug(slug)
     window.history.pushState({ recipeQuickView: slug }, '', `/recipes/${slug}`)
   }
-  const closeQuickView = () => {
+  // Stable identity (useCallback) so RecipeQuickViewModal's focus/scroll-lock
+  // effect — which depends on this — doesn't re-run and steal focus back to
+  // the page on every unrelated SplashScreen re-render (e.g. scroll-driven
+  // navScrolled updates) while the modal is open.
+  const closeQuickView = useCallback(() => {
     setQuickViewSlug(null)
     if (window.location.pathname.startsWith('/recipes/')) {
       window.history.pushState({}, '', '/')
     }
-  }
+  }, [])
 
   // Keeps the modal in sync with the browser's own back/forward buttons
   // (e.g. user opens a recipe, hits Back — modal should close, not the page).
@@ -487,18 +491,25 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             </p>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <ul className="hp-recipes-grid" style={{ listStyle: 'none' }}>
+            <ul
+              className="hp-recipes-grid"
+              style={{ listStyle: 'none' }}
+              onClick={e => {
+                // Single delegated handler for the whole grid (rather than one
+                // closure per card) — reads the slug straight off the DOM at
+                // click-time, so it can't go stale per-item.
+                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                const link = e.target.closest('a[data-recipe-slug]')
+                if (!link) return
+                e.preventDefault()
+                openQuickView(link.dataset.recipeSlug)
+              }}
+            >
               {PUBLIC_RECIPES.map(r => (
                 <li key={r.slug} style={{ margin: 0 }}>
                   <a
                     href={`/recipes/${r.slug}`}
-                    onClick={e => {
-                      // Let modifier-clicks / middle-click behave natively (open in
-                      // new tab) — only a plain left-click opens the quick-view modal.
-                      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-                      e.preventDefault()
-                      openQuickView(r.slug)
-                    }}
+                    data-recipe-slug={r.slug}
                     style={{ display: 'block', textDecoration: 'none', color: 'inherit', borderRadius: 4, cursor: 'pointer' }}
                   >
                     <figure style={{ margin: 0 }}>

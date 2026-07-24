@@ -258,7 +258,11 @@ export default function App() {
             if (localStorage.getItem('old2new_pending_reset')) {
               localStorage.removeItem('old2new_pending_reset')
               setScreen('reset-password')
-            } else {
+            } else if (!path.startsWith('/recipes/')) {
+              // Public recipe pages (standalone /recipes/:slug, or the homepage
+              // while a recipe quick-view modal has the URL set to /recipes/:slug
+              // — see SplashScreen.jsx) must never auto-redirect a signed-in
+              // visitor into the app, same as /recipe/ share links below.
               goToApp()
             }
             appInitializedRef.current = true
@@ -284,7 +288,7 @@ export default function App() {
           await loadProfile(session.user.id)
           loadSavedRecipes(session.user.id)
           appInitializedRef.current = true
-          if (!window.location.pathname.startsWith('/recipe/')) {
+          if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/')) {
             goToApp()
           }
         }
@@ -310,7 +314,7 @@ export default function App() {
                 appInitializedRef.current = true
               } else if (event === 'SIGNED_IN' && !appInitializedRef.current) {
                 loadSavedRecipes(session.user.id)
-                if (!window.location.pathname.startsWith('/recipe/')) {
+                if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/')) {
                   goToApp()
                 }
                 appInitializedRef.current = true
