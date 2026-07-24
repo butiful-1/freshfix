@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { PUBLIC_RECIPES } from '../data/publicRecipes'
+import RecipeQuickViewModal from './RecipeQuickViewModal'
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const G   = '#22C55E'
@@ -260,6 +261,38 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
   const howRef     = useRef(null)
   const faqRef     = useRef(null)
 
+  // Recipe "quick view" modal — clicking a showcase recipe opens this instead
+  // of navigating to /recipes/:slug, so the visitor never leaves the homepage
+  // and (if signed in) is never pulled into the app. The URL bar is still
+  // updated via pushState (no reload, no re-mount) purely so the address is
+  // shareable; visiting that URL fresh loads the existing standalone
+  // /recipes/:slug page (PublicRecipePage.jsx, unchanged) — same content,
+  // different chrome. See openQuickView/closeQuickView below.
+  const [quickViewSlug, setQuickViewSlug] = useState(null)
+  const quickViewRecipe = quickViewSlug ? PUBLIC_RECIPES.find(r => r.slug === quickViewSlug) : null
+
+  const openQuickView = (slug) => {
+    setQuickViewSlug(slug)
+    window.history.pushState({ recipeQuickView: slug }, '', `/recipes/${slug}`)
+  }
+  const closeQuickView = () => {
+    setQuickViewSlug(null)
+    if (window.location.pathname.startsWith('/recipes/')) {
+      window.history.pushState({}, '', '/')
+    }
+  }
+
+  // Keeps the modal in sync with the browser's own back/forward buttons
+  // (e.g. user opens a recipe, hits Back — modal should close, not the page).
+  useEffect(() => {
+    const onPopState = () => {
+      const p = window.location.pathname
+      setQuickViewSlug(p.startsWith('/recipes/') ? p.split('/recipes/')[1]?.split('?')[0] || null : null)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
   useEffect(() => {
     const fn = () => setNavScrolled(window.scrollY > 24)
     window.addEventListener('scroll', fn, { passive: true })
@@ -459,7 +492,14 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
                 <li key={r.slug} style={{ margin: 0 }}>
                   <a
                     href={`/recipes/${r.slug}`}
-                    style={{ display: 'block', textDecoration: 'none', color: 'inherit', borderRadius: 4 }}
+                    onClick={e => {
+                      // Let modifier-clicks / middle-click behave natively (open in
+                      // new tab) — only a plain left-click opens the quick-view modal.
+                      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                      e.preventDefault()
+                      openQuickView(r.slug)
+                    }}
+                    style={{ display: 'block', textDecoration: 'none', color: 'inherit', borderRadius: 4, cursor: 'pointer' }}
                   >
                     <figure style={{ margin: 0 }}>
                       <img
@@ -783,6 +823,14 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
         </div>
       </footer>
+
+      {quickViewRecipe && (
+        <RecipeQuickViewModal
+          recipe={quickViewRecipe}
+          onClose={closeQuickView}
+          onSignUp={onSignUp}
+        />
+      )}
     </div>
   )
 }
