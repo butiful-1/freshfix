@@ -26,8 +26,7 @@ import ResetPasswordScreen from './components/ResetPasswordScreen'
 import PublicRecipesIndex from './components/PublicRecipesIndex'
 import PublicRecipePage from './components/PublicRecipePage'
 
-// Temporary for Google Play closed testing — revert to 5 after July 30, 2026
-const PLAN_LIMITS = { free: 30, wellness: 50, family: 150 }
+const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
 
 export default function App() {
   // ── Auth ──────────────────────────────────────
