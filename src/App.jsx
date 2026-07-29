@@ -27,6 +27,8 @@ import PublicRecipesIndex from './components/PublicRecipesIndex'
 import PublicRecipePage from './components/PublicRecipePage'
 
 const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
+// Internal accounts get a raised limit regardless of plan
+const INTERNAL_LIMITS = { 'kim@butiful.info': 250 }
 
 export default function App() {
   // ── Auth ──────────────────────────────────────
@@ -615,11 +617,13 @@ export default function App() {
       prev.includes(diet) ? prev.filter(d => d !== diet) : [...prev, diet]
     )
 
+  const transformLimit = INTERNAL_LIMITS[user?.email?.toLowerCase()] ?? PLAN_LIMITS[plan]
+
   const handleTransform = async () => {
     if (!recipeInput.trim()) { setError('Please enter a recipe or dish name.'); return }
     if (selectedDiets.length === 0 && !healthGoal.trim()) { setError('Please select a diet preference or enter a health goal.'); return }
 
-    const limit = PLAN_LIMITS[plan]
+    const limit = transformLimit
     if (limit !== undefined && swapUsage.count >= limit) {
       setShowUpgradeModal(true); return
     }
@@ -901,7 +905,7 @@ export default function App() {
             onTransform={handleTransform} isLoading={isLoading} error={error}
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
             plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA) setScreen('pricing') }}
-            transformLimit={PLAN_LIMITS[plan]} dietaryPreferences={dietaryPreferences}
+            transformLimit={transformLimit} dietaryPreferences={dietaryPreferences}
             onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA}
           />
         )
