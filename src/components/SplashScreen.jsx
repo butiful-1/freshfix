@@ -476,6 +476,28 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
         </div>
       </section>
 
+      {/* ── GOOGLE PLAY ─────────────────────────────────────────────────── */}
+      {/* Hidden in TWA — no point advertising the Play listing inside the app itself */}
+      {!isTWA && (
+        <section style={{ padding: '72px 24px', background: '#F0FDF4', textAlign: 'center' }}>
+          <FadeIn>
+            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1, lineHeight: 1.1, marginBottom: 16 }}>
+              Download the Old2New App
+            </h2>
+            <p style={{ fontSize: 17, color: TM, lineHeight: 1.7, maxWidth: 520, margin: '0 auto 36px', fontFamily: SF }}>
+              Transform your favorite comfort food recipes into healthier versions right from your phone.
+            </p>
+            <a
+              href="https://play.google.com/store/apps/details?id=app.old2new.twa"
+              target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-block', width: 'min(100%, 380px)', boxSizing: 'border-box', background: G, color: 'white', borderRadius: 4, padding: '17px 40px', fontSize: 17, fontWeight: 600, fontFamily: SF, textDecoration: 'none', transition: 'background 0.15s', textAlign: 'center' }}
+              onMouseEnter={e => e.currentTarget.style.background = GD}
+              onMouseLeave={e => e.currentTarget.style.background = G}
+            >📲 Get it on Google Play</a>
+          </FadeIn>
+        </section>
+      )}
+
       {/* ── RECIPE GALLERY ──────────────────────────────────────────────── */}
       <section ref={recipesRef} style={{ padding: '108px 40px', background: 'white', position: 'relative', overflow: 'hidden' }}>
         <BgTex file="bg-herbs-top.jpg" pos="center top" />
