@@ -3,7 +3,7 @@ import useDocumentHead from '../seo/useDocumentHead.js'
 import { blogPostJsonLd, blogPostMeta, breadcrumbJsonLd } from '../seo/seoHelpers.js'
 import { getBlogPostBySlug } from '../blog/loadPosts.js'
 import { PublicHeader, PublicFooter } from './shared/PublicPageChrome.jsx'
-import BlogCTA from './BlogCTA.jsx'
+import Old2NewCTA from './Old2NewCTA.jsx'
 
 const T   = '#111827'
 const TM  = '#6B7280'
@@ -105,7 +105,7 @@ export default function BlogPostPage({ slug, onSignUp, onLogin }) {
         {/* CTA — one shared component, rendered here so every article gets
             it automatically without repeating markup in each .md file. */}
         <div style={{ padding: '8px 20px 0' }}>
-          <BlogCTA />
+          <Old2NewCTA />
         </div>
       </main>
 

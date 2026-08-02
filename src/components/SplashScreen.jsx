@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../supabase'
 import { PUBLIC_RECIPES } from '../data/publicRecipes'
 import RecipeQuickViewModal from './RecipeQuickViewModal'
+import Old2NewCTA from './Old2NewCTA'
 
 // ── Brand tokens ──────────────────────────────────────────────────────────────
 const G   = '#22C55E'
@@ -372,6 +373,11 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
               onMouseEnter={e => e.currentTarget.style.color = T}
               onMouseLeave={e => e.currentTarget.style.color = TM}
             >Recipes</a>
+            <a href="/blog"
+              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+              onMouseEnter={e => e.currentTarget.style.color = T}
+              onMouseLeave={e => e.currentTarget.style.color = TM}
+            >Blog</a>
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
@@ -422,6 +428,9 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             <a href="/recipes"
               style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
             >Recipes</a>
+            <a href="/blog"
+              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+            >Blog</a>
             <button onClick={() => closeMenuAndScrollTo(howRef)}
               style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, borderBottom: '1px solid #F3EFE9' }}
             >How It Works</button>
@@ -476,24 +485,12 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
         </div>
       </section>
 
-      {/* ── GOOGLE PLAY ─────────────────────────────────────────────────── */}
+      {/* ── OLD2NEW CTA ─────────────────────────────────────────────────── */}
       {/* Hidden in TWA — no point advertising the Play listing inside the app itself */}
       {!isTWA && (
-        <section style={{ padding: '72px 24px', background: '#F0FDF4', textAlign: 'center' }}>
-          <FadeIn>
-            <h2 style={{ fontFamily: SRF, fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 700, color: T, letterSpacing: -1, lineHeight: 1.1, marginBottom: 16 }}>
-              Download the Old2New App
-            </h2>
-            <p style={{ fontSize: 17, color: TM, lineHeight: 1.7, maxWidth: 520, margin: '0 auto 36px', fontFamily: SF }}>
-              Transform your favorite comfort food recipes into healthier versions right from your phone.
-            </p>
-            <a
-              href="https://play.google.com/store/apps/details?id=app.old2new.twa"
-              target="_blank" rel="noopener noreferrer"
-              style={{ display: 'inline-block', width: 'min(100%, 380px)', boxSizing: 'border-box', background: G, color: 'white', borderRadius: 4, padding: '17px 40px', fontSize: 17, fontWeight: 600, fontFamily: SF, textDecoration: 'none', transition: 'background 0.15s', textAlign: 'center' }}
-              onMouseEnter={e => e.currentTarget.style.background = GD}
-              onMouseLeave={e => e.currentTarget.style.background = G}
-            >📲 Get it on Google Play</a>
+        <section style={{ padding: '72px 24px', background: '#F0FDF4' }}>
+          <FadeIn style={{ maxWidth: 720, margin: '0 auto' }}>
+            <Old2NewCTA />
           </FadeIn>
         </section>
       )}
@@ -827,6 +824,11 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
               onMouseEnter={e => e.target.style.color = G}
               onMouseLeave={e => e.target.style.color = '#2B2B2B'}
             >Recipes</a>
+            <a href="/blog"
+              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = G}
+              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+            >Blog</a>
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },

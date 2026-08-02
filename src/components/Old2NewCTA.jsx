@@ -5,12 +5,13 @@ const TM  = '#6B7280'
 const SF  = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 const SRF = 'Georgia, "Times New Roman", serif'
 
-// Reusable end-of-article CTA — rendered once by BlogPostPage.jsx so every
-// article gets it automatically without repeating markup per post. The
-// badge row is a flex-wrap container so a second badge (Apple App Store,
-// once iOS launches) can simply be dropped in next to GooglePlayBadge with
-// no layout changes needed.
-export default function BlogCTA() {
+// Single shared conversion CTA — used at the end of every blog article
+// (via BlogPostPage.jsx) and on the homepage (via SplashScreen.jsx), so
+// wording and styling only exist in one place. The badge row is a
+// flex-wrap container so a second badge (Apple App Store, once iOS
+// launches) can simply be dropped in next to GooglePlayBadge with no
+// layout changes needed.
+export default function Old2NewCTA() {
   return (
     <section style={{
       margin: '36px 0 0', padding: '40px 28px', background: 'var(--green-bg, #F0FDF4)',
