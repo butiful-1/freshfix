@@ -203,7 +203,7 @@ Adding protein is one of the most impactful changes you can make to familiar mea
 - [What Can I Make with Cottage Cheese?](/blog/what-can-i-make-with-cottage-cheese) — the complete guide to the most versatile protein ingredient
 - [What Can I Make with Greek Yogurt?](/blog/what-can-i-make-with-greek-yogurt) — everything Greek yogurt can do across every meal
 - [What Can I Make with Lentils?](/blog/what-can-i-make-with-lentils) — plant-based protein that works in almost everything
-- [How to Build a Balanced Plate](/blog/how-to-build-a-balanced-plate) — how protein fits into a balanced plate
+- [Understanding Portion Balance](/blog/understanding-portion-balance) — how protein fits into a balanced plate
 - [How to Eat Healthier Without Giving Up Comfort Food](/blog/how-to-eat-healthier-without-giving-up-comfort-food) — comfort food built around protein from the ground up
 
 ---
