@@ -3,6 +3,7 @@ const FREE_LIMIT = 5
 const NAV_ITEMS = [
   { id: 'home',    label: 'Home',    icon: '🏠', activeIcon: '🏡' },
   { id: 'saved',   label: 'Saved',   icon: '🔖', activeIcon: '🔖' },
+  { id: 'blog',    label: 'Blog',    icon: '📰', activeIcon: '📰', href: '/blog' },
   { id: 'pricing', label: 'Pricing', icon: '⭐', activeIcon: '⭐' },
   { id: 'about',   label: 'About',   icon: 'ℹ️', activeIcon: 'ℹ️' },
 ]
@@ -21,7 +22,7 @@ export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, 
           <button
             key={item.id}
             className={`nav-item ${isActive ? 'active' : ''}`}
-            onClick={() => onNavigate(item.id)}
+            onClick={() => item.href ? (window.location.href = item.href) : onNavigate(item.id)}
             aria-label={item.label}
             aria-current={isActive ? 'page' : undefined}
           >

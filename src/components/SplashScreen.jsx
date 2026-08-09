@@ -378,6 +378,11 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
               onMouseEnter={e => e.currentTarget.style.color = T}
               onMouseLeave={e => e.currentTarget.style.color = TM}
             >Blog</a>
+            <a href="/about"
+              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+              onMouseEnter={e => e.currentTarget.style.color = T}
+              onMouseLeave={e => e.currentTarget.style.color = TM}
+            >About</a>
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
@@ -431,6 +436,9 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             <a href="/blog"
               style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
             >Blog</a>
+            <a href="/about"
+              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+            >About</a>
             <button onClick={() => closeMenuAndScrollTo(howRef)}
               style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, borderBottom: '1px solid #F3EFE9' }}
             >How It Works</button>
@@ -567,7 +575,7 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
       </section>
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────────── */}
-      <section ref={howRef} style={{ padding: '100px 32px 110px', background: CRM, position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+      <section id="how-it-works" ref={howRef} style={{ padding: '100px 32px 110px', background: CRM, position: 'relative', overflow: 'hidden', marginTop: -10 }}>
         <BgTex file="bg-cuttingboard.jpg" pos="center" />
         <FadeIn style={{ maxWidth: 1175, margin: '0 auto', position: 'relative', zIndex: 2 }}>
           <img
@@ -699,7 +707,7 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
       </section>
 
       {/* ── FAQ ─────────────────────────────────────────────────────────── */}
-      <section ref={faqRef} style={{ padding: '88px 40px', background: 'white', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
+      <section id="faq" ref={faqRef} style={{ padding: '88px 40px', background: 'white', position: 'relative', overflow: 'hidden', marginTop: -10 }}>
         <BgTex file="bg-kitchen.jpg" pos="center" />
         <FadeIn style={{ maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 2 }}>
           <div className="hp-faq" style={{ background: 'rgba(255,252,246,0.93)', borderRadius: 18, padding: 'clamp(40px, 5vw, 72px)', boxShadow: '0 16px 45px rgba(0,0,0,0.08)', border: '1px solid rgba(80,60,40,0.08)' }}>
@@ -829,6 +837,11 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
               onMouseEnter={e => e.target.style.color = G}
               onMouseLeave={e => e.target.style.color = '#2B2B2B'}
             >Blog</a>
+            <a href="/about"
+              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+              onMouseEnter={e => e.target.style.color = G}
+              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+            >About</a>
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
@@ -842,13 +855,7 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             <span style={{ color: '#D1C9BE', fontSize: 13, padding: '0 2px' }}>·</span>
             <a href="/privacy.html" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Privacy</a>
             <a href="/terms.html"   style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Terms</a>
-            <a href="mailto:admin@old2new.app" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Contact</a>
-            <span style={{ color: '#D1C9BE', fontSize: 13, padding: '0 2px' }}>·</span>
-            <a href="mailto:admin@old2new.app"
-              style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', fontFamily: SF, padding: '4px 10px' }}
-              onMouseEnter={e => e.target.style.color = G}
-              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
-            >admin@old2new.app</a>
+            <a href="/contact" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Contact</a>
           </div>
 
           {/* Legal */}

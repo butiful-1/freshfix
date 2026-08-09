@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -25,6 +26,11 @@ import WhatSoundsGoodScreen from './components/WhatSoundsGoodScreen'
 import ResetPasswordScreen from './components/ResetPasswordScreen'
 import PublicRecipesIndex from './components/PublicRecipesIndex'
 import PublicRecipePage from './components/PublicRecipePage'
+import BlogIndex from './components/BlogIndex'
+import BlogPostPage from './components/BlogPostPage'
+import AboutPage from './components/AboutPage'
+import ContactPage from './components/ContactPage'
+import MarketingConsentBanner from './components/MarketingConsentBanner'
 
 const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
 // Internal accounts get a raised limit regardless of plan
@@ -47,6 +53,10 @@ export default function App() {
     if (p.startsWith('/recipe/')) return 'recipe-share'
     if (p === '/recipes') return 'recipes-index'
     if (p.startsWith('/recipes/')) return 'recipe-public'
+    if (p === '/blog') return 'blog-index'
+    if (p.startsWith('/blog/')) return 'blog-post'
+    if (p === '/about') return 'about-page'
+    if (p === '/contact') return 'contact-page'
     if (p === '/success') return 'success'
     if (p === '/cancel') return 'cancel'
     return 'splash'
@@ -56,6 +66,11 @@ export default function App() {
   const [publicRecipeSlug] = useState(() => {
     const p = window.location.pathname
     return p.startsWith('/recipes/') ? p.split('/recipes/')[1]?.split('?')[0] : null
+  })
+  // Public /blog/:slug — same synchronous-from-URL pattern as publicRecipeSlug.
+  const [publicBlogSlug] = useState(() => {
+    const p = window.location.pathname
+    return p.startsWith('/blog/') ? p.split('/blog/')[1]?.split('?')[0] : null
   })
   const [showDisclaimer, setShowDisclaimer] = useState(false)
   const [callbackStatus, setCallbackStatus] = useState('loading') // 'loading' | 'success' | 'error'
@@ -107,6 +122,33 @@ export default function App() {
   // ── Dietary preferences ───────────────────────
   const [dietaryPreferences, setDietaryPreferences] = useState({})
   const [showLoadingRecovery, setShowLoadingRecovery] = useState(false)
+
+  // ── Marketing email consent ───────────────────
+  const [marketingEmailConsent, setMarketingEmailConsent] = useState(false)
+
+  // ── Marketing consent banner (soft, dismissible nudge) ────────────
+  const [bannerDismissedThisSession, setBannerDismissedThisSession] = useState(false)
+  const [bannerDismissalCount] = useState(() => parseInt(localStorage.getItem('old2new_banner_dismissals') || '0', 10))
+  // Hoisted above every early return further down (renderScreen's early
+  // 'splash'/'recipes-index'/'blog-index'/'blog-post' returns) so the
+  // useEffect below it is always called in the same order — Rules of Hooks.
+  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
+  const showMarketingBanner = showNav && !!user && !!profile
+    && profile.marketing_email_consent_source == null
+    && !bannerDismissedThisSession
+    && bannerDismissalCount < 3
+    && !showDisclaimer && !showUpgradeModal
+
+  // One increment per browser-tab session, the first time the banner
+  // becomes eligible to show — covers both an explicit X-close and
+  // silently leaving/closing the tab without deciding (there's no reliable
+  // way to distinguish those after the fact). Never touches Supabase.
+  useEffect(() => {
+    if (!showMarketingBanner) return
+    if (sessionStorage.getItem('old2new_banner_counted_this_session')) return
+    sessionStorage.setItem('old2new_banner_counted_this_session', '1')
+    localStorage.setItem('old2new_banner_dismissals', String(bannerDismissalCount + 1))
+  }, [showMarketingBanner, bannerDismissalCount])
 
   // ── Post-logout confirmation toast ────────────
   // Purely additive UI feedback — does not affect the sign-out call, the
@@ -166,7 +208,10 @@ export default function App() {
   }, [authChecked])
 
   // ── Load Supabase profile ─────────────────────
-  const loadProfile = async (userId, retries = 2) => {
+  // authUser (the Supabase auth user object, carrying user_metadata) is
+  // optional and only used for the one-time marketing-consent sync below —
+  // every existing call site already has it in scope.
+  const loadProfile = async (userId, authUser = null, retries = 2) => {
     try {
       const { data } = await withTimeout(
         supabase.from('profiles').select('*').eq('id', userId).single(),
@@ -175,7 +220,7 @@ export default function App() {
 
       if (!data && retries > 0) {
         await new Promise(r => setTimeout(r, 600))
-        return loadProfile(userId, retries - 1)
+        return loadProfile(userId, authUser, retries - 1)
       }
       if (!data) return
 
@@ -192,10 +237,30 @@ export default function App() {
         p = updated || { ...data, swaps_used: 0, swaps_month: currentMonth }
       }
 
+      // One-time sync of signup-time marketing-consent metadata (set via
+      // supabase.auth.signUp's options.data in SignUpScreen.jsx) into the
+      // profile row. Gated on marketing_email_consent_source still being
+      // null so this can never clobber a later Account Settings change.
+      const signupConsent = authUser?.user_metadata?.marketing_email_consent
+      if (p.marketing_email_consent_source == null && signupConsent !== undefined) {
+        try {
+          const { data: synced } = await supabase.from('profiles').update({
+            marketing_email_consent: !!signupConsent,
+            marketing_email_consent_source: authUser.user_metadata.marketing_email_consent_source || 'signup',
+            marketing_email_consent_version: authUser.user_metadata.marketing_email_consent_version || null,
+            marketing_email_consented_at: authUser.user_metadata.marketing_email_consented_at || null,
+          }).eq('id', userId).select().single()
+          if (synced) p = synced
+        } catch (e) {
+          console.error('loadProfile: marketing consent sync failed:', e.message)
+        }
+      }
+
       setProfile(p)
       setPlan(p.plan || 'free')
       setSwapUsage({ month: p.swaps_month, count: p.swaps_used || 0 })
       setDietaryPreferences(p.dietary_preferences || {})
+      setMarketingEmailConsent(!!p.marketing_email_consent)
     } catch (e) {
       console.error('loadProfile:', e.message)
     }
@@ -253,16 +318,17 @@ export default function App() {
         )
         if (session?.user) {
           setUser(session.user)
-          await loadProfile(session.user.id)
+          await loadProfile(session.user.id, session.user)
           loadSavedRecipes(session.user.id)
           if (path !== '/success' && path !== '/cancel') {
             if (localStorage.getItem('old2new_pending_reset')) {
               localStorage.removeItem('old2new_pending_reset')
               setScreen('reset-password')
-            } else if (!path.startsWith('/recipes/')) {
+            } else if (!path.startsWith('/recipes/') && path !== '/blog' && !path.startsWith('/blog/') && path !== '/about' && path !== '/contact') {
               // Public recipe pages (standalone /recipes/:slug, or the homepage
               // while a recipe quick-view modal has the URL set to /recipes/:slug
-              // — see SplashScreen.jsx) must never auto-redirect a signed-in
+              // — see SplashScreen.jsx) and public blog pages (index /blog and
+              // articles /blog/:slug) must never auto-redirect a signed-in
               // visitor into the app, same as /recipe/ share links below.
               goToApp()
             }
@@ -286,10 +352,10 @@ export default function App() {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
           setUser(session.user)
-          await loadProfile(session.user.id)
+          await loadProfile(session.user.id, session.user)
           loadSavedRecipes(session.user.id)
           appInitializedRef.current = true
-          if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/')) {
+          if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/') && window.location.pathname !== '/blog' && !window.location.pathname.startsWith('/blog/') && window.location.pathname !== '/about' && window.location.pathname !== '/contact') {
             goToApp()
           }
         }
@@ -306,7 +372,7 @@ export default function App() {
           try {
             if (session?.user) {
               setUser(session.user)
-              await loadProfile(session.user.id)
+              await loadProfile(session.user.id, session.user)
               if (event === 'PASSWORD_RECOVERY') {
                 inCallbackRef.current = false
                 appInitializedRef.current = true
@@ -315,7 +381,7 @@ export default function App() {
                 appInitializedRef.current = true
               } else if (event === 'SIGNED_IN' && !appInitializedRef.current) {
                 loadSavedRecipes(session.user.id)
-                if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/')) {
+                if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/') && window.location.pathname !== '/blog' && !window.location.pathname.startsWith('/blog/') && window.location.pathname !== '/about' && window.location.pathname !== '/contact') {
                   goToApp()
                 }
                 appInitializedRef.current = true
@@ -326,7 +392,16 @@ export default function App() {
               setDietaryPreferences({})
               setSavedRecipes([])
               appInitializedRef.current = false
-              if (!window.location.pathname.startsWith('/recipe/')) {
+              // Same public-page exclusions as the goToApp() guards above —
+              // a signed-out (or not-yet-resolved) session must never bounce
+              // an anonymous visitor on /recipes, /recipes/:slug, /blog, or
+              // /blog/:slug back to the splash screen. This event fires on
+              // every mount (Supabase's initial INITIAL_SESSION event, session
+              // null for anonymous visitors), so without these exclusions it
+              // silently swaps any public page to splash without touching the
+              // URL — visually indistinguishable from a random redirect.
+              const p = window.location.pathname
+              if (!p.startsWith('/recipe/') && !p.startsWith('/recipes/') && p !== '/blog' && !p.startsWith('/blog/') && p !== '/about' && p !== '/contact') {
                 setScreen('splash')
               }
             }
@@ -435,7 +510,7 @@ export default function App() {
             console.log('[Old2New] Session established — navigating to app')
             localStorage.setItem('supabase-auth-complete', Date.now().toString())
             setUser(session.user)
-            loadProfile(session.user.id)
+            loadProfile(session.user.id, session.user)
             loadSavedRecipes(session.user.id)
             appInitializedRef.current = true
             inCallbackRef.current = false
@@ -458,7 +533,7 @@ export default function App() {
               console.log('[Old2New] Already signed in — navigating to app')
               localStorage.setItem('supabase-auth-complete', Date.now().toString())
               setUser(data.session.user)
-              loadProfile(data.session.user.id)
+              loadProfile(data.session.user.id, data.session.user)
               loadSavedRecipes(data.session.user.id)
               appInitializedRef.current = true
               inCallbackRef.current = false
@@ -551,7 +626,7 @@ export default function App() {
           console.log('[Old2New] Root OAuth code fallback — session established')
           localStorage.setItem('supabase-auth-complete', Date.now().toString())
           setUser(session.user)
-          loadProfile(session.user.id)
+          loadProfile(session.user.id, session.user)
           loadSavedRecipes(session.user.id)
           appInitializedRef.current = true
           inCallbackRef.current = false
@@ -564,7 +639,7 @@ export default function App() {
               console.log('[Old2New] Root OAuth code fallback — already signed in')
               localStorage.setItem('supabase-auth-complete', Date.now().toString())
               setUser(data.session.user)
-              loadProfile(data.session.user.id)
+              loadProfile(data.session.user.id, data.session.user)
               loadSavedRecipes(data.session.user.id)
               appInitializedRef.current = true
               inCallbackRef.current = false
@@ -594,6 +669,14 @@ export default function App() {
       setScreen('recipes-index')
     } else if (path.startsWith('/recipes/')) {
       setScreen('recipe-public')
+    } else if (path === '/blog') {
+      setScreen('blog-index')
+    } else if (path.startsWith('/blog/')) {
+      setScreen('blog-post')
+    } else if (path === '/about') {
+      setScreen('about-page')
+    } else if (path === '/contact') {
+      setScreen('contact-page')
     } else {
       console.log('[Old2New] OAuth Path Used: HOMEPAGE (NO CODE)')
     }
@@ -810,6 +893,38 @@ export default function App() {
     }
   }
 
+  // Turning consent off (with no explicit source, e.g. the Account Settings
+  // toggle) only flips the boolean — consented_at/source/version are left as
+  // the historical record of the last time it was turned on. Callers with a
+  // known distinct origin (e.g. the marketing banner) can pass `source` to
+  // record it explicitly, on either the accept or decline path.
+  const handleSaveMarketingConsent = async (consent, source) => {
+    if (!user) return
+    setMarketingEmailConsent(consent)
+    setProfile(prev => prev ? { ...prev, marketing_email_consent: consent } : prev)
+    const updates = { marketing_email_consent: consent }
+    if (consent) {
+      updates.marketing_email_consented_at = new Date().toISOString()
+      updates.marketing_email_consent_source = source || 'account_settings'
+      updates.marketing_email_consent_version = MARKETING_CONSENT_VERSION
+    } else if (source) {
+      updates.marketing_email_consent_source = source
+      updates.marketing_email_consent_version = MARKETING_CONSENT_VERSION
+    }
+    try {
+      await supabase.from('profiles').update(updates).eq('id', user.id)
+    } catch (e) {
+      console.error('handleSaveMarketingConsent:', e.message)
+    }
+  }
+
+  const handleBannerYes        = () => handleSaveMarketingConsent(true, 'banner_accept')
+  // "Maybe later" is the soft, session-only snooze (reappears next visit,
+  // up to 3 visits — see bannerDismissalCount). The X button is the
+  // permanent decline, writing to Supabase — see MarketingConsentBanner.jsx.
+  const handleBannerMaybeLater = () => setBannerDismissedThisSession(true)
+  const handleBannerDecline    = () => handleSaveMarketingConsent(false, 'banner_decline')
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
@@ -878,8 +993,18 @@ export default function App() {
   if (screen === 'recipe-public') {
     return <PublicRecipePage slug={publicRecipeSlug} onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
   }
-
-  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
+  if (screen === 'blog-index') {
+    return <BlogIndex onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
+  if (screen === 'blog-post') {
+    return <BlogPostPage slug={publicBlogSlug} onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
+  if (screen === 'about-page') {
+    return <AboutPage onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
+  if (screen === 'contact-page') {
+    return <ContactPage onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
 
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
@@ -1005,6 +1130,8 @@ export default function App() {
             user={user} onLogout={handleLogout}
             dietaryPreferences={dietaryPreferences}
             onSavePreferences={handleSaveDietaryPreferences}
+            marketingEmailConsent={marketingEmailConsent}
+            onSaveMarketingConsent={handleSaveMarketingConsent}
           />
         )
       case 'success':
@@ -1137,6 +1264,14 @@ export default function App() {
           activeScreen={screen} onNavigate={setScreen}
           savedCount={savedRecipes.length} plan={plan} swapUsage={swapUsage}
           isTWA={isTWA}
+        />
+      )}
+
+      {showMarketingBanner && (
+        <MarketingConsentBanner
+          onYes={handleBannerYes}
+          onMaybeLater={handleBannerMaybeLater}
+          onDecline={handleBannerDecline}
         />
       )}
 

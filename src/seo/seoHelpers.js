@@ -149,3 +149,93 @@ export const RECIPES_INDEX_META = {
   canonical: absUrl('/recipes'),
   image: absUrl('/og-image.png'),
 }
+
+export function blogItemListJsonLd(posts) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Old2New Blog',
+    itemListElement: posts.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: absUrl(`/blog/${p.slug}`),
+      name: p.title,
+    })),
+  }
+}
+
+export function blogPostJsonLd(post) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.metaDescription,
+    image: absUrl(post.heroImage),
+    author: { '@type': 'Organization', name: 'Old2New' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Old2New',
+      logo: { '@type': 'ImageObject', url: absUrl('/icon-512.png') },
+    },
+    datePublished: post.date,
+    dateModified: post.date,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': absUrl(`/blog/${post.slug}`) },
+  }
+}
+
+export function blogPostMeta(post) {
+  return {
+    title: `${post.title} | Old2New`,
+    description: post.metaDescription,
+    canonical: absUrl(`/blog/${post.slug}`),
+    image: absUrl(post.heroImage),
+  }
+}
+
+export const BLOG_INDEX_META = {
+  title: 'Blog | Old2New',
+  description: 'Recipe transformation tips, ingredient swaps, and healthy comfort food ideas from Old2New.',
+  canonical: absUrl('/blog'),
+  image: absUrl('/og-image.png'),
+}
+
+export const ABOUT_META = {
+  title: 'Our Story | Old2New',
+  description: 'Old2New began with a stage 4 liver failure diagnosis and nine years of transforming favorite recipes. This is why we believe food should never come with shame — and why comfort food is always the hero.',
+  canonical: absUrl('/about'),
+  image: absUrl('/og-image.png'),
+}
+
+export function aboutPageJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    name: 'Our Story',
+    description: ABOUT_META.description,
+    url: ABOUT_META.canonical,
+    mainEntity: { '@type': 'Organization', name: 'Old2New', url: SITE_URL },
+  }
+}
+
+export const CONTACT_META = {
+  title: 'Contact Old2New | Old2New',
+  description: 'Have a question, need help with your account, or want to share feedback? Contact Old2New at admin@old2new.app.',
+  canonical: absUrl('/contact'),
+  image: absUrl('/og-image.png'),
+}
+
+export function contactPageJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'Contact Old2New',
+    description: CONTACT_META.description,
+    url: CONTACT_META.canonical,
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Old2New',
+      url: SITE_URL,
+      contactPoint: { '@type': 'ContactPoint', email: 'admin@old2new.app', contactType: 'customer support' },
+    },
+  }
+}

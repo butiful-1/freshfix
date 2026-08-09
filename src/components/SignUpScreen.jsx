@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
+import { MARKETING_CONSENT_VERSION, MARKETING_CONSENT_LABEL } from '../marketingConsent'
 
 export default function SignUpScreen({ onLogin }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
+  const [marketingConsent, setMarketingConsent] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [done, setDone]         = useState(false)
@@ -38,6 +40,15 @@ export default function SignUpScreen({ onLogin }) {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        // Persisted on auth.users regardless of email-confirmation status,
+        // so it survives the gap until a session exists. Synced into
+        // profiles on first login — see loadProfile in App.jsx.
+        data: {
+          marketing_email_consent: marketingConsent,
+          marketing_email_consent_source: 'signup',
+          marketing_email_consent_version: MARKETING_CONSENT_VERSION,
+          marketing_email_consented_at: marketingConsent ? new Date().toISOString() : null,
+        },
       },
     })
     setLoading(false)
@@ -160,6 +171,18 @@ export default function SignUpScreen({ onLogin }) {
               showStrength
             />
           </div>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={e => setMarketingConsent(e.target.checked)}
+              style={{ width: 18, height: 18, marginTop: 1, accentColor: 'var(--green)', cursor: 'pointer', flexShrink: 0 }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              {MARKETING_CONSENT_LABEL}
+            </span>
+          </label>
 
           <button
             type="submit"

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MARKETING_CONSENT_LABEL } from '../marketingConsent'
 
 const PREF_OPTIONS = [
   { key: 'noPork',     label: 'No Pork',     icon: '🐷', desc: 'Excludes all pork & pork products' },
@@ -88,6 +89,35 @@ function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
   )
 }
 
+function MarketingConsentSection({ marketingEmailConsent, onSave }) {
+  return (
+    <div className="about-section">
+      <h3>Email Preferences</h3>
+      <label
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+          background: marketingEmailConsent ? 'var(--green-pale)' : 'var(--gray-50)',
+          border: `1px solid ${marketingEmailConsent ? 'var(--green-light)' : 'var(--gray-200)'}`,
+          borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={!!marketingEmailConsent}
+          onChange={e => onSave(e.target.checked)}
+          style={{ width: 18, height: 18, accentColor: 'var(--green)', cursor: 'pointer', flexShrink: 0 }}
+        />
+        <span style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5 }}>
+          {MARKETING_CONSENT_LABEL}
+        </span>
+      </label>
+      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
+        You can turn this off anytime.
+      </p>
+    </div>
+  )
+}
+
 const STEPS = [
   {
     n: '1',
@@ -114,7 +144,7 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences }) {
+export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
   return (
     <div className="animate-in">
       <div className="screen-header">
@@ -221,6 +251,14 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
           <DietaryPreferencesSection
             dietaryPreferences={dietaryPreferences || {}}
             onSave={onSavePreferences}
+          />
+        )}
+
+        {/* Marketing Email Consent */}
+        {user && onSaveMarketingConsent && (
+          <MarketingConsentSection
+            marketingEmailConsent={marketingEmailConsent}
+            onSave={onSaveMarketingConsent}
           />
         )}
 

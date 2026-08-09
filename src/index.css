@@ -1419,3 +1419,18 @@ textarea::placeholder { color: var(--text-muted); }
 @media (min-width: 700px) {
   .hp-footer-links { flex-direction: row; justify-content: space-between; align-items: center; }
 }
+
+/* ─────────────────────────────────────────────────── */
+/* BLOG: ARTICLE BODY (markdown-rendered content)     */
+/* ─────────────────────────────────────────────────── */
+.blog-content              { font-size: 17px; line-height: 1.75; color: var(--text-secondary, #3D5C3E); }
+.blog-content p             { margin: 0 0 22px; color: #374151; }
+.blog-content h2            { font-family: Georgia, "Times New Roman", serif; font-size: 26px; font-weight: 700; color: #111827; letter-spacing: -0.5px; line-height: 1.3; margin: 44px 0 18px; }
+.blog-content h3            { font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 700; color: #111827; letter-spacing: -0.3px; line-height: 1.35; margin: 32px 0 12px; }
+.blog-content ul, .blog-content ol { margin: 0 0 22px; padding-left: 22px; }
+.blog-content li            { margin-bottom: 10px; }
+.blog-content strong        { color: #111827; font-weight: 700; }
+.blog-content em            { font-style: italic; }
+.blog-content a             { color: var(--green-dark); text-decoration: underline; }
+.blog-content blockquote     { margin: 28px 0; padding: 4px 0 4px 20px; border-left: 3px solid var(--green); font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-style: italic; color: #16A34A; line-height: 1.5; }
+.blog-content blockquote p   { margin: 0; }

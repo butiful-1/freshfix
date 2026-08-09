@@ -29,6 +29,12 @@ export function PublicHeader({ onSignUp, onLogin }) {
           <a href="/recipes" style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, textDecoration: 'none' }}>
             Recipes
           </a>
+          <a href="/blog" style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, textDecoration: 'none' }}>
+            Blog
+          </a>
+          <a href="/about" style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, textDecoration: 'none' }}>
+            About
+          </a>
           <button onClick={onLogin} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, marginLeft: 4 }}>
             Sign In
           </button>
@@ -46,12 +52,15 @@ export function PublicFooter() {
     <footer style={{ background: '#F2EDE5', marginTop: 40 }}>
       <div style={{ maxWidth: 1320, margin: '0 auto', padding: '40px 40px 32px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 20 }}>
-          <a href="/" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>Home</a>
           <a href="/recipes" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>Recipes</a>
+          <a href="/blog" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>Blog</a>
+          <a href="/about" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>About</a>
+          <a href="/#how-it-works" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>How It Works</a>
+          <a href="/#faq" style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', textDecoration: 'none' }}>FAQ</a>
           <span style={{ color: '#D1C9BE', fontSize: 13 }}>·</span>
           <a href="/privacy.html" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }}>Privacy</a>
           <a href="/terms.html" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }}>Terms</a>
-          <a href="mailto:admin@old2new.app" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }}>Contact</a>
+          <a href="/contact" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }}>Contact</a>
         </div>
         <p style={{ fontSize: 11, color: '#666666', textAlign: 'center', lineHeight: 1.8, fontFamily: SF }}>
           Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.
