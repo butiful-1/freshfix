@@ -1,0 +1,293 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Old2New Agent API",
+    "version": "1.0.0",
+    "description": "Old2New transforms recipes to match dietary restrictions and health goals, using the same transformation and dietary-safety pipeline that powers the Old2New consumer app. Pay per call with x402 — no API key or account required.",
+    "contact": { "email": "admin@old2new.app" },
+    "x-guidance": "Call POST /api/agent/transform with no payment attached first — you will receive an HTTP 402 response whose body and PAYMENT-REQUIRED header describe exactly how to pay (USDC on Base via the 'exact' x402 v2 scheme). Attach a PAYMENT-SIGNATURE header per the x402 v2 HTTP transport spec and retry. Payment is verified before the model runs and only settled after a transformed recipe is actually produced — if the request fails for any reason (invalid input, an unrepairable dietary conflict, a model error), no payment is settled and you can retry. Always send `diets` and/or `healthGoal`, and set every applicable field in `restrictions` — `noNuts` is treated as a life-threatening allergy with zero tolerance, not a preference. The response's `disclaimer` field must be surfaced to any end user of the transformed recipe; nutrition values are estimates."
+  },
+  "servers": [
+    { "url": "https://old2new.app", "description": "Production" }
+  ],
+  "paths": {
+    "/api/agent/transform": {
+      "post": {
+        "operationId": "transformRecipe",
+        "summary": "Transform a recipe for dietary restrictions and health goals",
+        "description": "Transforms a recipe to match the given diet preferences, health goal, and/or hard dietary restrictions. Runs the same Claude-based transformation and deterministic consistency check used by the Old2New consumer app: if the model's first attempt violates a stated restriction, a repair pass runs automatically before the response is returned. If the repair cannot produce a compliant result, the request fails with 422 and no payment is settled.",
+        "tags": ["recipes"],
+        "security": [],
+        "x-payment-info": {
+          "protocols": [{ "x402": {} }],
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.10" }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransformRequest" },
+              "examples": {
+                "veganDairyFree": {
+                  "summary": "Vegan + dairy-free transformation with a health goal",
+                  "value": {
+                    "recipe": "Classic Beef Lasagna: 1 lb ground beef, 1 jar marinara sauce, 12 lasagna noodles, 16 oz ricotta cheese, 2 cups shredded mozzarella, 1 egg, 1/2 cup parmesan, salt and pepper to taste. Brown the beef, layer noodles with sauces and cheeses, bake at 375F for 45 minutes.",
+                    "diets": ["vegan"],
+                    "healthGoal": "Lower saturated fat",
+                    "restrictions": { "vegan": true, "dairyFree": true }
+                  }
+                },
+                "nutFreeKeto": {
+                  "summary": "Keto transformation with a strict nut allergy",
+                  "value": {
+                    "recipe": "Almond-Crusted Chicken: 4 chicken breasts, 1 cup almond flour, 2 eggs, 1/2 cup chopped walnuts, olive oil, salt and pepper.",
+                    "diets": ["keto"],
+                    "restrictions": { "noNuts": true }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recipe transformed successfully. Payment has been settled.",
+            "headers": {
+              "PAYMENT-RESPONSE": { "schema": { "type": "string" }, "description": "Base64-encoded x402 v2 SettlementResponse confirming the on-chain settlement." }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransformResponse" },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "ok": true,
+                      "schemaVersion": "1.0",
+                      "requestId": "5b1e3e0a-2f3a-4c9e-8e2a-8e6f1a2b3c4d",
+                      "model": "claude-sonnet-4-6",
+                      "restrictionsApplied": { "vegan": true, "dairyFree": true },
+                      "result": {
+                        "transformedRecipe": {
+                          "name": "Lentil Lasagna",
+                          "ingredients": [
+                            { "amount": "2 cups", "item": "cooked green lentils", "note": "swapped for ground beef" }
+                          ],
+                          "instructions": ["Brown the lentils with onion and garlic.", "Layer noodles with sauce and cashew ricotta.", "Bake at 375F for 45 minutes."]
+                        },
+                        "shoppingList": {
+                          "produce": ["onion", "garlic"],
+                          "protein": ["green lentils"],
+                          "dairy": [],
+                          "pantry": ["marinara sauce", "lasagna noodles"],
+                          "other": ["cashew ricotta"]
+                        }
+                      },
+                      "disclaimer": "Nutrition values are estimates, not measurements. This is not medical advice. Verify every ingredient against the end user's actual allergies and medical restrictions before preparing or consuming this recipe."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid request body.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "402": {
+            "description": "Payment required, or the attached payment failed verification/settlement. The PAYMENT-REQUIRED and WWW-Authenticate headers and the response body describe the price and accepted payment terms.",
+            "headers": {
+              "PAYMENT-REQUIRED": { "schema": { "type": "string" }, "description": "Base64-encoded x402 v2 PaymentRequired challenge." },
+              "WWW-Authenticate": { "schema": { "type": "string" }, "description": "RFC 7235 challenge, scheme `x402`, carrying the same price/network/asset/payTo terms as PAYMENT-REQUIRED." }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentRequiredResponse" } } }
+          },
+          "422": { "description": "The recipe could not be made to comply with a stated dietary restriction, even after an automatic repair attempt. No payment was settled.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "429": { "description": "Rate limited. Slow down and retry.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "502": { "description": "Upstream model output could not be parsed, or the payment facilitator was unreachable. Safe to retry.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "503": { "description": "The service is temporarily unavailable or not enabled in this environment.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/api/agent/transform-image": {
+      "post": {
+        "operationId": "transformRecipeWithImage",
+        "summary": "Transform a recipe and generate a food photo of the result",
+        "description": "Same transformation and dietary-safety pipeline as /api/agent/transform, plus one generated food photo of the transformed dish via Old2New's existing OpenAI image-generation pipeline. If the transform succeeds but image generation fails, the whole request fails and no payment is settled — you will not be charged for a partial result.",
+        "tags": ["recipes"],
+        "security": [],
+        "x-payment-info": {
+          "protocols": [{ "x402": {} }],
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.25" }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransformRequest" },
+              "examples": {
+                "lowCarbHighFiber": {
+                  "summary": "Low-carb transformation with a fiber health goal",
+                  "value": {
+                    "recipe": "Simple Grilled Chicken and Rice Bowl: 2 chicken breasts, 1 cup white rice, 1 tbsp olive oil, 1 tsp paprika, salt and pepper, 1 cup steamed broccoli. Season chicken with paprika, salt, and pepper. Grill 6-7 minutes per side. Cook rice. Serve chicken over rice with broccoli.",
+                    "diets": ["low-carb"],
+                    "healthGoal": "more fiber"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recipe transformed and image generated successfully. Payment has been settled.",
+            "headers": {
+              "PAYMENT-RESPONSE": { "schema": { "type": "string" }, "description": "Base64-encoded x402 v2 SettlementResponse confirming the on-chain settlement." }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TransformWithImageResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid request body.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "402": {
+            "description": "Payment required, or the attached payment failed verification/settlement. The PAYMENT-REQUIRED and WWW-Authenticate headers and the response body describe the price and accepted payment terms.",
+            "headers": {
+              "PAYMENT-REQUIRED": { "schema": { "type": "string" }, "description": "Base64-encoded x402 v2 PaymentRequired challenge." },
+              "WWW-Authenticate": { "schema": { "type": "string" }, "description": "RFC 7235 challenge, scheme `x402`, carrying the same price/network/asset/payTo terms as PAYMENT-REQUIRED." }
+            },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentRequiredResponse" } } }
+          },
+          "422": { "description": "The recipe could not be made to comply with a stated dietary restriction, even after an automatic repair attempt. No payment was settled.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "429": { "description": "Rate limited. Slow down and retry.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "502": { "description": "Upstream model output, image generation, or the payment facilitator failed. Safe to retry — nothing is settled on failure.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "503": { "description": "The service is temporarily unavailable or not enabled in this environment.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DietaryRestrictions": {
+        "type": "object",
+        "description": "Hard restrictions the transformed recipe must satisfy. Distinct from `diets`/`healthGoal`, which are preferences — every restriction set true here is enforced by a deterministic post-generation check and repaired automatically if violated.",
+        "properties": {
+          "dairyFree": { "type": "boolean" },
+          "glutenFree": { "type": "boolean" },
+          "noNuts": { "type": "boolean", "description": "Treated as a life-threatening allergy. Zero tolerance — set this whenever a nut allergy is possible, not just for a nut-free preference." },
+          "noPork": { "type": "boolean" },
+          "vegan": { "type": "boolean" },
+          "custom": { "type": "string", "maxLength": 200, "description": "Free-text restriction not covered by the boolean flags above, e.g. 'no shellfish'." }
+        },
+        "additionalProperties": false
+      },
+      "TransformRequest": {
+        "type": "object",
+        "required": ["recipe"],
+        "properties": {
+          "recipe": { "type": "string", "minLength": 10, "maxLength": 8000, "description": "The original recipe text to transform, in any reasonable format (prose, ingredient list + steps, etc.)." },
+          "diets": { "type": "array", "items": { "type": "string", "maxLength": 60 }, "maxItems": 10, "description": "Diet preferences to transform toward, e.g. 'vegan', 'keto', 'mediterranean'. Provide `diets` and/or `healthGoal` — at least one is required." },
+          "healthGoal": { "type": "string", "maxLength": 300, "description": "Free-text health goal or dietary preference, e.g. 'lower sodium for a heart condition'. Provide `diets` and/or `healthGoal` — at least one is required." },
+          "restrictions": { "$ref": "#/components/schemas/DietaryRestrictions" }
+        }
+      },
+      "TransformedRecipe": {
+        "type": "object",
+        "properties": {
+          "transformedRecipe": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "ingredients": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "amount": { "type": "string" },
+                    "item": { "type": "string" },
+                    "note": { "type": "string", "description": "Explains a substitution, e.g. 'swapped for ground beef'." }
+                  }
+                }
+              },
+              "instructions": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "shoppingList": {
+            "type": "object",
+            "properties": {
+              "produce": { "type": "array", "items": { "type": "string" } },
+              "protein": { "type": "array", "items": { "type": "string" } },
+              "dairy": { "type": "array", "items": { "type": "string" } },
+              "pantry": { "type": "array", "items": { "type": "string" } },
+              "other": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "TransformResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true },
+          "schemaVersion": { "type": "string" },
+          "requestId": { "type": "string", "format": "uuid" },
+          "model": { "type": "string" },
+          "restrictionsApplied": { "$ref": "#/components/schemas/DietaryRestrictions" },
+          "result": { "$ref": "#/components/schemas/TransformedRecipe" },
+          "disclaimer": { "type": "string", "description": "Must be surfaced to any end user of the transformed recipe." }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": false },
+          "error": { "type": "string", "description": "Machine-readable error code." },
+          "message": { "type": "string", "description": "Human-readable explanation." }
+        }
+      },
+      "PaymentRequirement": {
+        "type": "object",
+        "description": "x402 v2 PaymentRequirements object.",
+        "properties": {
+          "scheme": { "type": "string", "const": "exact" },
+          "network": { "type": "string", "description": "CAIP-2 network id, e.g. 'eip155:8453' (Base mainnet) or 'eip155:84532' (Base Sepolia)." },
+          "amount": { "type": "string", "description": "Required payment amount in atomic USDC units (6 decimals)." },
+          "asset": { "type": "string", "description": "USDC contract address on the given network." },
+          "payTo": { "type": "string", "description": "Recipient wallet address." },
+          "maxTimeoutSeconds": { "type": "number" },
+          "extra": { "type": "object" }
+        }
+      },
+      "ImageResult": {
+        "type": "object",
+        "properties": {
+          "imageUrl": { "type": "string", "format": "uri", "description": "Public URL of the generated food photo." },
+          "imageModel": { "type": "string", "const": "gpt-image-1" }
+        }
+      },
+      "TransformWithImageResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "const": true },
+          "schemaVersion": { "type": "string" },
+          "requestId": { "type": "string", "format": "uuid" },
+          "model": { "type": "string" },
+          "restrictionsApplied": { "$ref": "#/components/schemas/DietaryRestrictions" },
+          "result": { "$ref": "#/components/schemas/TransformedRecipe" },
+          "image": { "$ref": "#/components/schemas/ImageResult" },
+          "disclaimer": { "type": "string", "description": "Must be surfaced to any end user of the transformed recipe. Also notes the image is an AI-generated illustration, not a photo of the actual prepared dish." }
+        }
+      },
+      "PaymentRequiredResponse": {
+        "type": "object",
+        "description": "x402 v2 PaymentRequired envelope.",
+        "properties": {
+          "x402Version": { "type": "number", "const": 2 },
+          "error": { "type": "string" },
+          "resource": {
+            "type": "object",
+            "properties": { "url": { "type": "string" }, "description": { "type": "string" }, "mimeType": { "type": "string" } }
+          },
+          "accepts": { "type": "array", "items": { "$ref": "#/components/schemas/PaymentRequirement" } },
+          "extensions": { "type": "object" }
+        }
+      }
+    }
+  }
+}
