@@ -17,7 +17,6 @@ function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
     ...dietaryPreferences,
   })
   const [saved, setSaved] = useState(false)
-  }
 
   const toggle = (key) => {
     setPrefs(prev => ({ ...prev, [key]: !prev[key] }))
@@ -174,6 +173,8 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
     } finally {
       setDeleting(false)
     }
+  }
+
   return (
     <div className="animate-in">
       <div className="screen-header">
