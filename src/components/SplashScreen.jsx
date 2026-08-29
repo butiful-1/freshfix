@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { supabase } from '../supabase'
+import { startGoogleSignIn } from '../authRedirect'
 import { PUBLIC_RECIPES } from '../data/publicRecipes'
 import RecipeQuickViewModal from './RecipeQuickViewModal'
 import Old2NewCTA from './Old2NewCTA'
@@ -323,14 +323,7 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
   function handleGoogleSignIn() {
     setGoogleLoading(true)
-    supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.hostname === 'localhost'
-          ? `${window.location.origin}/auth/callback`
-          : 'https://old2new.app/auth/callback',
-      },
-    }).catch(err => {
+    startGoogleSignIn().catch(err => {
       console.error('[Old2New] Google OAuth error:', err)
       setGoogleLoading(false)
     })

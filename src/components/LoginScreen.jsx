@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
-import { authCallbackUrl } from '../authRedirect'
+import { authCallbackUrl, startGoogleSignIn } from '../authRedirect'
 
 export default function LoginScreen({ onSignUp, onHome }) {
   const [email, setEmail]       = useState('')
@@ -48,12 +48,7 @@ export default function LoginScreen({ onSignUp, onHome }) {
 
   function handleGoogleSignIn() {
     setGoogleLoading(true)
-    supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: authCallbackUrl()
-      }
-    }).catch(err => {
+    startGoogleSignIn().catch(err => {
       console.error('[Old2New] Google OAuth error:', err)
       setGoogleLoading(false)
     })

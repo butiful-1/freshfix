@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 import { App as CapacitorApp } from '@capacitor/app'
-import { isNativeApp, NATIVE_AUTH_SCHEME } from './authRedirect'
+import { isNativeApp, NATIVE_AUTH_SCHEME, closeNativeBrowser } from './authRedirect'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -437,6 +437,7 @@ export default function App() {
       if (!url || !url.startsWith(prefix)) return
       const rest = url.slice(prefix.length) // "?code=...&type=..." and/or "#..."
       console.log('[Old2New] Native auth deep link received')
+      closeNativeBrowser()
       window.location.assign(`/auth/callback${rest}`)
     }
     const sub = CapacitorApp.addListener('appUrlOpen', ({ url }) => handleUrl(url))
