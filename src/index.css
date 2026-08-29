@@ -1449,3 +1449,8 @@ textarea::placeholder { color: var(--text-muted); }
   padding-top: calc(16px + env(safe-area-inset-top, 0px));
   height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
 }
+
+/* Native iOS: the 430px phone-frame is for desktop browsers; on a real
+   phone the shell and bottom nav should fill the screen edge to edge. */
+.native .app { max-width: none; box-shadow: none; }
+.native .bottom-nav { max-width: none; }

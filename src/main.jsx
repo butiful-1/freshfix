@@ -1,8 +1,12 @@
 import { StrictMode } from 'react'
+import { isNativeApp } from './authRedirect'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+
+// Native app: let the phone shell fill the screen (see .native .app in index.css)
+if (isNativeApp()) document.documentElement.classList.add('native')
 
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID
 if (import.meta.env.PROD && GA_ID) {
