@@ -80,8 +80,6 @@ body {
   position: relative;
   box-shadow: 0 0 60px rgba(0,0,0,0.18);
   overflow: hidden;
-  /* iOS: keep sticky screen headers below the status bar / Dynamic Island */
-  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .screen {
@@ -1436,3 +1434,14 @@ textarea::placeholder { color: var(--text-muted); }
 .blog-content a             { color: var(--green-dark); text-decoration: underline; }
 .blog-content blockquote     { margin: 28px 0; padding: 4px 0 4px 20px; border-left: 3px solid var(--green); font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-style: italic; color: #16A34A; line-height: 1.5; }
 .blog-content blockquote p   { margin: 0; }
+
+/* iOS: sticky headers stick to the viewport top, so they must carry the
+   status-bar / Dynamic Island inset themselves (0 on web/Android). */
+.screen-header {
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+}
+.home-header {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+}
