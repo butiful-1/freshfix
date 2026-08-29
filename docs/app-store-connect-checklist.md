@@ -60,12 +60,19 @@ phone or Mac (👤). Version 1.0 (build 1), bundle ID `app.old2new.ios`, team
 **What's New**
 > First release.
 
-**Screenshots** — required: 6.9" iPhone (1320×2868). ASC scales these for smaller
-iPhones. Prepared: `docs/app-store/iphone-6.9-01-home.png` (home).
-Still needed (👤 — requires tapping through a signed-in session on the
-iPhone 17 Pro Max simulator or a real device, then `xcrun simctl io booted
-screenshot`): transform input, transformed recipe result, saved recipes,
-"What sounds good?". Three to five screenshots total is ideal.
+**Screenshots** — required: 6.9" iPhone (1320×2868); ASC scales these for
+smaller iPhones. Captured in `docs/app-store/` (all 1320×2868):
+
+| Order | File | Notes |
+|---|---|---|
+| 1 | `iphone-6.9-01-home.png` | Signed-out home / hero |
+| 2 | `iphone-6.9-02-transform.png` | Transform input with recipe + GLP-1 selected |
+| 3 | `iphone-6.9-03-result.png` | Transformed result: photo, before/after calories |
+| 4 | `iphone-6.9-05-suggest-ideas.png` | "What sounds good?" dinner ideas |
+| 5 | `iphone-6.9-06-suggest-filters.png` | Suggestion filters (optional) |
+| 6 | `iphone-6.9-04-saved.png` | Saved recipes — weakest; retake with 3–4 saved recipes that have photos before using |
+
+Upload order suggestion: 3, 2, 4, 1, 5 (lead with the result).
 
 ## 4. App Privacy
 
