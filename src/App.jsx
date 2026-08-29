@@ -1016,9 +1016,9 @@ export default function App() {
       case 'splash':
         return <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
       case 'signup':
-        return <SignUpScreen onLogin={() => setScreen('login')} />
+        return <SignUpScreen onLogin={() => setScreen('login')} onHome={() => setScreen('splash')} />
       case 'login':
-        return <LoginScreen onSignUp={() => setScreen('signup')} />
+        return <LoginScreen onSignUp={() => setScreen('signup')} onHome={() => setScreen('splash')} />
       case 'onboarding':
         return <OnboardingScreen onComplete={handleOnboardingComplete} />
       case 'home':

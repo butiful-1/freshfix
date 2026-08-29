@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
 import { MARKETING_CONSENT_VERSION, MARKETING_CONSENT_LABEL } from '../marketingConsent'
 
-export default function SignUpScreen({ onLogin }) {
+export default function SignUpScreen({ onLogin, onHome }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
@@ -102,14 +102,19 @@ export default function SignUpScreen({ onLogin }) {
     }}>
       {/* Logo */}
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div style={{
+        <button
+          type="button"
+          onClick={onHome}
+          aria-label="Old2New — back to Home"
+          style={{
           width: 72, height: 72, borderRadius: 20, background: 'var(--green)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 38, margin: '0 auto 14px',
           boxShadow: '0 12px 36px rgba(34,197,94,0.35)',
+          border: 'none', cursor: 'pointer', padding: 0,
         }}>
           🌿
-        </div>
+        </button>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: -0.8 }}>
           Create your account
         </h1>

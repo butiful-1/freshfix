@@ -342,6 +342,7 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
       {/* ── NAVIGATION ──────────────────────────────────────────────────── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
         background: navScrolled ? 'rgba(255,255,255,0.96)' : 'white',
         backdropFilter: navScrolled ? 'blur(12px)' : 'none',
         WebkitBackdropFilter: navScrolled ? 'blur(12px)' : 'none',
