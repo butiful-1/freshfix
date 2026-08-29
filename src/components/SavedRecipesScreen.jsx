@@ -163,7 +163,16 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, plan, is
               tabIndex={0}
             >
               <div className="saved-card-thumb" style={{ background: bg }}>
-                <span style={{ fontSize: 38 }}>{emoji}</span>
+                {recipe.imageUrl ? (
+                  <img
+                    src={recipe.imageUrl}
+                    alt=""
+                    loading="lazy"
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 38 }}>{emoji}</span>
+                )}
                 <div style={{ position: 'absolute', top: 6, right: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <button
                     className="saved-delete"
