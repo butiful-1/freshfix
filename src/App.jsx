@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { MARKETING_CONSENT_VERSION } from './marketingConsent'
+import { App as CapacitorApp } from '@capacitor/app'
+import { isNativeApp, NATIVE_AUTH_SCHEME } from './authRedirect'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -421,6 +423,26 @@ export default function App() {
       window.removeEventListener('storage', handleCrossTabAuth)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Native deep links (iOS) ──────────────────
+  // Supabase redirects email-confirmation / reset / OAuth links to
+  // old2new://auth/callback?... which iOS hands to the app. Re-enter the
+  // web app at /auth/callback so the URL-routing effect below handles it
+  // exactly as on the web (same capacitor://localhost origin, so the PKCE
+  // code verifier in localStorage is still available).
+  useEffect(() => {
+    if (!isNativeApp()) return
+    const prefix = `${NATIVE_AUTH_SCHEME}://auth/callback`
+    const handleUrl = (url) => {
+      if (!url || !url.startsWith(prefix)) return
+      const rest = url.slice(prefix.length) // "?code=...&type=..." and/or "#..."
+      console.log('[Old2New] Native auth deep link received')
+      window.location.assign(`/auth/callback${rest}`)
+    }
+    const sub = CapacitorApp.addListener('appUrlOpen', ({ url }) => handleUrl(url))
+    CapacitorApp.getLaunchUrl().then(r => handleUrl(r?.url)).catch(() => {})
+    return () => { sub.then(h => h.remove()).catch(() => {}) }
+  }, [])
 
   // ── URL routing ──────────────────────────────
   useEffect(() => {

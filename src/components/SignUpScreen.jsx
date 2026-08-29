@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
+import { authCallbackUrl } from '../authRedirect'
 import { MARKETING_CONSENT_VERSION, MARKETING_CONSENT_LABEL } from '../marketingConsent'
 
 export default function SignUpScreen({ onLogin, onHome }) {
@@ -19,9 +20,7 @@ export default function SignUpScreen({ onLogin, onHome }) {
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
-          ? `${window.location.origin}/auth/callback`
-          : 'https://old2new.app/auth/callback'
+        redirectTo: authCallbackUrl()
       }
     }).catch(err => {
       console.error('[Old2New] Google OAuth error:', err)
@@ -39,9 +38,7 @@ export default function SignUpScreen({ onLogin, onHome }) {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
-          ? `${window.location.origin}/auth/callback`
-          : 'https://old2new.app/auth/callback',
+        emailRedirectTo: authCallbackUrl(),
         // Persisted on auth.users regardless of email-confirmation status,
         // so it survives the gap until a session exists. Synced into
         // profiles on first login — see loadProfile in App.jsx.

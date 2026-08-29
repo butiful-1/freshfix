@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
+import { authCallbackUrl } from '../authRedirect'
 
 export default function LoginScreen({ onSignUp, onHome }) {
   const [email, setEmail]       = useState('')
@@ -36,9 +37,7 @@ export default function LoginScreen({ onSignUp, onHome }) {
     if (!email.trim()) { setError('Enter your email address first.'); return }
 
     setLoading(true); setError('')
-    const resetRedirect = window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
-      ? `${window.location.origin}/auth/callback?type=recovery`
-      : 'https://old2new.app/auth/callback?type=recovery'
+    const resetRedirect = authCallbackUrl('?type=recovery')
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: resetRedirect,
     })
@@ -52,9 +51,7 @@ export default function LoginScreen({ onSignUp, onHome }) {
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
-          ? `${window.location.origin}/auth/callback`
-          : 'https://old2new.app/auth/callback'
+        redirectTo: authCallbackUrl()
       }
     }).catch(err => {
       console.error('[Old2New] Google OAuth error:', err)
