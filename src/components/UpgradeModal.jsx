@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiBase'
 
 export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA }) {
   const [loading, setLoading] = useState(null)
@@ -8,7 +9,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA })
     setLoading(plan)
     setError('')
     try {
-      const res = await fetch('/api/create-checkout', {
+      const res = await fetch(apiUrl('/api/create-checkout'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),

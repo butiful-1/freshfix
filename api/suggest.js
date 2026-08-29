@@ -4,6 +4,7 @@ import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse } fro
 export const config = { maxDuration: 30 }
 
 const ALLOWED_ORIGINS = [
+  'capacitor://localhost', // iOS app (Capacitor WebView origin)
   'https://old2new.app',
   'https://www.old2new.app',
   'https://old2new-app.vercel.app',

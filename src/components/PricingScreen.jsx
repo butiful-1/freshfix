@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiBase'
 
 const FREE_LIMIT = 5
 
@@ -124,7 +125,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
     setLoading(planKey)
     setError('')
     try {
-      const res = await fetch('/api/create-checkout', {
+      const res = await fetch(apiUrl('/api/create-checkout'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: planKey, ...(user?.id ? { userId: user.id } : {}) }),

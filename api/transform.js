@@ -4,6 +4,7 @@ import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runR
 export const config = { maxDuration: 55 }
 
 const ALLOWED_ORIGINS = [
+  'capacitor://localhost', // iOS app (Capacitor WebView origin)
   'https://freshfix.app',
   'https://www.freshfix.app',
   'https://freshfix-app.vercel.app',

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { apiUrl } from './apiBase'
 import { supabase } from './supabase'
 import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 import { App as CapacitorApp } from '@capacitor/app'
@@ -113,7 +114,10 @@ export default function App() {
 
   // ── TWA (Android app) detection ───────────────
   // Persisted to sessionStorage so in-app navigation doesn't lose it.
+  // The native iOS app is treated the same way: App Store rule 3.1.1 forbids
+  // Stripe purchase flows in-app, so pricing/upgrade UI is hidden there too.
   const [isTWA] = useState(() => {
+    if (isNativeApp()) return true
     if (new URLSearchParams(window.location.search).get('src') === 'twa') {
       sessionStorage.setItem('twa', '1')
       return true
@@ -753,7 +757,7 @@ export default function App() {
     }, 50000)
 
     try {
-      const res = await fetch('/api/transform', {
+      const res = await fetch(apiUrl('/api/transform'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipe: recipeInput, diets: selectedDiets, dietaryPreferences, healthGoal }),
@@ -772,7 +776,7 @@ export default function App() {
 
       // Fire image generation asynchronously — recipe is visible, image loads in background
       if (result.imagePrompt) {
-        fetch('/api/generate-image', {
+        fetch(apiUrl('/api/generate-image'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imagePrompt: result.imagePrompt }),
@@ -840,7 +844,7 @@ export default function App() {
       }
 
       if (ingredientsChanged) {
-        const syncRes = await fetch('/api/sync-recipe', {
+        const syncRes = await fetch(apiUrl('/api/sync-recipe'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ recipe: recipeToStore, dietaryPreferences }),

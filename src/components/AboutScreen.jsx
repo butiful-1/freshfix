@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { MARKETING_CONSENT_LABEL } from '../marketingConsent'
+import { supabase } from '../supabase'
+import { apiUrl } from '../apiBase'
 
 const PREF_OPTIONS = [
   { key: 'noPork',     label: 'No Pork',     icon: '🐷', desc: 'Excludes all pork & pork products' },
@@ -15,6 +17,33 @@ function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
     ...dietaryPreferences,
   })
   const [saved, setSaved] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // App Store rule 5.1.1(v): account deletion must be possible in-app.
+  async function handleDeleteAccount() {
+    const ok = window.confirm('Delete your Old2New account? This permanently removes your account, saved recipes and preferences. This cannot be undone.')
+    if (!ok) return
+    setDeleting(true)
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data?.session?.access_token
+      if (!token) throw new Error('Please sign in again and retry.')
+      const res = await fetch(apiUrl('/api/delete-account'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
+      window.alert('Your account has been deleted.')
+      onLogout()
+    } catch (e) {
+      window.alert(`Could not delete account: ${e.message}. You can also email admin@old2new.app.`)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const toggle = (key) => {
     setPrefs(prev => ({ ...prev, [key]: !prev[key] }))
@@ -279,10 +308,11 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
               </button>
             </div>
             <button
-              onClick={() => window.open('https://old2new.app/delete-account.html', '_blank')}
+              onClick={handleDeleteAccount}
+              disabled={deleting}
               style={{ marginTop: 10, background: 'none', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: 0.7 }}
             >
-              Delete Account
+              {deleting ? 'Deleting…' : 'Delete Account'}
             </button>
           </div>
         )}

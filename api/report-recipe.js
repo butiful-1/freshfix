@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 
 const ALLOWED_ORIGINS = [
+  'capacitor://localhost', // iOS app (Capacitor WebView origin)
   'https://old2new.app',
   'https://www.old2new.app',
   'http://localhost:5174',

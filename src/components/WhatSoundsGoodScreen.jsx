@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiBase'
 
 const MEAL_TYPES = [
   { id: 'Breakfast', emoji: '🌅' },
@@ -106,7 +107,7 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
     setIdeas([])
     setStep(3)
     try {
-      const res = await fetch('/api/suggest', {
+      const res = await fetch(apiUrl('/api/suggest'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mealType, filters: activeFilters, dietaryPreferences, healthGoal }),

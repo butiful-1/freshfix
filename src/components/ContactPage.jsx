@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiBase'
 import useDocumentHead from '../seo/useDocumentHead.js'
 import { CONTACT_META, contactPageJsonLd } from '../seo/seoHelpers.js'
 import { PublicHeader, PublicFooter } from './shared/PublicPageChrome.jsx'
@@ -35,7 +36,7 @@ export default function ContactPage({ onSignUp, onLogin }) {
     setSubmitting(true)
     setResult(null)
     try {
-      const res = await fetch('/api/contact', {
+      const res = await fetch(apiUrl('/api/contact'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),

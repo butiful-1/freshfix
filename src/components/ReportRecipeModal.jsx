@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiUrl } from '../apiBase'
 import { supabase } from '../supabase'
 
 export default function ReportRecipeModal({ recipeName, recipeId, onClose }) {
@@ -17,7 +18,7 @@ export default function ReportRecipeModal({ recipeName, recipeId, onClose }) {
         userId = data?.session?.user?.id || ''
       } catch {}
 
-      const res = await fetch('/api/report-recipe', {
+      const res = await fetch(apiUrl('/api/report-recipe'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipeName, recipeId, userId, comments }),

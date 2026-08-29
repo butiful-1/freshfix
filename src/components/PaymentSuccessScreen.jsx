@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { apiUrl } from '../apiBase'
 
 const PLAN_LABELS = {
   wellness: { name: 'Plus',    emoji: '💚', tagline: '50 Recipe Upgrades per month unlocked!' },
@@ -14,7 +15,7 @@ export default function PaymentSuccessScreen({ sessionId, onPlanUpdate, onContin
       setStatus('error')
       return
     }
-    fetch(`/api/verify-session?sessionId=${sessionId}`)
+    fetch(apiUrl(`/api/verify-session?sessionId=${sessionId}`))
       .then((r) => r.json())
       .then((data) => {
         if (data.plan && data.status === 'paid') {
