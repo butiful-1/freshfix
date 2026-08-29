@@ -48,6 +48,14 @@ export default function SignUpScreen({ onLogin, onHome }) {
     setLoading(false)
 
     if (err) { setError(err.message); return }
+    // With email confirmation on, Supabase answers a signup for an existing
+    // address with a placeholder user (identities: []) and sends NO email,
+    // to prevent account enumeration. Showing "check your email" there
+    // strands the user — tell them to sign in / reset instead.
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setError('An account with this email already exists. Please sign in, or use "Forgot password" if you need to reset it.')
+      return
+    }
     if (!data.session) {
       setDone(true)
     }
