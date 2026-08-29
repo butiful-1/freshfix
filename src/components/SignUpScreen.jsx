@@ -19,7 +19,7 @@ export default function SignUpScreen({ onLogin, onHome }) {
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.hostname === 'localhost'
+        redirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
           ? `${window.location.origin}/auth/callback`
           : 'https://old2new.app/auth/callback'
       }
@@ -39,7 +39,9 @@ export default function SignUpScreen({ onLogin, onHome }) {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
+          ? `${window.location.origin}/auth/callback`
+          : 'https://old2new.app/auth/callback',
         // Persisted on auth.users regardless of email-confirmation status,
         // so it survives the gap until a session exists. Synced into
         // profiles on first login — see loadProfile in App.jsx.

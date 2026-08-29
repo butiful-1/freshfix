@@ -36,7 +36,7 @@ export default function LoginScreen({ onSignUp, onHome }) {
     if (!email.trim()) { setError('Enter your email address first.'); return }
 
     setLoading(true); setError('')
-    const resetRedirect = window.location.hostname === 'localhost'
+    const resetRedirect = window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
       ? `${window.location.origin}/auth/callback?type=recovery`
       : 'https://old2new.app/auth/callback?type=recovery'
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -52,7 +52,7 @@ export default function LoginScreen({ onSignUp, onHome }) {
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.hostname === 'localhost'
+        redirectTo: window.location.protocol !== 'capacitor:' && window.location.hostname === 'localhost'
           ? `${window.location.origin}/auth/callback`
           : 'https://old2new.app/auth/callback'
       }
