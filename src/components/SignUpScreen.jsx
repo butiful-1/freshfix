@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
-import { authCallbackUrl, startGoogleSignIn } from '../authRedirect'
+import { authCallbackUrl, startGoogleSignIn, isNativeApp } from '../authRedirect'
 import { MARKETING_CONSENT_VERSION, MARKETING_CONSENT_LABEL } from '../marketingConsent'
 
 export default function SignUpScreen({ onLogin, onHome }) {
@@ -126,6 +126,8 @@ export default function SignUpScreen({ onLogin, onHome }) {
           </div>
         )}
 
+        {/* Google is web-only for iOS v1 (App Store rule 4.8 would otherwise require Sign in with Apple). */}
+        {!isNativeApp() && (<>
         <button
           type="button"
           onClick={handleGoogleSignIn}
@@ -140,6 +142,7 @@ export default function SignUpScreen({ onLogin, onHome }) {
           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>or</span>
           <div style={{ flex: 1, height: 1, background: 'var(--gray-300)' }} />
         </div>
+        </>)}
 
         <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>

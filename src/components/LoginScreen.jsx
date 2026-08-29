@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import PasswordInput from './auth/PasswordInput'
-import { authCallbackUrl, startGoogleSignIn } from '../authRedirect'
+import { authCallbackUrl, startGoogleSignIn, isNativeApp } from '../authRedirect'
 
 export default function LoginScreen({ onSignUp, onHome }) {
   const [email, setEmail]       = useState('')
@@ -120,7 +120,8 @@ export default function LoginScreen({ onSignUp, onHome }) {
           </div>
         )}
 
-        {!forgotMode && (
+        {/* Google is web-only for iOS v1 (App Store rule 4.8 would otherwise require Sign in with Apple). */}
+        {!forgotMode && !isNativeApp() && (
           <>
             <button
               type="button"
