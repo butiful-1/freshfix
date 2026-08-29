@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import ReportRecipeModal from './ReportRecipeModal.jsx'
 import { MACRO_COLORS, MacroBar } from './shared/MacroBar.jsx'
 
-export default function ResultsScreen({ result, onSave, onShoppingList, onStartOver, savedRecipes }) {
+export default function ResultsScreen({ result, onSave, onShoppingList, onStartOver, savedRecipes, onShare }) {
   const [saved, setSaved] = useState(() => savedRecipes?.some(r => r.id === result?.id))
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -59,6 +59,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const handleShare = async () => {
     if (shareUrl) {
       try {
+        await onShare?.(result.id)
         if (navigator.share) {
           await navigator.share({ title: transformedRecipe?.name || 'Old2New Recipe', url: shareUrl })
         } else {

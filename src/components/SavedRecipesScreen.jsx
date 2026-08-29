@@ -14,7 +14,7 @@ const BG_GRADIENTS = [
   'linear-gradient(135deg, #F1F8E9, #DCEDC8)',
 ]
 
-export default function SavedRecipesScreen({ recipes, onView, onDelete, plan, isTWA }) {
+export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare, plan, isTWA }) {
   const [copiedId,    setCopiedId]    = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadErr, setDownloadErr] = useState('')
@@ -55,6 +55,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, plan, is
     e.stopPropagation()
     const url = `https://old2new.app/recipe/${recipe.id}`
     try {
+      await onShare?.(recipe.id)
       if (navigator.share) {
         await navigator.share({ title: recipe.transformedRecipe?.name || 'Old2New Recipe', url })
       } else {

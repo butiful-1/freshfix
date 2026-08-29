@@ -905,14 +905,23 @@ export default function App() {
     setScreen('home')
   }
 
+  // The plan itself is only written server-side (Stripe webhook and
+  // /api/verify-session with the service role); the database rejects client
+  // plan changes. Here we just reflect the verified plan locally and reload.
   const handlePlanUpdate = async (newPlan) => {
     setPlan(newPlan)
     const resetUsage = { month: new Date().toISOString().slice(0, 7), count: 0 }
     setSwapUsage(resetUsage)
-    if (user) {
-      await supabase.from('profiles').update({ plan: newPlan, swaps_used: 0 }).eq('id', user.id)
-      setProfile(prev => prev ? { ...prev, plan: newPlan, swaps_used: 0 } : prev)
-    }
+    setProfile(prev => prev ? { ...prev, plan: newPlan, swaps_used: 0 } : prev)
+    if (user) loadProfile(user.id, user)
+  }
+
+  // Sharing a recipe makes it readable at its public /recipe/<id> link.
+  const handleMarkShared = async (id) => {
+    if (!user || typeof id !== 'string') return
+    setSavedRecipes(prev => prev.map(r => r.id === id ? { ...r, is_shared: true } : r))
+    const { error } = await supabase.from('saved_recipes').update({ is_shared: true }).eq('id', id)
+    if (error) console.error('[Old2New] Could not mark recipe shared:', error.message)
   }
 
   const handleSaveDietaryPreferences = async (prefs) => {
@@ -1074,12 +1083,13 @@ export default function App() {
             onShoppingList={() => setScreen('shopping')}
             onStartOver={handleStartOver} savedRecipes={savedRecipes}
             dietaryPreferences={dietaryPreferences}
+            onShare={handleMarkShared}
           />
         )
       case 'shopping':
         return <ShoppingListScreen result={transformResult} onBack={() => setScreen('results')} />
       case 'saved':
-        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} plan={plan} isTWA={isTWA} />
+        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} onShare={handleMarkShared} plan={plan} isTWA={isTWA} />
       case 'pricing':
         if (isTWA) { setTimeout(() => setScreen('home'), 0); return null }
         return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user} />
