@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import { assetUrl } from '../apiBase'
 import useDocumentHead from '../seo/useDocumentHead.js'
 import { blogPostJsonLd, blogPostMeta, breadcrumbJsonLd } from '../seo/seoHelpers.js'
 import { getBlogPostBySlug } from '../blog/loadPosts.js'
@@ -90,7 +91,7 @@ export default function BlogPostPage({ slug, onSignUp, onLogin }) {
         {post.heroImage && (
           <div style={{ margin: '20px 0', padding: '0 20px' }}>
             <img
-              src={post.heroImage}
+              src={assetUrl(post.heroImage)}
               alt={post.heroImageAlt || post.title}
               style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 12, display: 'block' }}
             />

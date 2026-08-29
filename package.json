@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"vite --port 5174\" \"node server/index.js\"",
     "build": "vite build && node scripts/prerender.mjs",
+    "ios:sync": "npm run build && node scripts/sync-ios.mjs && cap sync ios",
     "preview": "vite preview",
     "server": "node server/index.js",
     "test": "vitest"
