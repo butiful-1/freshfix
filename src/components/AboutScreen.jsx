@@ -17,32 +17,6 @@ function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
     ...dietaryPreferences,
   })
   const [saved, setSaved] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-
-  // App Store rule 5.1.1(v): account deletion must be possible in-app.
-  async function handleDeleteAccount() {
-    const ok = window.confirm('Delete your Old2New account? This permanently removes your account, saved recipes and preferences. This cannot be undone.')
-    if (!ok) return
-    setDeleting(true)
-    try {
-      const { data } = await supabase.auth.getSession()
-      const token = data?.session?.access_token
-      if (!token) throw new Error('Please sign in again and retry.')
-      const res = await fetch(apiUrl('/api/delete-account'), {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Request failed (${res.status})`)
-      }
-      window.alert('Your account has been deleted.')
-      onLogout()
-    } catch (e) {
-      window.alert(`Could not delete account: ${e.message}. You can also email admin@old2new.app.`)
-    } finally {
-      setDeleting(false)
-    }
   }
 
   const toggle = (key) => {
@@ -174,6 +148,32 @@ const DIETS = [
 ]
 
 export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
+  const [deleting, setDeleting] = useState(false)
+
+  // App Store rule 5.1.1(v): account deletion must be possible in-app.
+  async function handleDeleteAccount() {
+    const ok = window.confirm('Delete your Old2New account? This permanently removes your account, saved recipes and preferences. This cannot be undone.')
+    if (!ok) return
+    setDeleting(true)
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data?.session?.access_token
+      if (!token) throw new Error('Please sign in again and retry.')
+      const res = await fetch(apiUrl('/api/delete-account'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
+      window.alert('Your account has been deleted.')
+      onLogout()
+    } catch (e) {
+      window.alert(`Could not delete account: ${e.message}. You can also email admin@old2new.app.`)
+    } finally {
+      setDeleting(false)
+    }
   return (
     <div className="animate-in">
       <div className="screen-header">
