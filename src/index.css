@@ -1439,18 +1439,14 @@ textarea::placeholder { color: var(--text-muted); }
 .blog-content blockquote     { margin: 28px 0; padding: 4px 0 4px 20px; border-left: 3px solid var(--green); font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-style: italic; color: #16A34A; line-height: 1.5; }
 .blog-content blockquote p   { margin: 0; }
 
-/* iOS: sticky headers stick to the viewport top, so they must carry the
-   status-bar / Dynamic Island inset themselves (0 on web/Android). */
-.screen-header {
-  padding-top: env(safe-area-inset-top, 0px);
-  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
-}
-.home-header {
-  padding-top: calc(16px + env(safe-area-inset-top, 0px));
-  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
-}
-
 /* Native iOS: the 430px phone-frame is for desktop browsers; on a real
-   phone the shell and bottom nav should fill the screen edge to edge. */
-.native .app { max-width: none; box-shadow: none; }
+   phone the shell fills the screen edge to edge, carries the status-bar /
+   Dynamic Island inset, and is the scroll container — so every screen
+   starts below the status bar and sticky headers stick beneath it too. */
+.native .app {
+  max-width: none;
+  box-shadow: none;
+  height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+}
 .native .bottom-nav { max-width: none; }
