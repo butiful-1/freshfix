@@ -439,6 +439,12 @@ export default function App() {
     const prefix = `${NATIVE_AUTH_SCHEME}://auth/callback`
     const handleUrl = (url) => {
       if (!url || !url.startsWith(prefix)) return
+      // getLaunchUrl() keeps returning the same URL after we reload the
+      // WebView below, which would loop forever — handle each link once.
+      try {
+        if (sessionStorage.getItem('old2new_handled_deeplink') === url) return
+        sessionStorage.setItem('old2new_handled_deeplink', url)
+      } catch {}
       const rest = url.slice(prefix.length) // "?code=...&type=..." and/or "#..."
       console.log('[Old2New] Native auth deep link received')
       closeNativeBrowser()
