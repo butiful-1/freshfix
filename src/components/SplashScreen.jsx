@@ -362,21 +362,29 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
           {/* Desktop nav */}
           <div className="hp-desktop-nav" style={{ alignItems: 'center', gap: 4 }}>
-            <a href="/recipes"
-              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
-              onMouseEnter={e => e.currentTarget.style.color = T}
-              onMouseLeave={e => e.currentTarget.style.color = TM}
-            >Recipes</a>
-            <a href="/blog"
-              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
-              onMouseEnter={e => e.currentTarget.style.color = T}
-              onMouseLeave={e => e.currentTarget.style.color = TM}
-            >Blog</a>
-            <a href="/about"
-              style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
-              onMouseEnter={e => e.currentTarget.style.color = T}
-              onMouseLeave={e => e.currentTarget.style.color = TM}
-            >About</a>
+            {/* Marketing routes (/recipes, /blog, /about) are web-only. In the
+                native app they trigger a full WebView reload onto standalone
+                public pages that show Sign In and no app chrome — which reads as
+                a forced logout — so they are hidden in-app (isTWA). */}
+            {!isTWA && (
+              <>
+                <a href="/recipes"
+                  style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.color = T}
+                  onMouseLeave={e => e.currentTarget.style.color = TM}
+                >Recipes</a>
+                <a href="/blog"
+                  style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.color = T}
+                  onMouseLeave={e => e.currentTarget.style.color = TM}
+                >Blog</a>
+                <a href="/about"
+                  style={{ fontSize: 14, fontWeight: 500, color: TM, padding: '8px 16px', borderRadius: 5, fontFamily: SF, transition: 'color 0.15s', textDecoration: 'none' }}
+                  onMouseEnter={e => e.currentTarget.style.color = T}
+                  onMouseLeave={e => e.currentTarget.style.color = TM}
+                >About</a>
+              </>
+            )}
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
@@ -424,15 +432,20 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
           <div className="hp-mobile-menu" style={{ borderTop: '1px solid #EDE8E1', background: 'white' }}>
-            <a href="/recipes"
-              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
-            >Recipes</a>
-            <a href="/blog"
-              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
-            >Blog</a>
-            <a href="/about"
-              style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
-            >About</a>
+            {/* Web-only marketing routes — hidden in the native app (see desktop nav note). */}
+            {!isTWA && (
+              <>
+                <a href="/recipes"
+                  style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+                >Recipes</a>
+                <a href="/blog"
+                  style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+                >Blog</a>
+                <a href="/about"
+                  style={{ display: 'block', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, textDecoration: 'none', borderBottom: '1px solid #F3EFE9' }}
+                >About</a>
+              </>
+            )}
             <button onClick={() => closeMenuAndScrollTo(howRef)}
               style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 500, color: T, padding: '16px 24px', fontFamily: SF, borderBottom: '1px solid #F3EFE9' }}
             >How It Works</button>
@@ -551,20 +564,24 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
               ))}
             </ul>
           </FadeIn>
-          <FadeIn delay={0.15} style={{ textAlign: 'center', marginTop: 56 }}>
-            <a href="/recipes"
-              style={{
-                display: 'inline-block', background: 'transparent', color: T,
-                border: '1.5px solid #C2BAB0', borderRadius: 4, padding: '14px 32px',
-                fontSize: 15, fontWeight: 500, fontFamily: SF, textDecoration: 'none',
-                transition: 'border-color 0.15s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = T}
-              onMouseLeave={e => e.currentTarget.style.borderColor = '#C2BAB0'}
-            >
-              Explore All Recipe Transformations
-            </a>
-          </FadeIn>
+          {/* Web-only "see all" link to the public /recipes index — hidden in the
+              native app, where the recipe cards above open an in-app quick-view. */}
+          {!isTWA && (
+            <FadeIn delay={0.15} style={{ textAlign: 'center', marginTop: 56 }}>
+              <a href="/recipes"
+                style={{
+                  display: 'inline-block', background: 'transparent', color: T,
+                  border: '1.5px solid #C2BAB0', borderRadius: 4, padding: '14px 32px',
+                  fontSize: 15, fontWeight: 500, fontFamily: SF, textDecoration: 'none',
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = T}
+                onMouseLeave={e => e.currentTarget.style.borderColor = '#C2BAB0'}
+              >
+                Explore All Recipe Transformations
+              </a>
+            </FadeIn>
+          )}
         </div>
       </section>
 
@@ -821,21 +838,26 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
 
           {/* Links row: all centered */}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 4, marginBottom: 32 }}>
-            <a href="/recipes"
-              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
-              onMouseEnter={e => e.target.style.color = G}
-              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
-            >Recipes</a>
-            <a href="/blog"
-              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
-              onMouseEnter={e => e.target.style.color = G}
-              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
-            >Blog</a>
-            <a href="/about"
-              style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
-              onMouseEnter={e => e.target.style.color = G}
-              onMouseLeave={e => e.target.style.color = '#2B2B2B'}
-            >About</a>
+            {/* Web-only marketing routes — hidden in the native app (see desktop nav note). */}
+            {!isTWA && (
+              <>
+                <a href="/recipes"
+                  style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+                  onMouseEnter={e => e.target.style.color = G}
+                  onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+                >Recipes</a>
+                <a href="/blog"
+                  style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+                  onMouseEnter={e => e.target.style.color = G}
+                  onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+                >Blog</a>
+                <a href="/about"
+                  style={{ fontSize: 13, color: '#2B2B2B', fontFamily: SF, padding: '4px 10px', borderRadius: 4, textDecoration: 'none' }}
+                  onMouseEnter={e => e.target.style.color = G}
+                  onMouseLeave={e => e.target.style.color = '#2B2B2B'}
+                >About</a>
+              </>
+            )}
             {[
               { label: 'How It Works', action: () => scrollTo(howRef) },
               { label: 'FAQ',          action: () => scrollTo(faqRef) },
@@ -849,7 +871,8 @@ export default function SplashScreen({ onSignUp, onLogin, isTWA }) {
             <span style={{ color: '#D1C9BE', fontSize: 13, padding: '0 2px' }}>·</span>
             <a href="/privacy.html" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Privacy</a>
             <a href="/terms.html"   style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Terms</a>
-            <a href="/contact" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Contact</a>
+            {/* /contact is a web-only public page (full reload, no app chrome) — hidden in-app. */}
+            {!isTWA && <a href="/contact" style={{ fontSize: 13, color: '#2B2B2B', textDecoration: 'none', padding: '4px 10px' }} onMouseEnter={e => e.target.style.color = G} onMouseLeave={e => e.target.style.color = '#2B2B2B'}>Contact</a>}
           </div>
 
           {/* Legal */}

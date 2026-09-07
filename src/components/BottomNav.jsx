@@ -12,7 +12,11 @@ export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, 
   const activeBase = ['results', 'shopping'].includes(activeScreen) ? 'home' : activeScreen
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
   const atLimit = plan === 'free' && swapsLeft === 0
-  const visibleItems = isTWA ? NAV_ITEMS.filter(i => i.id !== 'pricing') : NAV_ITEMS
+  // In the native/TWA app the Blog tab does a full WebView reload to /blog — a
+  // standalone public marketing page (Sign In shown, no app chrome, and its
+  // assets are stripped from the native bundle), which reads as a forced logout.
+  // Pricing is likewise hidden natively (App Store rule 3.1.1). Both are web-only.
+  const visibleItems = isTWA ? NAV_ITEMS.filter(i => i.id !== 'pricing' && i.id !== 'blog') : NAV_ITEMS
 
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Main navigation">
