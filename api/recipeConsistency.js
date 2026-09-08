@@ -32,9 +32,41 @@ const RESTRICTED_TERMS = {
   ],
 }
 
-function termMatches(text, term) {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return new RegExp(`\\b${escaped}s?\\b`, 'i').test(text)
+function escapeRe(term) {
+  return term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+// Compliant substitutes are routinely named after the thing they replace:
+// "flax egg", "vegan mozzarella", "plant-based butter", "dairy-free ricotta".
+// For the two categories where that naming is standard (vegan, dairyFree) a
+// restricted term directly preceded by one of these qualifiers is NOT a
+// violation. Every other category (noNuts, noPork, glutenFree) stays strict —
+// "almond ricotta" clears the dairy check but "almond" is still a nut hit.
+const SUBSTITUTE_QUALIFIERS = [
+  'vegan', 'plant-based', 'plant based', 'dairy-free', 'dairy free', 'non-dairy', 'nondairy',
+  'egg-free', 'eggless', 'flax', 'flaxseed', 'chia', 'tofu', 'coconut', 'oat', 'soy', 'cashew', 'almond', 'vegetable',
+]
+const QUALIFIED_CATEGORIES = new Set(['vegan', 'dairyFree'])
+const QUALIFIER_RE = SUBSTITUTE_QUALIFIERS.map(escapeRe).join('|')
+
+// Absence / replacement forms are never a violation in any category:
+// "egg-free noodles", "eggless", "egg substitute", "wheat-free flour",
+// "peanut-free". Descriptor forms ("ricotta-like", "cheddar-style") are
+// excused only where substitutes are the norm (vegan, dairyFree).
+const ABSENCE_SUFFIX_RE = '(?:-?free|less|[\\s-]+(?:substitute|replacer|replacement|alternative))'
+const DESCRIPTOR_SUFFIX_RE = '(?:-(?:like|style))'
+
+function termMatches(text, term, category) {
+  const escaped = escapeRe(term)
+  const re = new RegExp(`\\b${escaped}s?\\b`, 'gi')
+  const total = (text.match(re) || []).length
+  if (total === 0) return false
+  let excused = (text.match(new RegExp(`\\b${escaped}s?${ABSENCE_SUFFIX_RE}\\b`, 'gi')) || []).length
+  if (QUALIFIED_CATEGORIES.has(category)) {
+    excused += (text.match(new RegExp(`\\b(?:${QUALIFIER_RE})[\\s-]+${escaped}s?\\b`, 'gi')) || []).length
+    excused += (text.match(new RegExp(`\\b${escaped}s?${DESCRIPTOR_SUFFIX_RE}\\b`, 'gi')) || []).length
+  }
+  return total > excused
 }
 
 function recipeCorpus(recipe) {
@@ -63,7 +95,7 @@ export function checkConsistency(recipe, dietaryPreferences) {
   for (const [key, terms] of Object.entries(RESTRICTED_TERMS)) {
     if (!dietaryPreferences?.[key]) continue
     for (const term of terms) {
-      if (termMatches(corpus, term)) violations.push({ restriction: key, term })
+      if (termMatches(corpus, term, key)) violations.push({ restriction: key, term })
     }
   }
   return violations
@@ -148,7 +180,7 @@ export async function runRepair(client, result, violationDesc, dietaryPreference
     system: REPAIR_SYSTEM_PROMPT,
     messages: [{
       role: 'user',
-      content: `Violations: ${violationDesc}${rulesSection}\n\nCurrent ingredients: ${ingredientList}\n\nReplace EVERY violating ingredient (all of the terms listed above, and any other ingredient that breaks the active restrictions) with compliant alternatives. Return the complete updated ingredients list, rewritten instructions, and rewritten shoppingList — all consistent and free of restricted items.`,
+      content: `Violations: ${violationDesc}${rulesSection}\n\nCurrent ingredients: ${ingredientList}\n\nReplace EVERY violating ingredient (all of the terms listed above, and any other ingredient that breaks the active restrictions) with compliant alternatives. Name substitutes by what they are, not by what they replace (write "ground flaxseed binder", not "flax egg"; "cashew-based cheese", not "vegan ricotta") and never reuse a restricted word in ingredients, instructions, or the shopping list. Return the complete updated ingredients list, rewritten instructions, and rewritten shoppingList — all consistent and free of restricted items.`,
     }],
   })
   const repaired = parseJsonResponse(repair.content[0].text)

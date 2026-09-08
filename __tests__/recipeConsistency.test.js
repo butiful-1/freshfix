@@ -305,3 +305,60 @@ describe('runRepair — repairs all same-category violations', () => {
     await expect(runRepair(client, result, describeViolations(checkConsistency(result, prefs)), prefs)).rejects.toThrow(/Post-repair violations remain: .*"ricotta".*"mozzarella"/)
   })
 })
+
+describe('checkConsistency — qualified substitutes are not violations (vegan / dairy-free only)', () => {
+  const mk = (items, extra = {}) => ({ transformedRecipe: { ingredients: items.map(item => ({ amount: '1', item })), instructions: extra.instructions || [] }, shoppingList: extra.shoppingList || {} })
+
+  it('"flax egg" is not a vegan egg violation, a plain egg still is', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    expect(checkConsistency(mk(['flax egg']), { vegan: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['chia egg', 'vegan egg substitute']), { vegan: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['flax egg', 'egg']), { vegan: true })).toEqual([{ restriction: 'vegan', term: 'egg' }])
+    expect(checkConsistency(mk(['flax egg'], { instructions: ['Beat 1 egg.'] }), { vegan: true })).toEqual([{ restriction: 'vegan', term: 'egg' }])
+  })
+
+  it('"vegan mozzarella", "dairy-free ricotta", "plant-based butter" clear the dairy-free and vegan checks', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    const recipe = mk(['vegan mozzarella', 'dairy-free ricotta', 'plant-based butter', 'non-dairy parmesan'])
+    expect(checkConsistency(recipe, { dairyFree: true, vegan: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['mozzarella']), { dairyFree: true })).toEqual([{ restriction: 'dairyFree', term: 'mozzarella' }])
+  })
+
+  it('qualifiers never loosen the nut, pork, or gluten checks', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    const nutty = checkConsistency(mk(['almond ricotta']), { dairyFree: true, noNuts: true })
+    expect(nutty).toEqual([{ restriction: 'noNuts', term: 'almond' }])
+    expect(checkConsistency(mk(['vegan bacon']), { noPork: true })).toEqual([{ restriction: 'noPork', term: 'bacon' }])
+    expect(checkConsistency(mk(['vegan wheat flour']), { glutenFree: true })).toEqual([{ restriction: 'glutenFree', term: 'wheat' }])
+  })
+
+  it('the 2026-09-08 repaired lasagna (cheeses swapped, "flax egg" used) now passes', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    const repaired = mk(['2 cups cooked lentils', 'cashew-based soft cheese', 'vegan mozzarella', 'flax egg', 'nutritional yeast'], { instructions: ['Layer noodles with lentils, cashew cheese, and vegan mozzarella. Bake at 375F.'], shoppingList: { dairy: [], other: ['flax egg'] } })
+    expect(checkConsistency(repaired, { vegan: true, dairyFree: true })).toHaveLength(0)
+  })
+})
+
+describe('checkConsistency — absence and descriptor forms', () => {
+  const mk = (items, instructions = [], shoppingList = {}) => ({ transformedRecipe: { ingredients: items.map(item => ({ amount: '1', item })), instructions }, shoppingList })
+
+  it('"egg-free lasagna noodles" and "egg substitute" are not vegan violations (seen live 2026-09-08)', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    expect(checkConsistency(mk(['egg-free lasagna noodles', 'egg substitute'], [], { pantry: ['12 egg-free lasagna noodles'] }), { vegan: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['egg-free lasagna noodles', 'egg']), { vegan: true })).toEqual([{ restriction: 'vegan', term: 'egg' }])
+  })
+
+  it('"ricotta-like consistency" in instructions is not a dairy violation (seen live 2026-09-08)', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    expect(checkConsistency(mk(['cashew-based soft cheese'], ['Blend until it reaches a ricotta-like consistency.']), { dairyFree: true, vegan: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['cashew-based soft cheese'], ['Stir in the ricotta.']), { dairyFree: true })).toEqual([{ restriction: 'dairyFree', term: 'ricotta' }])
+  })
+
+  it('absence forms are excused in strict categories too, but plain terms still flag', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    expect(checkConsistency(mk(['peanut-free granola', 'wheat-free flour', 'bacon substitute']), { noNuts: true, glutenFree: true, noPork: true })).toHaveLength(0)
+    expect(checkConsistency(mk(['peanut-free granola', 'peanuts']), { noNuts: true })).toEqual([{ restriction: 'noNuts', term: 'peanut' }])
+    // Descriptor forms stay strict for safety categories: "almond-style" still counts.
+    expect(checkConsistency(mk(['almond-style extract']), { noNuts: true })).toEqual([{ restriction: 'noNuts', term: 'almond' }])
+  })
+})
