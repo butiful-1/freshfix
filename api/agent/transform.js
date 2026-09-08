@@ -23,7 +23,7 @@ import {
 import { SYSTEM_PROMPT } from '../transform.js'
 import { paymentRequirements, decodeB64Header, send402, verifyPayment, settlePayment, sendPaymentResponseHeader, paymentMatchesExpected, currentNetwork } from '../_lib/x402.js'
 import { rateLimit, clientIp } from '../_lib/rateLimit.js'
-import { TRANSFORM_INPUT_SCHEMA, TRANSFORM_OUTPUT_EXAMPLE } from '../_lib/bazaarSchemas.js'
+import { TRANSFORM_INPUT_SCHEMA, TRANSFORM_INPUT_EXAMPLE, TRANSFORM_OUTPUT_EXAMPLE } from '../_lib/bazaarSchemas.js'
 
 export const config = { maxDuration: 120 }
 
@@ -132,6 +132,8 @@ export default async function handler(req, res) {
     amountUsd: PRICE_USD,
     network,
     inputSchema: TRANSFORM_INPUT_SCHEMA,
+    inputExample: TRANSFORM_INPUT_EXAMPLE,
+    iconUrl: `https://${req.headers.host}/icon-192.png`,
     outputExample: TRANSFORM_OUTPUT_EXAMPLE,
   }
 

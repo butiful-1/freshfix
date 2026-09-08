@@ -25,6 +25,15 @@ export const TRANSFORM_INPUT_SCHEMA = {
   },
 }
 
+// Example request body for discovery crawlers (CDP Bazaar sends this as the
+// unpaid probe input; it is also the `info.input.body` example agents copy).
+export const TRANSFORM_INPUT_EXAMPLE = {
+  recipe: 'Classic Beef Lasagna: 1 lb ground beef, 1 jar marinara sauce, 12 lasagna noodles, 16 oz ricotta cheese, 2 cups shredded mozzarella, 1 egg, 1/2 cup parmesan, salt and pepper to taste. Brown the beef, layer noodles with sauces and cheeses, bake at 375F for 45 minutes.',
+  diets: ['vegan'],
+  healthGoal: 'Lower saturated fat',
+  restrictions: { vegan: true, dairyFree: true },
+}
+
 export const TRANSFORM_OUTPUT_EXAMPLE = {
   ok: true,
   schemaVersion: '1.0',

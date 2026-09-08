@@ -1,0 +1,26 @@
+# Old2New Agent API
+
+> Old2New transforms recipes to match dietary restrictions and health goals, using the same transformation and dietary-safety pipeline that powers the Old2New consumer app (https://old2new.app). Pay per call with x402 (USDC on Base). No API key or account required.
+
+## Paid endpoints (x402 v2, scheme "exact", USDC on Base mainnet eip155:8453)
+- POST https://old2new.app/api/agent/transform — $0.10 per call. Transform a recipe for diets, a health goal, and hard dietary restrictions. Runs a deterministic consistency check plus an automatic repair pass; if the recipe cannot be made compliant, the call fails with 422 and nothing is settled.
+- POST https://old2new.app/api/agent/transform-image — $0.25 per call. Same transformation plus one AI-generated food photo of the finished dish. If image generation fails, the whole call fails and nothing is settled.
+
+## How to pay
+1. Call the endpoint with no payment. You receive HTTP 402; the PAYMENT-REQUIRED header (base64 JSON) and the body carry the exact terms: amount in atomic USDC units (100000 = $0.10), asset, payTo, network, and `extra.name`/`extra.version` = the token's EIP-712 domain.
+2. Sign an EIP-3009 transferWithAuthorization for that amount and retry with a PAYMENT-SIGNATURE header (x402 v2 HTTP transport). Any x402 v2 client works.
+3. Payment is verified before the model runs and settled only after a result is produced. A 200 carries a PAYMENT-RESPONSE header with the settlement transaction.
+
+## Input (JSON body)
+- `recipe` (string, required, 10-8000 chars): the original recipe text.
+- `diets` (string[], optional): e.g. ["vegan"], ["keto"]. Provide `diets` and/or `healthGoal`.
+- `healthGoal` (string, optional): free text, e.g. "lower sodium".
+- `restrictions` (object, optional): `dairyFree`, `glutenFree`, `noNuts`, `noPork`, `vegan` (booleans), `custom` (string). `noNuts` is treated as a life-threatening allergy with zero tolerance.
+
+## Output
+JSON with `result.transformedRecipe` (name, ingredients, instructions), `result.shoppingList`, `restrictionsApplied`, `requestId`, and a `disclaimer` that must be surfaced to any end user. Nutrition values are estimates. The image endpoint adds `image.imageUrl`.
+
+## Discovery
+- OpenAPI: https://old2new.app/openapi.json
+- Manifest: https://old2new.app/.well-known/x402
+- Contact: admin@old2new.app

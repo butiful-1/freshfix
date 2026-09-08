@@ -109,7 +109,9 @@ describe('api/agent/transform.js — x402 gate', () => {
     // extensions.bazaar.schema on the runtime 402 body itself.
     const bazaarSchema = challenge.extensions?.bazaar?.schema
     expect(bazaarSchema?.properties?.input?.properties?.body?.type).toBe('object')
-    expect(bazaarSchema?.properties?.output?.properties?.example?.ok).toBe(true)
+    expect(bazaarSchema?.properties?.output?.properties?.example).toBeDefined()
+    // The literal output example now lives in the CDP-style info block.
+    expect(challenge.extensions?.bazaar?.info?.output?.example?.ok).toBe(true)
   })
 
   it('returns 402 for a malformed PAYMENT-SIGNATURE header', async () => {
@@ -332,5 +334,38 @@ describe('api/agent/transform-image.js — pricing gate', () => {
     expect(wwwAuth).toBeTruthy()
     expect(wwwAuth).toMatch(/^x402\s/)
     expect(wwwAuth).toContain('amount="250000"') // $0.25 in atomic USDC
+  })
+})
+
+describe('x402 challenge metadata — EIP-712 domain and Bazaar discovery', () => {
+  it('advertises the on-chain USDC domain name per network and the transfer method', async () => {
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const mainnet = paymentRequirements({ amountUsd: 0.10, network: 'eip155:8453' })
+    const sepolia = paymentRequirements({ amountUsd: 0.10, network: 'eip155:84532' })
+    // Base mainnet USDC's DOMAIN_SEPARATOR is built from name "USD Coin" (verified on-chain 2026-09-08);
+    // the Sepolia test token uses "USDC". Signing with the wrong name reverts at settlement.
+    expect(mainnet.extra).toEqual({ name: 'USD Coin', version: '2', assetTransferMethod: 'eip3009' })
+    expect(mainnet.asset).toBe('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913')
+    expect(sepolia.extra).toEqual({ name: 'USDC', version: '2', assetTransferMethod: 'eip3009' })
+    expect(mainnet.amount).toBe('100000')
+  })
+
+  it('carries both the CDP bazaar.info block and the x402scan schema paths, plus service metadata', async () => {
+    const { default: handler } = await import('../api/agent/transform.js')
+    const res = mockRes()
+    await handler(mockReq({ headers: { host: 'old2new.app' }, body: {} }), res)
+    expect(res.statusCode).toBe(402)
+    const challenge = decodeHeader(res.headers['PAYMENT-REQUIRED'])
+    expect(challenge.resource).toMatchObject({ url: 'https://old2new.app/api/agent/transform', serviceName: 'Old2New Agent API', iconUrl: 'https://old2new.app/icon-192.png' })
+    expect(challenge.resource.tags.length).toBeLessThanOrEqual(5)
+    const bazaar = challenge.extensions.bazaar
+    expect(bazaar.info.input).toMatchObject({ type: 'http', method: 'POST', bodyType: 'json' })
+    expect(bazaar.info.input.body.recipe).toContain('Lasagna')
+    expect(bazaar.info.output.type).toBe('json')
+    expect(bazaar.info.output.example.ok).toBe(true)
+    expect(bazaar.schema.properties.input.properties.body.required).toEqual(['recipe'])
+    expect(bazaar.schema.properties.input.required).toEqual(['type', 'method', 'bodyType', 'body'])
+    expect(bazaar.schema.properties.output.properties.example).toBeDefined()
+    expect(res.headers['WWW-Authenticate']).toMatch(/^x402 /)
   })
 })

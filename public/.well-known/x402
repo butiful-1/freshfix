@@ -1,0 +1,189 @@
+{
+  "x402Version": 2,
+  "spec": "x402-well-known/1",
+  "name": "Old2New Agent API",
+  "description": "Recipe transformation for dietary restrictions and health goals, paid per call with x402 (USDC on Base). Same pipeline as the Old2New consumer app.",
+  "url": "https://old2new.app",
+  "openapi": "https://old2new.app/openapi.json",
+  "llmsTxt": "https://old2new.app/llms.txt",
+  "contact": "admin@old2new.app",
+  "network": "eip155:8453",
+  "facilitator": "https://v2.facilitator.mogami.tech",
+  "payTo": "0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE",
+  "lastUpdated": "2026-09-08",
+  "resources": [
+    {
+      "resource": "https://old2new.app/api/agent/transform",
+      "type": "http",
+      "method": "POST",
+      "x402Version": 2,
+      "description": "Transform a recipe for dietary restrictions and health goals. Verified before the model runs; settled only after a compliant recipe is produced (422 + no charge otherwise).",
+      "serviceName": "Old2New Agent API",
+      "tags": [
+        "recipes",
+        "food",
+        "nutrition",
+        "dietary-restrictions",
+        "ai"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "amount": "100000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "payTo": "0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE",
+          "maxTimeoutSeconds": 60,
+          "extra": {
+            "name": "USD Coin",
+            "version": "2",
+            "assetTransferMethod": "eip3009"
+          }
+        }
+      ],
+      "metadata": {
+        "name": "Transform a recipe for dietary restrictions and health goals",
+        "input": {
+          "type": "http",
+          "method": "POST",
+          "bodyType": "json",
+          "body": {
+            "recipe": "Classic Beef Lasagna: 1 lb ground beef, 1 jar marinara sauce, 12 lasagna noodles, 16 oz ricotta cheese, 2 cups shredded mozzarella, 1 egg, 1/2 cup parmesan, salt and pepper. Brown the beef, layer, bake at 375F for 45 minutes.",
+            "diets": [
+              "vegan"
+            ],
+            "healthGoal": "Lower saturated fat",
+            "restrictions": {
+              "vegan": true,
+              "dairyFree": true
+            }
+          }
+        },
+        "output": {
+          "type": "json",
+          "example": {
+            "ok": true,
+            "schemaVersion": "1.0",
+            "requestId": "<uuid>",
+            "result": {
+              "transformedRecipe": {
+                "name": "Lentil Lasagna",
+                "ingredients": [
+                  {
+                    "amount": "2 cups",
+                    "item": "cooked green lentils"
+                  }
+                ],
+                "instructions": [
+                  "..."
+                ]
+              },
+              "shoppingList": {
+                "produce": [
+                  "onion"
+                ],
+                "protein": [
+                  "green lentils"
+                ],
+                "dairy": [],
+                "pantry": [
+                  "marinara sauce"
+                ],
+                "other": []
+              }
+            },
+            "disclaimer": "Nutrition values are estimates, not measurements. This is not medical advice."
+          }
+        }
+      }
+    },
+    {
+      "resource": "https://old2new.app/api/agent/transform-image",
+      "type": "http",
+      "method": "POST",
+      "x402Version": 2,
+      "description": "Transform a recipe and generate one food photo of the result. Nothing is settled if either step fails.",
+      "serviceName": "Old2New Agent API",
+      "tags": [
+        "recipes",
+        "food",
+        "nutrition",
+        "dietary-restrictions",
+        "ai"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "eip155:8453",
+          "amount": "250000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "payTo": "0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE",
+          "maxTimeoutSeconds": 60,
+          "extra": {
+            "name": "USD Coin",
+            "version": "2",
+            "assetTransferMethod": "eip3009"
+          }
+        }
+      ],
+      "metadata": {
+        "name": "Transform a recipe and generate one food photo of the result",
+        "input": {
+          "type": "http",
+          "method": "POST",
+          "bodyType": "json",
+          "body": {
+            "recipe": "Classic Beef Lasagna: 1 lb ground beef, 1 jar marinara sauce, 12 lasagna noodles, 16 oz ricotta cheese, 2 cups shredded mozzarella, 1 egg, 1/2 cup parmesan, salt and pepper. Brown the beef, layer, bake at 375F for 45 minutes.",
+            "diets": [
+              "vegan"
+            ],
+            "healthGoal": "Lower saturated fat",
+            "restrictions": {
+              "vegan": true,
+              "dairyFree": true
+            }
+          }
+        },
+        "output": {
+          "type": "json",
+          "example": {
+            "ok": true,
+            "schemaVersion": "1.0",
+            "requestId": "<uuid>",
+            "result": {
+              "transformedRecipe": {
+                "name": "Lentil Lasagna",
+                "ingredients": [
+                  {
+                    "amount": "2 cups",
+                    "item": "cooked green lentils"
+                  }
+                ],
+                "instructions": [
+                  "..."
+                ]
+              },
+              "shoppingList": {
+                "produce": [
+                  "onion"
+                ],
+                "protein": [
+                  "green lentils"
+                ],
+                "dairy": [],
+                "pantry": [
+                  "marinara sauce"
+                ],
+                "other": []
+              }
+            },
+            "image": {
+              "imageUrl": "https://.../example.png"
+            },
+            "disclaimer": "Nutrition values are estimates, not measurements. This is not medical advice."
+          }
+        }
+      }
+    }
+  ]
+}
