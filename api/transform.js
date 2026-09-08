@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from './recipeConsistency.js'
+import { checkConsistency, describeViolations, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from './recipeConsistency.js'
 
 export const config = { maxDuration: 55 }
 
@@ -153,7 +153,7 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
     // Falls back to a cheap Haiku repair call only when violations are found.
     const violations = checkConsistency(result, dietaryPreferences)
     if (violations.length > 0) {
-      const violationDesc = violations.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
+      const violationDesc = describeViolations(violations)
       const isSafetyCritical = violations.some(v => v.restriction === 'noNuts')
       try {
         await runRepair(client, result, violationDesc, dietaryPreferences)

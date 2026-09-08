@@ -47,20 +47,40 @@ function recipeCorpus(recipe) {
   return `${ingredients} ${instructions} ${shopping}`
 }
 
-// Returns an array of violation objects. Empty means consistent.
+// Returns an array of violation objects, one per (restriction, term) pair,
+// covering EVERY restricted term present — not just the first per category.
+// Empty means consistent.
+//
+// History: this loop used to `break` after the first matching term in a
+// category, so a lasagna with beef + mozzarella + ricotta + parmesan + egg was
+// reported as just "vegan: beef, dairyFree: parmesan". The repair model then
+// fixed only what it was told about, the post-repair check found the rest, and
+// the request failed with 422 even though the recipe was repairable. Reported
+// live during paid testing (2026-08) and reproduced on mainnet 2026-09-08.
 export function checkConsistency(recipe, dietaryPreferences) {
   const violations = []
   const corpus = recipeCorpus(recipe)
   for (const [key, terms] of Object.entries(RESTRICTED_TERMS)) {
     if (!dietaryPreferences?.[key]) continue
     for (const term of terms) {
-      if (termMatches(corpus, term)) {
-        violations.push({ restriction: key, term })
-        break
-      }
+      if (termMatches(corpus, term)) violations.push({ restriction: key, term })
     }
   }
   return violations
+}
+
+// 'vegan: found "beef", "egg"; dairyFree: found "ricotta"' — grouped per
+// restriction so the repair prompt lists every offending term once per category.
+export function describeViolations(violations) {
+  const byRestriction = new Map()
+  for (const v of violations) {
+    if (!byRestriction.has(v.restriction)) byRestriction.set(v.restriction, [])
+    const terms = byRestriction.get(v.restriction)
+    if (!terms.includes(v.term)) terms.push(v.term)
+  }
+  return [...byRestriction.entries()]
+    .map(([restriction, terms]) => `${restriction}: found ${terms.map(t => `"${t}"`).join(', ')}`)
+    .join('; ')
 }
 
 export function buildDietaryRestrictionLines(dietaryPreferences) {
@@ -115,13 +135,20 @@ export async function runRepair(client, result, violationDesc, dietaryPreference
   const ingredientList = (result.transformedRecipe?.ingredients || [])
     .map(i => `${i.amount} ${i.item}`.trim()).join(', ')
 
+  // The repair model sees every offending term (violationDesc lists all of
+  // them per category) AND the full restriction rules, so it cannot fix one
+  // ingredient and leave a sibling violation behind.
+  const restrictionLines = buildDietaryRestrictionLines(dietaryPreferences)
+  const rulesSection = restrictionLines.length
+    ? `\n\nActive dietary restrictions (ALL must hold):\n${restrictionLines.join('\n')}`
+    : ''
   const repair = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 2000,
     system: REPAIR_SYSTEM_PROMPT,
     messages: [{
       role: 'user',
-      content: `Violations: ${violationDesc}\n\nCurrent ingredients: ${ingredientList}\n\nReplace any violating ingredients with compliant alternatives. Return the complete updated ingredients list, rewritten instructions, and rewritten shoppingList — all consistent and free of restricted items.`,
+      content: `Violations: ${violationDesc}${rulesSection}\n\nCurrent ingredients: ${ingredientList}\n\nReplace EVERY violating ingredient (all of the terms listed above, and any other ingredient that breaks the active restrictions) with compliant alternatives. Return the complete updated ingredients list, rewritten instructions, and rewritten shoppingList — all consistent and free of restricted items.`,
     }],
   })
   const repaired = parseJsonResponse(repair.content[0].text)
@@ -131,7 +158,6 @@ export async function runRepair(client, result, violationDesc, dietaryPreference
 
   const remaining = checkConsistency(result, dietaryPreferences)
   if (remaining.length > 0) {
-    const remainingDesc = remaining.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
-    throw new Error(`Post-repair violations remain: ${remainingDesc}`)
+    throw new Error(`Post-repair violations remain: ${describeViolations(remaining)}`)
   }
 }

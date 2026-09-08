@@ -217,3 +217,91 @@ describe('buildDietaryRestrictionLines', () => {
     expect(lines.some(l => l.toLowerCase().includes('vegan'))).toBe(false)
   })
 })
+
+// Regression: the checker used to stop at the first matching term per
+// category, which starved the repair prompt and produced 422s on repairable
+// recipes (mainnet reproduction 2026-09-08 with this exact lasagna).
+describe('checkConsistency — reports EVERY violating term within one category', () => {
+  const lasagna = {
+    transformedRecipe: {
+      name: 'Classic Beef Lasagna',
+      ingredients: [
+        { amount: '1 lb', item: 'ground beef' },
+        { amount: '16 oz', item: 'ricotta cheese' },
+        { amount: '2 cups', item: 'shredded mozzarella' },
+        { amount: '1', item: 'egg' },
+        { amount: '1/2 cup', item: 'parmesan' },
+      ],
+      instructions: ['Brown the beef.', 'Layer noodles with sauces and cheeses.', 'Bake at 375F for 45 minutes.'],
+    },
+    shoppingList: { produce: [], protein: ['ground beef'], dairy: ['ricotta', 'mozzarella', 'parmesan'], pantry: ['lasagna noodles'], other: ['egg'] },
+  }
+
+  it('lists all dairy terms for a dairy-free check, not just the first', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    const terms = checkConsistency(lasagna, { dairyFree: true }).map(v => v.term)
+    expect(terms).toEqual(expect.arrayContaining(['parmesan', 'mozzarella', 'ricotta']))
+    expect(terms).toHaveLength(3)
+  })
+
+  it('vegan + dairy-free lasagna reports every animal product and every cheese', async () => {
+    const { checkConsistency, describeViolations } = await import('../api/recipeConsistency.js')
+    const violations = checkConsistency(lasagna, { vegan: true, dairyFree: true })
+    const vegan = violations.filter(v => v.restriction === 'vegan').map(v => v.term)
+    const dairy = violations.filter(v => v.restriction === 'dairyFree').map(v => v.term)
+    expect(vegan).toEqual(expect.arrayContaining(['beef', 'parmesan', 'mozzarella', 'ricotta', 'egg']))
+    expect(dairy).toEqual(expect.arrayContaining(['parmesan', 'mozzarella', 'ricotta']))
+    const desc = describeViolations(violations)
+    expect(desc).toContain('vegan: found ')
+    expect(desc).toContain('dairyFree: found ')
+    expect(desc.split('; ')).toHaveLength(2) // one grouped entry per restriction
+    for (const t of ['"beef"', '"egg"', '"ricotta"', '"mozzarella"', '"parmesan"']) expect(desc).toContain(t)
+  })
+
+  it('does not report the same (restriction, term) pair twice', async () => {
+    const { checkConsistency } = await import('../api/recipeConsistency.js')
+    const recipe = { transformedRecipe: { ingredients: [{ amount: '1', item: 'egg' }], instructions: ['Beat the egg. Add another egg.'] }, shoppingList: { other: ['egg'] } }
+    expect(checkConsistency(recipe, { vegan: true })).toEqual([{ restriction: 'vegan', term: 'egg' }])
+  })
+})
+
+describe('runRepair — repairs all same-category violations', () => {
+  function fakeClient(replyIngredients) {
+    return {
+      calls: [],
+      messages: {
+        create: async (req) => {
+          fakeClient.last = req
+          return { content: [{ text: JSON.stringify({ ingredients: replyIngredients, instructions: ['Layer and bake.'], shoppingList: { produce: [], protein: ['lentils'], dairy: [], pantry: ['noodles'], other: [] } }) }] }
+        },
+      },
+    }
+  }
+  const prefs = { vegan: true, dairyFree: true }
+  const makeResult = () => ({
+    transformedRecipe: { ingredients: [{ amount: '1 lb', item: 'ground beef' }, { amount: '16 oz', item: 'ricotta cheese' }, { amount: '2 cups', item: 'mozzarella' }, { amount: '1', item: 'egg' }], instructions: ['Brown the beef.'] },
+    shoppingList: { protein: ['ground beef'], dairy: ['ricotta', 'mozzarella'], other: ['egg'] },
+  })
+
+  it('tells the repair model every offending term and the full rules', async () => {
+    const { checkConsistency, describeViolations, runRepair } = await import('../api/recipeConsistency.js')
+    const result = makeResult()
+    // Replacement names deliberately avoid restricted keywords ("vegan
+    // mozzarella" would still trip the deterministic checker, by design).
+    const client = fakeClient([{ amount: '2 cups', item: 'cooked lentils', note: 'swapped for beef' }, { amount: '16 oz', item: 'cashew-based soft cheese', note: 'dairy-free' }, { amount: '2 cups', item: 'plant-based shreds', note: '' }, { amount: '1 tbsp', item: 'ground flaxseed binder', note: '' }])
+    await runRepair(client, result, describeViolations(checkConsistency(result, prefs)), prefs)
+    const prompt = fakeClient.last.messages[0].content
+    for (const t of ['"beef"', '"ricotta"', '"mozzarella"', '"egg"']) expect(prompt).toContain(t)
+    expect(prompt).toContain('Vegan: strictly no animal products')
+    expect(prompt).toContain('Dairy free')
+    expect(checkConsistency(result, prefs)).toHaveLength(0)
+  })
+
+  it('still fails closed when the repair leaves a second same-category violation behind', async () => {
+    const { checkConsistency, describeViolations, runRepair } = await import('../api/recipeConsistency.js')
+    const result = makeResult()
+    // Model "fixes" beef and egg but leaves both cheeses.
+    const client = fakeClient([{ amount: '2 cups', item: 'cooked lentils' }, { amount: '16 oz', item: 'ricotta cheese' }, { amount: '2 cups', item: 'mozzarella' }, { amount: '1', item: 'flax egg' }])
+    await expect(runRepair(client, result, describeViolations(checkConsistency(result, prefs)), prefs)).rejects.toThrow(/Post-repair violations remain: .*"ricotta".*"mozzarella"/)
+  })
+})

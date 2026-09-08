@@ -17,6 +17,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { randomUUID, timingSafeEqual, createHash } from 'crypto'
 import {
   checkConsistency,
+  describeViolations,
   buildDietaryRestrictionLines,
   parseJsonResponse,
   runRepair,
@@ -216,7 +217,7 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
 
     const violations = checkConsistency(result, input.restrictions)
     if (violations.length > 0) {
-      const violationDesc = violations.map(v => `${v.restriction}: found "${v.term}"`).join(', ')
+      const violationDesc = describeViolations(violations)
       const isSafetyCritical = violations.some(v => v.restriction === 'noNuts')
       try {
         await runRepair(client, result, violationDesc, input.restrictions)
