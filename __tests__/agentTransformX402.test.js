@@ -346,11 +346,13 @@ describe('api/agent/transform-image.js — payment window covers image generatio
     vi.doMock('../api/_lib/generateFoodImage.js', () => ({
       generateFoodImage: vi.fn().mockResolvedValue({
         imageUrl: 'https://example.com/img.png',
+        storagePath: 'img.png',
         imagePrompt: 'test',
         imageModel: 'gpt-image-1',
         imageGeneratedAt: new Date().toISOString(),
         usage: null,
       }),
+      deleteFoodImage: vi.fn().mockResolvedValue({ ok: true }),
     }))
   }
 
@@ -455,6 +457,113 @@ describe('api/agent/transform-image.js — payment window covers image generatio
     expect(res.statusCode).toBe(402)
     expect(decodeHeader(res.headers['PAYMENT-REQUIRED']).accepts[0].maxTimeoutSeconds).toBe(60)
     expect(res.headers['WWW-Authenticate']).toContain('maxTimeoutSeconds="60"')
+  })
+})
+
+// The image is uploaded to storage before settlement. If settlement fails,
+// the buyer is not charged, so the just-created object must be removed rather
+// than left orphaned (see the failed 0.25 USDC attempt on 2026-09-11 that
+// stored an image, then failed to settle).
+describe('api/agent/transform-image.js — deletes the stored image only when settlement fails', () => {
+  const STORAGE_PATH = 'req-specific-uuid.png'
+  let deleteSpy
+
+  function mockImageWithCleanup() {
+    deleteSpy = vi.fn().mockResolvedValue({ ok: true })
+    vi.doMock('../api/_lib/generateFoodImage.js', () => ({
+      generateFoodImage: vi.fn().mockResolvedValue({
+        imageUrl: 'https://example.com/img.png',
+        storagePath: STORAGE_PATH,
+        imagePrompt: 'test',
+        imageModel: 'gpt-image-1',
+        imageGeneratedAt: new Date().toISOString(),
+        usage: null,
+      }),
+      deleteFoodImage: deleteSpy,
+    }))
+  }
+
+  async function paidImageRequest(requirements) {
+    const goodPayload = Buffer.from(JSON.stringify({
+      x402Version: 2,
+      accepted: requirements,
+      payload: { signature: '0xsig', authorization: { from: '0xbuyer', to: requirements.payTo, value: requirements.amount, validAfter: '0', validBefore: '9999999999', nonce: '0xnonce' } },
+    })).toString('base64')
+    return mockReq({
+      headers: { host: 'old2new.app', 'x-forwarded-for': nextIp(), 'payment-signature': goodPayload },
+      body: { recipe: 'a'.repeat(20), diets: ['vegan'] },
+    })
+  }
+
+  it('does NOT delete the image when settlement succeeds (result and image are returned)', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    mockImageWithCleanup()
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isValid: true, payer: '0xbuyer' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, payer: '0xbuyer', transaction: '0xtx', network: 'eip155:84532' }) })
+
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const requirements = paymentRequirements({ amountUsd: 0.25, network: 'eip155:84532', maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
+    const res = mockRes()
+
+    await handler(await paidImageRequest(requirements), res)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.image.imageUrl).toBe('https://example.com/img.png')
+    expect(deleteSpy).not.toHaveBeenCalled() // never delete a paid-for image
+  })
+
+  it('deletes exactly the request-specific object when settlement fails, and withholds the result', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    mockImageWithCleanup()
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isValid: true, payer: '0xbuyer' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: false, errorReason: 'authorization_expired', transaction: '', network: 'eip155:84532' }) })
+
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const requirements = paymentRequirements({ amountUsd: 0.25, network: 'eip155:84532', maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
+    const res = mockRes()
+
+    await handler(await paidImageRequest(requirements), res)
+
+    expect(res.statusCode).toBe(402)
+    expect(res.body.error).toBe('settlement_failed')
+    expect(res.body.result).toBeUndefined()
+    expect(res.body.image).toBeUndefined()
+    expect(deleteSpy).toHaveBeenCalledTimes(1)
+    expect(deleteSpy).toHaveBeenCalledWith(STORAGE_PATH) // only this request's object
+  })
+
+  it('also deletes the object when the facilitator is unreachable at settle time', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    mockImageWithCleanup()
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isValid: true, payer: '0xbuyer' }) })
+      .mockRejectedValueOnce(new Error('network down'))
+
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const requirements = paymentRequirements({ amountUsd: 0.25, network: 'eip155:84532', maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
+    const res = mockRes()
+
+    await handler(await paidImageRequest(requirements), res)
+
+    expect(res.statusCode).toBe(502)
+    expect(res.body.error).toBe('facilitator_unavailable')
+    expect(deleteSpy).toHaveBeenCalledTimes(1)
+    expect(deleteSpy).toHaveBeenCalledWith(STORAGE_PATH)
+  })
+
+  it('deleteFoodImage no-ops (never an unscoped delete) when given no path', async () => {
+    // importActual bypasses any generateFoodImage mock left registered by the
+    // sibling tests above, so this exercises the real guard.
+    const { deleteFoodImage } = await vi.importActual('../api/_lib/generateFoodImage.js')
+    const r = await deleteFoodImage('')
+    expect(r).toEqual({ ok: false, skipped: true })
+    const r2 = await deleteFoodImage(undefined)
+    expect(r2).toEqual({ ok: false, skipped: true })
   })
 })
 
