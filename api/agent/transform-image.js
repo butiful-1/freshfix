@@ -30,6 +30,16 @@ import { TRANSFORM_INPUT_SCHEMA, TRANSFORM_INPUT_EXAMPLE, TRANSFORM_IMAGE_OUTPUT
 
 export const config = { maxDuration: 120 }
 
+// PAYMENT WINDOW: the buyer's signed authorization expires `maxTimeoutSeconds`
+// after they sign it, and we settle only after the transform AND the image are
+// both produced. That span regularly exceeds the shared 60s default (a live
+// 0.25 USDC purchase on 2026-09-11 completed the work, then failed at /settle
+// with the authorization already expired, so the buyer paid nothing and got
+// nothing while we still paid for the model and image calls). Give the buyer's
+// authorization at least the function's own maxDuration plus a margin for the
+// facilitator round-trip. Price, payTo, asset and network are unchanged.
+export const PAYMENT_TIMEOUT_SECONDS = 300
+
 const SCHEMA_VERSION = '1.0'
 const MODEL = 'claude-sonnet-4-6'
 const RESOURCE_PATH = '/api/agent/transform-image'
@@ -143,12 +153,13 @@ export default async function handler(req, res) {
       )
     }
 
-    const expected = paymentRequirements({ amountUsd: priceUsd, network })
+    const expected = paymentRequirements({ amountUsd: priceUsd, network, maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
     const challengeDefaults = {
       resourceUrl,
       description: RESOURCE_DESCRIPTION,
       amountUsd: priceUsd,
       network,
+      maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS,
       inputSchema: TRANSFORM_INPUT_SCHEMA,
     inputExample: TRANSFORM_INPUT_EXAMPLE,
     iconUrl: `https://${req.headers.host}/icon-192.png`,

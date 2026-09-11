@@ -10,7 +10,7 @@
   "network": "eip155:8453",
   "facilitator": "https://v2.facilitator.mogami.tech",
   "payTo": "0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE",
-  "lastUpdated": "2026-09-08",
+  "lastUpdated": "2026-09-11",
   "resources": [
     {
       "resource": "https://old2new.app/api/agent/transform",
@@ -118,7 +118,7 @@
           "amount": "250000",
           "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
           "payTo": "0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE",
-          "maxTimeoutSeconds": 60,
+          "maxTimeoutSeconds": 300,
           "extra": {
             "name": "USD Coin",
             "version": "2",

@@ -51,7 +51,15 @@ export function usdcFor(network = NETWORK) {
   return token
 }
 
-export function paymentRequirements({ amountUsd, network = NETWORK }) {
+// How long the buyer's signed EIP-3009 authorization stays valid. x402 clients
+// set `validBefore = now + maxTimeoutSeconds` when they sign, and we settle
+// only AFTER the paid work is produced — so this must cover the route's whole
+// verify → work → settle span, or the facilitator rejects the settlement as
+// expired and the buyer's completed result is withheld. 60s fits a single
+// model call (transform); routes that do more work pass a larger value.
+export const DEFAULT_MAX_TIMEOUT_SECONDS = 60
+
+export function paymentRequirements({ amountUsd, network = NETWORK, maxTimeoutSeconds = DEFAULT_MAX_TIMEOUT_SECONDS }) {
   const token = usdcFor(network)
   return {
     scheme: 'exact',
@@ -59,7 +67,7 @@ export function paymentRequirements({ amountUsd, network = NETWORK }) {
     amount: usdToAtomicUsdc(amountUsd),
     asset: token.asset,
     payTo: sellerAddress(),
-    maxTimeoutSeconds: 60,
+    maxTimeoutSeconds,
     extra: { name: token.name, version: token.version, assetTransferMethod: 'eip3009' },
   }
 }
@@ -134,7 +142,7 @@ export function buildBazaarExtension({ method = 'POST', inputSchema, inputExampl
   return { bazaar: { info, schema } }
 }
 
-export function buildPaymentRequired({ resourceUrl, description, amountUsd, network = NETWORK, mimeType = 'application/json', error, inputSchema, inputExample, outputExample, iconUrl }) {
+export function buildPaymentRequired({ resourceUrl, description, amountUsd, network = NETWORK, maxTimeoutSeconds = DEFAULT_MAX_TIMEOUT_SECONDS, mimeType = 'application/json', error, inputSchema, inputExample, outputExample, iconUrl }) {
   return {
     x402Version: 2,
     error,
@@ -146,7 +154,7 @@ export function buildPaymentRequired({ resourceUrl, description, amountUsd, netw
       tags: SERVICE_TAGS,
       ...(iconUrl ? { iconUrl } : {}),
     },
-    accepts: [paymentRequirements({ amountUsd, network })],
+    accepts: [paymentRequirements({ amountUsd, network, maxTimeoutSeconds })],
     extensions: buildBazaarExtension({ method: 'POST', inputSchema, inputExample, outputExample }),
   }
 }

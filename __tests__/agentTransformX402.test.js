@@ -337,6 +337,127 @@ describe('api/agent/transform-image.js — pricing gate', () => {
   })
 })
 
+// The buyer's EIP-3009 authorization expires maxTimeoutSeconds after signing
+// and the image route settles only after transform + image generation are
+// both done. A live 0.25 USDC purchase (2026-09-11) completed the work and
+// then failed at /settle because the shared 60s window had already lapsed.
+describe('api/agent/transform-image.js — payment window covers image generation', () => {
+  function mockImage() {
+    vi.doMock('../api/_lib/generateFoodImage.js', () => ({
+      generateFoodImage: vi.fn().mockResolvedValue({
+        imageUrl: 'https://example.com/img.png',
+        imagePrompt: 'test',
+        imageModel: 'gpt-image-1',
+        imageGeneratedAt: new Date().toISOString(),
+        usage: null,
+      }),
+    }))
+  }
+
+  async function paidImageRequest(requirements) {
+    const goodPayload = Buffer.from(JSON.stringify({
+      x402Version: 2,
+      accepted: requirements,
+      payload: { signature: '0xsig', authorization: { from: '0xbuyer', to: requirements.payTo, value: requirements.amount, validAfter: '0', validBefore: '9999999999', nonce: '0xnonce' } },
+    })).toString('base64')
+    return mockReq({
+      headers: { host: 'old2new.app', 'x-forwarded-for': nextIp(), 'payment-signature': goodPayload },
+      body: { recipe: 'a'.repeat(20), diets: ['vegan'] },
+    })
+  }
+
+  it('gives the buyer authorization at least the function maxDuration plus a settlement margin', async () => {
+    const { PAYMENT_TIMEOUT_SECONDS, config } = await import('../api/agent/transform-image.js')
+    const { DEFAULT_MAX_TIMEOUT_SECONDS } = await import('../api/_lib/x402.js')
+    // Work can run up to maxDuration; settle is a facilitator round-trip after that.
+    expect(PAYMENT_TIMEOUT_SECONDS).toBeGreaterThanOrEqual(config.maxDuration + 30)
+    expect(PAYMENT_TIMEOUT_SECONDS).toBeGreaterThan(DEFAULT_MAX_TIMEOUT_SECONDS)
+  })
+
+  it('advertises the longer window in the 402 challenge, with price, payTo, asset and network unchanged', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const req = mockReq({ headers: { host: 'old2new.app', 'x-forwarded-for': nextIp() }, body: {} })
+    const res = mockRes()
+
+    await handler(req, res)
+
+    expect(res.statusCode).toBe(402)
+    const accept = decodeHeader(res.headers['PAYMENT-REQUIRED']).accepts[0]
+    expect(accept.maxTimeoutSeconds).toBe(PAYMENT_TIMEOUT_SECONDS)
+    expect(accept.amount).toBe('250000') // $0.25, unchanged
+    expect(accept.payTo).toBe('0x2D6503F39026E53FEBadbDf54B4F56150b4f1aEE')
+    expect(accept.network).toBe('eip155:84532')
+    expect(accept.asset).toBe('0x036CbD53842c5426634e7929541eC2318f3dCF7e')
+    expect(res.headers['WWW-Authenticate']).toContain(`maxTimeoutSeconds="${PAYMENT_TIMEOUT_SECONDS}"`)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends the same longer window to the facilitator on /verify and /settle, then returns the image', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    mockImage()
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isValid: true, payer: '0xbuyer' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, payer: '0xbuyer', transaction: '0xtx', network: 'eip155:84532' }) })
+
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const requirements = paymentRequirements({ amountUsd: 0.25, network: 'eip155:84532', maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
+    const res = mockRes()
+
+    await handler(await paidImageRequest(requirements), res)
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0][0]).toContain('/verify')
+    expect(fetchMock.mock.calls[1][0]).toContain('/settle')
+    for (const call of fetchMock.mock.calls) {
+      const sent = JSON.parse(call[1].body)
+      expect(sent.paymentRequirements.maxTimeoutSeconds).toBe(PAYMENT_TIMEOUT_SECONDS)
+      expect(sent.paymentRequirements.amount).toBe('250000')
+    }
+    expect(res.statusCode).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.image.imageUrl).toBe('https://example.com/img.png')
+    expect(res.headers['PAYMENT-RESPONSE']).toBeTruthy()
+  })
+
+  it('still withholds the recipe and image when settlement fails after the work is done', async () => {
+    process.env.X402_TRANSFORM_IMAGE_PRICE_USD = '0.25'
+    mockImage()
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ isValid: true, payer: '0xbuyer' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: false, errorReason: 'authorization_expired', transaction: '', network: 'eip155:84532' }) })
+
+    const { default: handler, PAYMENT_TIMEOUT_SECONDS } = await import('../api/agent/transform-image.js')
+    const { paymentRequirements } = await import('../api/_lib/x402.js')
+    const requirements = paymentRequirements({ amountUsd: 0.25, network: 'eip155:84532', maxTimeoutSeconds: PAYMENT_TIMEOUT_SECONDS })
+    const res = mockRes()
+
+    await handler(await paidImageRequest(requirements), res)
+
+    expect(res.statusCode).toBe(402)
+    expect(res.body.error).toBe('settlement_failed')
+    expect(res.body.result).toBeUndefined()
+    expect(res.body.image).toBeUndefined()
+    expect(res.headers['PAYMENT-RESPONSE']).toBeUndefined()
+  })
+
+  it('leaves the text transform route on the shared 60s default', async () => {
+    const { default: handler } = await import('../api/agent/transform.js')
+    const { DEFAULT_MAX_TIMEOUT_SECONDS, paymentRequirements } = await import('../api/_lib/x402.js')
+    expect(DEFAULT_MAX_TIMEOUT_SECONDS).toBe(60)
+    expect(paymentRequirements({ amountUsd: 0.10, network: 'eip155:84532' }).maxTimeoutSeconds).toBe(60)
+
+    const req = mockReq({ headers: { host: 'old2new.app', 'x-forwarded-for': nextIp() }, body: { recipe: 'a'.repeat(20), diets: ['vegan'] } })
+    const res = mockRes()
+    await handler(req, res)
+
+    expect(res.statusCode).toBe(402)
+    expect(decodeHeader(res.headers['PAYMENT-REQUIRED']).accepts[0].maxTimeoutSeconds).toBe(60)
+    expect(res.headers['WWW-Authenticate']).toContain('maxTimeoutSeconds="60"')
+  })
+})
+
 describe('x402 challenge metadata — EIP-712 domain and Bazaar discovery', () => {
   it('advertises the on-chain USDC domain name per network and the transfer method', async () => {
     const { paymentRequirements } = await import('../api/_lib/x402.js')
