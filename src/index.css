@@ -1451,3 +1451,14 @@ textarea::placeholder { color: var(--text-muted); }
   padding-top: env(safe-area-inset-top, 0px);
 }
 .native .bottom-nav { max-width: none; }
+
+/* Native iPad (app runs as a real iPad app since build 3 — iPadOS 26's
+   scaled iPhone-compatibility window delivers touches with the wrong
+   geometry, so taps miss their targets; see App Review rejection of
+   build 2). Wide native screens keep the centered phone-column layout
+   the website already uses instead of stretching phone screens across
+   the full tablet width. */
+@media (min-width: 600px) {
+  .native .app { max-width: 430px; box-shadow: 0 0 60px rgba(0,0,0,0.18); }
+  .native .bottom-nav { max-width: 430px; }
+}
