@@ -60,9 +60,41 @@ export async function generateFoodImage(imagePrompt) {
 
   return {
     imageUrl: publicUrl,
+    // The bucket-relative object name (e.g. "<uuid>.png"). Callers that must
+    // undo the upload — a paid endpoint whose settlement fails after this
+    // succeeds — pass this to deleteFoodImage so only THIS request's object is
+    // removed. Not sent to clients; the response exposes imageUrl/imageModel.
+    storagePath: fileName,
     imagePrompt: fullPrompt,
     imageModel: 'gpt-image-1',
     imageGeneratedAt: new Date().toISOString(),
     usage: response.usage || null,
+  }
+}
+
+// Removes one just-created object from recipe-images. Used to undo an upload
+// when a paid request cannot settle after the image was stored, so a buyer who
+// paid nothing leaves nothing orphaned. Best-effort by design: it targets only
+// the single storagePath it is given, never throws (a cleanup failure must not
+// change the response the caller is about to send), and no-ops on a missing
+// path so it can never issue an unscoped delete.
+export async function deleteFoodImage(storagePath) {
+  if (!storagePath || typeof storagePath !== 'string') return { ok: false, skipped: true }
+
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !supabaseServiceKey) return { ok: false, skipped: true }
+
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const { error } = await supabase.storage.from('recipe-images').remove([storagePath])
+    if (error) {
+      console.error(`[generateFoodImage] cleanup failed for ${storagePath}:`, error.message)
+      return { ok: false }
+    }
+    return { ok: true }
+  } catch (err) {
+    console.error(`[generateFoodImage] cleanup threw for ${storagePath}:`, err.message)
+    return { ok: false }
   }
 }

@@ -23,7 +23,7 @@ import {
   runRepair,
 } from '../recipeConsistency.js'
 import { SYSTEM_PROMPT } from '../transform.js'
-import { generateFoodImage } from '../_lib/generateFoodImage.js'
+import { generateFoodImage, deleteFoodImage } from '../_lib/generateFoodImage.js'
 import { paymentRequirements, decodeB64Header, send402, verifyPayment, settlePayment, sendPaymentResponseHeader, paymentMatchesExpected, currentNetwork } from '../_lib/x402.js'
 import { rateLimit, clientIp } from '../_lib/rateLimit.js'
 import { TRANSFORM_INPUT_SCHEMA, TRANSFORM_INPUT_EXAMPLE, TRANSFORM_IMAGE_OUTPUT_EXAMPLE } from '../_lib/bazaarSchemas.js'
@@ -272,15 +272,21 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
     )
 
     if (!usingInternalKey) {
+      // The image is already stored. If settlement does not succeed we withhold
+      // the result AND delete the object we just created — the buyer is not
+      // charged, so nothing should be left behind. Only runs on a settlement
+      // that did not succeed; the 200 path below never deletes.
       let settleResult
       try {
         settleResult = await settlePayment(paymentPayload, requirements)
       } catch (err) {
         console.error(`[agent-transform-image ${requestId}] facilitator /settle unreachable:`, err.message)
+        await deleteFoodImage(image.storagePath)
         return fail(res, 502, 'facilitator_unavailable', 'The result was produced but payment could not be settled. Please retry.')
       }
       if (!settleResult.ok || !settleResult.data?.success) {
         console.error(`[agent-transform-image ${requestId}] settlement failed:`, settleResult.data?.errorReason)
+        await deleteFoodImage(image.storagePath)
         return fail(res, 402, 'settlement_failed', 'Payment could not be settled. No result was returned.')
       }
       sendPaymentResponseHeader(res, settleResult.data)
