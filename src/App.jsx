@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 import { App as CapacitorApp } from '@capacitor/app'
 import { isNativeApp, NATIVE_AUTH_SCHEME, closeNativeBrowser } from './authRedirect'
+import { signOutToastMessage } from './signOutToast'
 import { decideAuthAction, isPublicPath } from './authState'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
@@ -161,6 +162,10 @@ export default function App() {
   // Purely additive UI feedback — does not affect the sign-out call, the
   // auth-state redirect, or its timing (handled by onAuthStateChange below).
   const [justSignedOut, setJustSignedOut] = useState(false)
+  // Separate from justSignedOut so a completed account deletion shows an
+  // explicit "Account deleted" confirmation (App Store 5.1.1(v)) rather than
+  // the generic sign-out toast — the sign-out call itself is the same.
+  const [justDeletedAccount, setJustDeletedAccount] = useState(false)
 
   // ── 15-second "Try Again" timer ───────────────
   useEffect(() => {
@@ -202,6 +207,11 @@ export default function App() {
     const t = setTimeout(() => setJustSignedOut(false), 5000)
     return () => clearTimeout(t)
   }, [justSignedOut])
+  useEffect(() => {
+    if (!justDeletedAccount) return
+    const t = setTimeout(() => setJustDeletedAccount(false), 5000)
+    return () => clearTimeout(t)
+  }, [justDeletedAccount])
 
   // ── TWA visibility safety net ─────────────────
   // When Android backgrounds then restores the TWA, React state is preserved.
@@ -999,6 +1009,19 @@ export default function App() {
     }
   }
 
+  // Called by AboutScreen only after the server has confirmed the account is
+  // deleted. The local session is already invalid, so clear it the same way as
+  // a sign-out, but confirm the *deletion* explicitly rather than "signed out".
+  const handleAccountDeleted = async () => {
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error('[Old2New] Post-deletion sign out error:', e.message)
+    } finally {
+      setJustDeletedAccount(true)
+    }
+  }
+
   // ── Auth loading screen ───────────────────────
   if (!authChecked) {
     return (
@@ -1030,7 +1053,7 @@ export default function App() {
     return (
       <>
         <SplashScreen onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} isTWA={isTWA} />
-        {justSignedOut && (
+        {(justSignedOut || justDeletedAccount) && (
           <div
             role="status"
             style={{
@@ -1042,7 +1065,7 @@ export default function App() {
               animation: 'fadeIn 0.2s ease',
             }}
           >
-            Signed out successfully
+            {signOutToastMessage({ justSignedOut, justDeletedAccount })}
           </div>
         )}
       </>
@@ -1193,7 +1216,7 @@ export default function App() {
       case 'about':
         return (
           <AboutScreen
-            user={user} onLogout={handleLogout}
+            user={user} onLogout={handleLogout} onAccountDeleted={handleAccountDeleted}
             dietaryPreferences={dietaryPreferences}
             onSavePreferences={handleSaveDietaryPreferences}
             marketingEmailConsent={marketingEmailConsent}
