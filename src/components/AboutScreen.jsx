@@ -241,16 +241,17 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
+export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
   // App Store rule 5.1.1(v): account deletion is initiated and completed in-app
   // via an in-app confirmation modal (see DeleteAccountModal).
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   function handleAccountDeleted() {
     setShowDeleteModal(false)
-    // Local session is now invalid server-side; sign out to clear it and return
-    // the user to the signed-out home screen.
-    onLogout()
+    // Local session is now invalid server-side. onAccountDeleted clears it and
+    // shows an explicit "Account deleted" confirmation (not the generic
+    // sign-out toast) on the signed-out home screen.
+    ;(onAccountDeleted || onLogout)()
   }
 
   return (
