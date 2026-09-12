@@ -4,6 +4,7 @@ import { supabase } from './supabase'
 import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 import { App as CapacitorApp } from '@capacitor/app'
 import { isNativeApp, NATIVE_AUTH_SCHEME, closeNativeBrowser } from './authRedirect'
+import { decideAuthAction, isPublicPath } from './authState'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -376,40 +377,62 @@ export default function App() {
       const { data } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           try {
-            if (session?.user) {
-              setUser(session.user)
-              await loadProfile(session.user.id, session.user)
-              if (event === 'PASSWORD_RECOVERY') {
+            // decideAuthAction() encodes the fix for the intermittent OAuth
+            // kick-back: a null session on INITIAL_SESSION (exchange still in
+            // flight, or cold-start restore not finished) is 'ignore', NOT a
+            // sign-out. Only a real SIGNED_OUT clears state and navigates. See
+            // src/authState.js.
+            const action = decideAuthAction(event, session, {
+              inCallback: inCallbackRef.current,
+              appInitialized: appInitializedRef.current,
+            })
+            switch (action.type) {
+              case 'recovery':
+                setUser(session.user)
+                await loadProfile(session.user.id, session.user)
                 inCallbackRef.current = false
                 appInitializedRef.current = true
                 setScreen('reset-password')
-              } else if (event === 'SIGNED_IN' && inCallbackRef.current) {
+                break
+              case 'adopt-callback':
+                // A callback code exchange is in flight; that flow owns
+                // navigation. Adopt the session so the app has the user, but do
+                // not navigate here.
+                setUser(session.user)
+                await loadProfile(session.user.id, session.user)
                 appInitializedRef.current = true
-              } else if (event === 'SIGNED_IN' && !appInitializedRef.current) {
+                break
+              case 'sign-in-navigate':
+                setUser(session.user)
+                await loadProfile(session.user.id, session.user)
                 loadSavedRecipes(session.user.id)
-                if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/') && window.location.pathname !== '/blog' && !window.location.pathname.startsWith('/blog/') && window.location.pathname !== '/about' && window.location.pathname !== '/contact') {
-                  goToApp()
-                }
+                if (!isPublicPath(window.location.pathname)) goToApp()
                 appInitializedRef.current = true
-              }
-            } else {
-              setUser(null); setProfile(null)
-              setPlan('free'); setSwapUsage({ month: '', count: 0 })
-              setDietaryPreferences({})
-              setSavedRecipes([])
-              appInitializedRef.current = false
-              // Same public-page exclusions as the goToApp() guards above —
-              // a signed-out (or not-yet-resolved) session must never bounce
-              // an anonymous visitor on /recipes, /recipes/:slug, /blog, or
-              // /blog/:slug back to the splash screen. This event fires on
-              // every mount (Supabase's initial INITIAL_SESSION event, session
-              // null for anonymous visitors), so without these exclusions it
-              // silently swaps any public page to splash without touching the
-              // URL — visually indistinguishable from a random redirect.
-              const p = window.location.pathname
-              if (!p.startsWith('/recipe/') && !p.startsWith('/recipes/') && p !== '/blog' && !p.startsWith('/blog/') && p !== '/about' && p !== '/contact') {
-                setScreen('splash')
-              }
+                break
+              case 'refresh-user':
+                // User-bearing event that must not re-navigate (INITIAL_SESSION
+                // with a restored user, TOKEN_REFRESHED, USER_UPDATED, or a
+                // repeat SIGNED_IN once already in the app).
+                setUser(session.user)
+                await loadProfile(session.user.id, session.user)
+                break
+              case 'sign-out':
+                setUser(null); setProfile(null)
+                setPlan('free'); setSwapUsage({ month: '', count: 0 })
+                setDietaryPreferences({})
+                setSavedRecipes([])
+                appInitializedRef.current = false
+                // A signed-out session must never bounce a visitor off a public
+                // marketing/SEO page (see isPublicPath).
+                if (!isPublicPath(window.location.pathname)) {
+                  setScreen('splash')
+                }
+                break
+              case 'ignore':
+              default:
+                // Transient null session (e.g. INITIAL_SESSION before the OAuth
+                // exchange completes). Do nothing — do NOT clear or navigate.
+                break
             }
           } catch (e) {
             console.error('[Old2New] Auth state change error:', e.message)
