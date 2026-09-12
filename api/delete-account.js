@@ -48,6 +48,18 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Could not cancel subscription. Please contact support.' })
   }
 
+  // Delete the user's rows explicitly first. profiles and saved_recipes both
+  // declare ON DELETE CASCADE from auth.users (migrations 001), so deleteUser
+  // below already removes them — these explicit deletes are defense-in-depth so
+  // no associated data can survive even if a cascade were ever misconfigured.
+  // Non-fatal: the authoritative removal is deleteUser.
+  try {
+    await admin.from('saved_recipes').delete().eq('user_id', user.id)
+    await admin.from('profiles').delete().eq('id', user.id)
+  } catch (e) {
+    console.error('[delete-account] pre-delete of user data failed (cascade will still run):', e.message)
+  }
+
   const { error: delErr } = await admin.auth.admin.deleteUser(user.id)
   if (delErr) {
     console.error('[delete-account] deleteUser failed:', delErr.message)
