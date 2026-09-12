@@ -2,6 +2,101 @@ import { useState } from 'react'
 import { MARKETING_CONSENT_LABEL } from '../marketingConsent'
 import { supabase } from '../supabase'
 import { apiUrl } from '../apiBase'
+import { requestAccountDeletion } from '../deleteAccount'
+
+// Apple Guideline 5.1.1(v): account deletion must be initiated and completed
+// in-app. This is an in-app confirmation modal (NOT window.confirm/alert, which
+// are unreliable in the iOS WKWebView) that clearly states what is deleted,
+// requires an explicit confirm, shows progress and any error inline, and never
+// leaves the user unsure whether deletion happened.
+function DeleteAccountModal({ email, onCancel, onConfirmed }) {
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function confirmDelete() {
+    setDeleting(true)
+    setError('')
+    try {
+      const { data } = await supabase.auth.getSession()
+      await requestAccountDeletion({
+        token: data?.session?.access_token,
+        endpoint: apiUrl('/api/delete-account'),
+      })
+      onConfirmed()
+    } catch (e) {
+      setError(`${e.message} You can also email admin@old2new.app.`)
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Delete account confirmation"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 2000,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}
+      onClick={() => { if (!deleting) onCancel() }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: 'white', borderRadius: 18, padding: '24px 22px',
+          maxWidth: 380, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        }}
+      >
+        <div style={{ fontSize: 40, textAlign: 'center', marginBottom: 8 }}>⚠️</div>
+        <h3 style={{ fontSize: 19, fontWeight: 800, color: 'var(--text-primary)', textAlign: 'center', margin: '0 0 12px' }}>
+          Delete your account?
+        </h3>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.55, margin: '0 0 8px' }}>
+          This permanently deletes the Old2New account for <strong>{email}</strong>, including:
+        </p>
+        <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 14px', paddingLeft: 20 }}>
+          <li>Your saved recipes</li>
+          <li>Your dietary preferences and settings</li>
+          <li>Any active subscription (cancelled automatically)</li>
+        </ul>
+        <p style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600, lineHeight: 1.5, margin: '0 0 18px' }}>
+          This cannot be undone.
+        </p>
+
+        {error && (
+          <p role="alert" style={{ fontSize: 13, color: 'var(--red)', background: 'var(--red-bg)', borderRadius: 10, padding: '10px 12px', margin: '0 0 14px', lineHeight: 1.5 }}>
+            {error}
+          </p>
+        )}
+
+        <button
+          onClick={confirmDelete}
+          disabled={deleting}
+          style={{
+            width: '100%', background: 'var(--red)', color: 'white', border: 'none',
+            borderRadius: 12, padding: '13px', fontSize: 15, fontWeight: 700,
+            cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.7 : 1,
+          }}
+        >
+          {deleting ? 'Deleting your account…' : 'Permanently delete my account'}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={deleting}
+          style={{
+            width: '100%', marginTop: 10, background: 'none', color: 'var(--text-secondary)',
+            border: '1px solid var(--gray-200)', borderRadius: 12, padding: '12px',
+            fontSize: 15, fontWeight: 600, cursor: deleting ? 'default' : 'pointer',
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const PREF_OPTIONS = [
   { key: 'noPork',     label: 'No Pork',     icon: '🐷', desc: 'Excludes all pork & pork products' },
@@ -147,32 +242,15 @@ const DIETS = [
 ]
 
 export default function AboutScreen({ user, onLogout, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
-  const [deleting, setDeleting] = useState(false)
+  // App Store rule 5.1.1(v): account deletion is initiated and completed in-app
+  // via an in-app confirmation modal (see DeleteAccountModal).
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
-  // App Store rule 5.1.1(v): account deletion must be possible in-app.
-  async function handleDeleteAccount() {
-    const ok = window.confirm('Delete your Old2New account? This permanently removes your account, saved recipes and preferences. This cannot be undone.')
-    if (!ok) return
-    setDeleting(true)
-    try {
-      const { data } = await supabase.auth.getSession()
-      const token = data?.session?.access_token
-      if (!token) throw new Error('Please sign in again and retry.')
-      const res = await fetch(apiUrl('/api/delete-account'), {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error || `Request failed (${res.status})`)
-      }
-      window.alert('Your account has been deleted.')
-      onLogout()
-    } catch (e) {
-      window.alert(`Could not delete account: ${e.message}. You can also email admin@old2new.app.`)
-    } finally {
-      setDeleting(false)
-    }
+  function handleAccountDeleted() {
+    setShowDeleteModal(false)
+    // Local session is now invalid server-side; sign out to clear it and return
+    // the user to the signed-out home screen.
+    onLogout()
   }
 
   return (
@@ -309,12 +387,14 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
               </button>
             </div>
             <button
-              onClick={handleDeleteAccount}
-              disabled={deleting}
-              style={{ marginTop: 10, background: 'none', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: 0.7 }}
+              onClick={() => setShowDeleteModal(true)}
+              style={{ marginTop: 12, width: '100%', background: 'none', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 10, padding: '11px 14px', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
             >
-              {deleting ? 'Deleting…' : 'Delete Account'}
+              Delete Account
             </button>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 }}>
+              Permanently deletes your account and all associated data. This cannot be undone.
+            </p>
           </div>
         )}
 
@@ -351,6 +431,14 @@ export default function AboutScreen({ user, onLogout, dietaryPreferences, onSave
       <div className="footer-disclaimer">
         <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
       </div>
+
+      {showDeleteModal && user && (
+        <DeleteAccountModal
+          email={user.email}
+          onCancel={() => setShowDeleteModal(false)}
+          onConfirmed={handleAccountDeleted}
+        />
+      )}
     </div>
   )
 }
