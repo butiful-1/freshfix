@@ -64,8 +64,10 @@ export function SourcesSheet({ topics, title, intro, showMethodology, onClose, o
   // (transformed) screen container would be positioned relative to that
   // container and end up off-screen on long pages such as the results screen.
   return createPortal(
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={title} onClick={onClose} style={{ zIndex: 1500 }}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={title} onClick={onClose} style={{ zIndex: 1500, justifyContent: 'center' }}>
+      {/* Portaled outside the app column, so cap the sheet at the column's width
+          (430px) and centre it on tablets and desktops. */}
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto', maxWidth: 430 }}>
         <div className="modal-handle" />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>📚 {title}</h2>
