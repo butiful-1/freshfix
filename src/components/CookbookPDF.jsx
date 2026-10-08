@@ -1,4 +1,7 @@
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Font, Link } from '@react-pdf/renderer'
+import { HEALTH_SOURCES } from '../data/healthSources.js'
+import { HEALTH_GOALS } from '../data/healthGoals.js'
+import { HEALTH_DISCLAIMER, NUTRITION_METHODOLOGY } from '../healthDisclaimer.js'
 
 const GREEN      = '#16A34A'
 const GREEN_DARK = '#14532D'
@@ -216,6 +219,9 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: MUTED,
   },
+  refText: { fontSize: 8.5, color: TEXT, lineHeight: 1.45, marginBottom: 3 },
+  refTitle: { fontSize: 8.5, fontWeight: 700, color: TEXT },
+  refLink: { fontSize: 7.5, color: GREEN, marginBottom: 2 },
 })
 
 function formatDate(dateStr) {
@@ -304,7 +310,7 @@ function RecipePage({ recipe, pageNumber, total }) {
 
       {/* Page footer */}
       <View style={styles.pageFooter} fixed>
-        <Text style={styles.pageFooterText}>Old2New — Not medical advice. Consult your physician before changing your diet.</Text>
+        <Text style={styles.pageFooterText}>Old2New — Nutrition values are per-serving estimates. Not medical advice. See the Sources page at the end.</Text>
         <Text style={styles.pageFooterText}>{pageNumber} / {total}</Text>
       </View>
     </Page>
@@ -331,10 +337,7 @@ export default function CookbookPDF({ recipes, generatedDate }) {
             <Text style={styles.coverMetaLabel}>Generated</Text>
           </View>
         </View>
-        <Text style={styles.coverFooter}>
-          Old2New is for informational purposes only. Not medical advice.{'\n'}
-          Consult your physician before making dietary changes.
-        </Text>
+        <Text style={styles.coverFooter}>{HEALTH_DISCLAIMER}</Text>
       </Page>
 
       {/* One page per recipe */}
@@ -346,6 +349,32 @@ export default function CookbookPDF({ recipes, generatedDate }) {
           total={totalPages}
         />
       ))}
+
+      {/* Sources, methodology and disclaimer (App Store 1.4.1) */}
+      <Page size="A4" style={styles.page} wrap>
+        <Text style={styles.recipeName}>Sources & how nutrition values are estimated</Text>
+        <View style={styles.divider} />
+        <Text style={styles.sectionLabel}>Nutrition methodology</Text>
+        {NUTRITION_METHODOLOGY.map((line, i) => (
+          <Text key={i} style={styles.refText}>{line}</Text>
+        ))}
+        <Text style={[styles.sectionLabel, { marginTop: 10 }]}>Transformation goals</Text>
+        {HEALTH_GOALS.map(g => (
+          <Text key={g.id} style={styles.refText}><Text style={styles.refTitle}>{g.id}: </Text>{g.definition}</Text>
+        ))}
+        <Text style={[styles.sectionLabel, { marginTop: 10 }]}>Sources</Text>
+        {HEALTH_SOURCES.map(s => (
+          <View key={s.id} style={{ marginBottom: 4 }} wrap={false}>
+            <Text style={styles.refText}><Text style={styles.refTitle}>{s.org}. </Text>{s.title}. Accessed {s.accessed}.</Text>
+            <Link src={s.url} style={styles.refLink}>{s.url}</Link>
+          </View>
+        ))}
+        <Text style={[styles.refText, { marginTop: 10 }]}>{HEALTH_DISCLAIMER}</Text>
+        <View style={styles.pageFooter} fixed>
+          <Text style={styles.pageFooterText}>Old2New — Sources & References</Text>
+          <Text style={styles.pageFooterText}>{totalPages + 1} / {totalPages + 1}</Text>
+        </View>
+      </Page>
     </Document>
   )
 }

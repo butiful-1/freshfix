@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import ReportRecipeModal from './ReportRecipeModal.jsx'
 import { MACRO_COLORS, MacroBar } from './shared/MacroBar.jsx'
+import SourcesLink from './shared/SourcesLink.jsx'
+import { topicsForGoals } from '../data/healthGoals.js'
+import { HEALTH_DISCLAIMER } from '../healthDisclaimer.js'
 
-export default function ResultsScreen({ result, onSave, onShoppingList, onStartOver, savedRecipes, onShare }) {
+export default function ResultsScreen({ result, onSave, onShoppingList, onStartOver, savedRecipes, onShare, onViewReferences }) {
   const [saved, setSaved] = useState(() => savedRecipes?.some(r => r.id === result?.id))
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -36,6 +39,7 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
   const { transformedRecipe, originalName, ingredientSwaps, caloriesBefore, caloriesAfter, macros, whyTheseSwaps, encouragement, diets } = result
 
   const calSaved = caloriesBefore - caloriesAfter
+  const sourceTopics = topicsForGoals(diets || [])
   const calPct = caloriesBefore > 0 ? Math.round((Math.abs(calSaved) / caloriesBefore) * 100) : 0
 
   const handleSave = async () => {
@@ -145,29 +149,39 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
           <div className="compare-label">BEFORE</div>
           <div className="compare-name">{originalName || 'Original Recipe'}</div>
           <div className="compare-cal">{caloriesBefore}</div>
-          <div className="compare-cal-label">calories</div>
+          <div className="compare-cal-label">calories (est.)</div>
         </div>
         <div className="compare-card after">
           <div className="compare-after-badge">NEW</div>
           <div className="compare-label">AFTER</div>
           <div className="compare-name">{transformedRecipe?.name}</div>
           <div className="compare-cal">{caloriesAfter}</div>
-          <div className="compare-cal-label">calories</div>
+          <div className="compare-cal-label">calories (est.)</div>
           {calSaved > 0 && (
-            <div className="compare-saved">↓ {calSaved} cal saved ({calPct}%)</div>
+            <div className="compare-saved">↓ about {calSaved} cal ({calPct}%)</div>
           )}
           {calSaved < 0 && (
             <div className="compare-saved" style={{ background: '#FFF3E0', borderColor: '#FFB74D', color: '#E65100' }}>
-              +{Math.abs(calSaved)} cal (more protein)
+              +about {Math.abs(calSaved)} cal
             </div>
           )}
         </div>
       </div>
 
-      {/* AI notice */}
-      <p style={{ padding: '0 16px 10px', fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-        AI-generated recipe. Please review ingredients, nutrition, allergens, and cooking instructions before preparing.
-      </p>
+      {/* AI notice + how values are estimated */}
+      <div style={{ padding: '0 16px 10px', display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
+        <p style={{ flex: 1, minWidth: 180, fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+          AI-generated recipe. Calories and macros are per-serving estimates, not measurements. Please review ingredients, nutrition, allergens, and cooking instructions before preparing.
+        </p>
+        <SourcesLink
+          compact
+          label="How we estimate"
+          title="How nutrition values are estimated"
+          topics={['nutrition-estimates']}
+          showMethodology
+          onViewAll={onViewReferences}
+        />
+      </div>
 
       {/* Diet badges */}
       {diets?.length > 0 && (
@@ -335,7 +349,16 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
           <div className="divider" />
 
           <div className="section">
-            <p className="section-title">💡 Why These Swaps</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+              <p className="section-title" style={{ margin: 0 }}>💡 Why These Swaps</p>
+              <SourcesLink
+                compact
+                topics={sourceTopics}
+                title={`Sources — ${(diets && diets.length) ? diets.join(', ') : 'nutrition guidance'}`}
+                intro="The general nutrition guidance behind this transformation goal. Recipe text is AI-generated and describes ingredient characteristics; it is not medical advice."
+                onViewAll={onViewReferences}
+              />
+            </div>
             <div className="why-box">{whyTheseSwaps}</div>
           </div>
         </div>
@@ -348,12 +371,12 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--gray-700)' }}>{caloriesBefore}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>BEFORE (cal)</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>BEFORE (cal, est.)</div>
               </div>
               <div style={{ fontSize: 24, color: 'var(--green)', alignSelf: 'center', fontWeight: 800 }}>→</div>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--green-dark)' }}>{caloriesAfter}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>AFTER (cal)</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>AFTER (cal, est.)</div>
               </div>
             </div>
           </div>
@@ -362,6 +385,16 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
             <p className="section-label" style={{ marginBottom: 6 }}>
               Gray = Before · Colored = After
             </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+              <SourcesLink
+                compact
+                label="How we estimate · Sources"
+                title="How nutrition values are estimated"
+                topics={['nutrition-estimates', ...sourceTopics.filter(t => t !== 'nutrition-estimates')]}
+                showMethodology
+                onViewAll={onViewReferences}
+              />
+            </div>
             <div className="macros-grid">
               <MacroBar label="Protein" before={macros?.before?.protein || 0} after={macros?.after?.protein || 0} color={MACRO_COLORS.protein} />
               <MacroBar label="Carbs" before={macros?.before?.carbs || 0} after={macros?.after?.carbs || 0} color={MACRO_COLORS.carbs} />
@@ -374,8 +407,14 @@ export default function ResultsScreen({ result, onSave, onShoppingList, onStartO
 
       {/* Disclaimer badge */}
       <div className="disclaimer-badge" style={{ margin: '8px 16px' }}>
-        <span className="disclaimer-badge-icon">⚠️</span>
-        <p>Nutritional information is estimated. Always verify with your healthcare provider before making dietary changes.</p>
+        <span className="disclaimer-badge-icon">⚕️</span>
+        <p>{HEALTH_DISCLAIMER}{' '}
+          {onViewReferences && (
+            <button type="button" onClick={onViewReferences} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--green-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: 12, fontFamily: 'var(--font)' }}>
+              Sources &amp; References
+            </button>
+          )}
+        </p>
       </div>
 
       {/* Action buttons */}

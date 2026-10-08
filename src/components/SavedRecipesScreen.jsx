@@ -14,7 +14,8 @@ const BG_GRADIENTS = [
   'linear-gradient(135deg, #F1F8E9, #DCEDC8)',
 ]
 
-export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare, plan, isTWA }) {
+export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare, plan, isTWA, showUpgrade, onUpgrade }) {
+  const canUpgrade = showUpgrade ?? !isTWA
   const [copiedId,    setCopiedId]    = useState(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadErr, setDownloadErr] = useState('')
@@ -128,11 +129,15 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare,
               </p>
             )}
           </div>
-        ) : !isTWA ? (
-          <div style={{
+        ) : canUpgrade ? (
+          <div
+            onClick={onUpgrade}
+            role={onUpgrade ? 'button' : undefined}
+            tabIndex={onUpgrade ? 0 : undefined}
+            style={{
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--gray-50)', border: '1.5px solid var(--gray-200)',
-            borderRadius: 14, padding: '13px 16px',
+            borderRadius: 14, padding: '13px 16px', cursor: onUpgrade ? 'pointer' : 'default',
           }}>
             <span style={{ fontSize: 20 }}>📖</span>
             <div style={{ flex: 1 }}>
@@ -140,7 +145,7 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare,
                 Download My Cookbook
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                Plus or Premium plan required
+                Plus or Premium plan required{onUpgrade ? ' · tap to see plans' : ''}
               </p>
             </div>
             <span style={{ fontSize: 16, color: 'var(--text-muted)' }}>🔒</span>

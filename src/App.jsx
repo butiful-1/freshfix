@@ -6,6 +6,8 @@ import { App as CapacitorApp } from '@capacitor/app'
 import { isNativeApp, NATIVE_AUTH_SCHEME, closeNativeBrowser } from './authRedirect'
 import { signOutToastMessage } from './signOutToast'
 import { decideAuthAction, isPublicPath } from './authState'
+import { isIOSNative } from './platform'
+import * as iap from './iap/store'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -36,6 +38,8 @@ import BlogPostPage from './components/BlogPostPage'
 import AboutPage from './components/AboutPage'
 import ContactPage from './components/ContactPage'
 import MarketingConsentBanner from './components/MarketingConsentBanner'
+import ReferencesScreen from './components/ReferencesScreen'
+import ReferencesPage from './components/ReferencesPage'
 
 const PLAN_LIMITS = { free: 5, wellness: 50, family: 150 }
 // Internal accounts get a raised limit regardless of plan
@@ -62,6 +66,7 @@ export default function App() {
     if (p.startsWith('/blog/')) return 'blog-post'
     if (p === '/about') return 'about-page'
     if (p === '/contact') return 'contact-page'
+    if (p === '/references') return 'references-page'
     if (p === '/success') return 'success'
     if (p === '/cancel') return 'cancel'
     return 'splash'
@@ -112,6 +117,16 @@ export default function App() {
   const [swapUsage, setSwapUsage]           = useState({ month: '', count: 0 })
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [stripeSessionId, setStripeSessionId]   = useState(null)
+  // Apple In-App Purchase (iOS only). The plan itself always comes from the
+  // server-written profiles.plan; these hold StoreKit product info and the
+  // entitlement source for the UI.
+  const appleIAP = isIOSNative()
+  const [appleProducts, setAppleProducts] = useState(null)
+  const [appleProductsError, setAppleProductsError] = useState('')
+  const [planSource, setPlanSource] = useState(null)
+  const [iapBusy, setIapBusy] = useState(false)
+  const [iapMessage, setIapMessage] = useState('')
+  const [referencesReturnScreen, setReferencesReturnScreen] = useState('home')
   const [sharedRecipeId, setSharedRecipeId]     = useState(null)
 
   // ── TWA (Android app) detection ───────────────
@@ -140,7 +155,7 @@ export default function App() {
   // Hoisted above every early return further down (renderScreen's early
   // 'splash'/'recipes-index'/'blog-index'/'blog-post' returns) so the
   // useEffect below it is always called in the same order — Rules of Hooks.
-  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password'].includes(screen)
+  const showNav = !['splash', 'signup', 'login', 'onboarding', 'callback', 'success', 'cancel', 'recipe-share', 'reset-password', 'references-page'].includes(screen)
   const showMarketingBanner = showNav && !!user && !!profile
     && profile.marketing_email_consent_source == null
     && !bannerDismissedThisSession
@@ -275,6 +290,7 @@ export default function App() {
 
       setProfile(p)
       setPlan(p.plan || 'free')
+      setPlanSource(p.entitlement_source || null)
       setSwapUsage({ month: p.swaps_month, count: p.swaps_used || 0 })
       setDietaryPreferences(p.dietary_preferences || {})
       setMarketingEmailConsent(!!p.marketing_email_consent)
@@ -429,6 +445,7 @@ export default function App() {
               case 'sign-out':
                 setUser(null); setProfile(null)
                 setPlan('free'); setSwapUsage({ month: '', count: 0 })
+                setPlanSource(null)
                 setDietaryPreferences({})
                 setSavedRecipes([])
                 appInitializedRef.current = false
@@ -487,6 +504,27 @@ export default function App() {
     CapacitorApp.getLaunchUrl().then(r => handleUrl(r?.url)).catch(() => {})
     return () => { sub.then(h => h.remove()).catch(() => {}) }
   }, [])
+
+  // ── Apple IAP: products, launch/resume entitlement sync, live updates ──
+  useEffect(() => {
+    if (!appleIAP) return
+    iap.loadProducts()
+      .then(p => { setAppleProducts(p); if (!p.length) setAppleProductsError('Subscriptions are not available right now. Please try again later.') })
+      .catch(e => { console.error('[iap] products:', e.message); setAppleProductsError('Could not load subscription prices from the App Store. Please try again later.') })
+  }, [appleIAP])
+
+  useEffect(() => {
+    if (!appleIAP || !user) return
+    let cancelled = false
+    const sync = () => iap.syncEntitlements()
+      .then(r => { if (!cancelled && r?.plan) { setPlan(r.plan); setPlanSource(r.source || null); loadProfile(user.id, user) } })
+      .catch(e => console.warn('[iap] sync:', e.message))
+    sync()
+    const onVisible = () => { if (document.visibilityState === 'visible') sync() }
+    document.addEventListener('visibilitychange', onVisible)
+    const stop = iap.onTransactionUpdated((r) => { if (!cancelled && r?.plan) { setPlan(r.plan); setPlanSource(r.source || null); loadProfile(user.id, user) } })
+    return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisible); stop() }
+  }, [appleIAP, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── URL routing ──────────────────────────────
   useEffect(() => {
@@ -743,6 +781,8 @@ export default function App() {
       setScreen('about-page')
     } else if (path === '/contact') {
       setScreen('contact-page')
+    } else if (path === '/references') {
+      setScreen('references-page')
     } else {
       console.log('[Old2New] OAuth Path Used: HOMEPAGE (NO CODE)')
     }
@@ -1000,6 +1040,44 @@ export default function App() {
   const handleBannerMaybeLater = () => setBannerDismissedThisSession(true)
   const handleBannerDecline    = () => handleSaveMarketingConsent(false, 'banner_decline')
 
+  // ── Apple In-App Purchase (iOS) ───────────────
+  // Every path ends in the server verifying Apple's signed transaction and
+  // writing profiles.plan; the client only reloads the profile afterwards.
+  const applyIapResult = async (result) => {
+    if (result?.plan) { setPlan(result.plan); setPlanSource(result.source || null) }
+    if (user) await loadProfile(user.id, user)
+  }
+
+  const handleApplePurchase = async (planKey) => {
+    if (!user) throw new Error('Please sign in to subscribe.')
+    try {
+      const result = await iap.purchasePlan(planKey, user.id)
+      await applyIapResult(result)
+      return { plan: result?.plan }
+    } catch (e) {
+      if (e instanceof iap.PurchasePending) return { pending: true, message: e.message }
+      throw e
+    }
+  }
+
+  const handleRestorePurchases = async () => {
+    setIapBusy(true)
+    setIapMessage('')
+    try {
+      const result = await iap.restorePurchases()
+      await applyIapResult(result)
+      const restoredPlan = result?.plan || plan
+      setIapMessage(restoredPlan !== 'free' ? `Restored: ${restoredPlan === 'family' ? 'Premium' : 'Plus'} is active.` : 'No active Apple subscription found for this Apple Account.')
+      return { plan: restoredPlan }
+    } finally {
+      setIapBusy(false)
+    }
+  }
+
+  const handleManageSubscription = () => { iap.openManageSubscriptions().catch(e => console.error('[iap] manage:', e.message)) }
+
+  const goToReferences = () => { setReferencesReturnScreen(screen); setScreen('references') }
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
@@ -1093,6 +1171,9 @@ export default function App() {
   if (screen === 'contact-page') {
     return <ContactPage onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
   }
+  if (screen === 'references-page') {
+    return <ReferencesPage onSignUp={() => setScreen('signup')} onLogin={() => setScreen('login')} />
+  }
 
   const renderScreen = () => {
     // Guard: unauthenticated users can only see landing, auth, and payment return screens
@@ -1117,9 +1198,10 @@ export default function App() {
             healthGoal={healthGoal} onHealthGoalChange={setHealthGoal}
             onTransform={handleTransform} isLoading={isLoading} error={error}
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
-            plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA) setScreen('pricing') }}
+            plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA || appleIAP) setScreen('pricing') }}
             transformLimit={transformLimit} dietaryPreferences={dietaryPreferences}
-            onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA}
+            onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA} showUpgrade={!isTWA || appleIAP}
+            onViewReferences={goToReferences}
           />
         )
       case 'results':
@@ -1130,15 +1212,26 @@ export default function App() {
             onStartOver={handleStartOver} savedRecipes={savedRecipes}
             dietaryPreferences={dietaryPreferences}
             onShare={handleMarkShared}
+            onViewReferences={goToReferences}
           />
         )
       case 'shopping':
         return <ShoppingListScreen result={transformResult} onBack={() => setScreen('results')} />
       case 'saved':
-        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} onShare={handleMarkShared} plan={plan} isTWA={isTWA} />
+        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} onShare={handleMarkShared} plan={plan} isTWA={isTWA} showUpgrade={!isTWA || appleIAP} onUpgrade={() => setScreen('pricing')} />
       case 'pricing':
-        if (isTWA) { setTimeout(() => setScreen('home'), 0); return null }
-        return <PricingScreen plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user} />
+        // Android (TWA) has no in-app purchases; iOS sells Plus/Premium via Apple IAP.
+        if (isTWA && !appleIAP) { setTimeout(() => setScreen('home'), 0); return null }
+        return (
+          <PricingScreen
+            plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user}
+            appleIAP={appleIAP} appleProducts={appleProducts} appleProductsError={appleProductsError}
+            onApplePurchase={handleApplePurchase} onRestorePurchases={handleRestorePurchases}
+            onManageSubscription={handleManageSubscription} planSource={planSource}
+          />
+        )
+      case 'references':
+        return <ReferencesScreen onBack={() => setScreen(referencesReturnScreen || 'home')} />
       case 'callback': {
         const wrapStyle = {
           display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -1221,6 +1314,13 @@ export default function App() {
             onSavePreferences={handleSaveDietaryPreferences}
             marketingEmailConsent={marketingEmailConsent}
             onSaveMarketingConsent={handleSaveMarketingConsent}
+            onViewReferences={goToReferences}
+            subscription={appleIAP ? {
+              plan, source: planSource, busy: iapBusy, message: iapMessage,
+              onViewPlans: () => setScreen('pricing'),
+              onRestore: () => handleRestorePurchases().catch(e => setIapMessage(e.message)),
+              onManage: planSource === 'apple' ? handleManageSubscription : undefined,
+            } : undefined}
           />
         )
       case 'success':
@@ -1250,6 +1350,7 @@ export default function App() {
             dietaryPreferences={dietaryPreferences}
             onSelectIdea={handleSelectIdea}
             onBack={() => setScreen('home')}
+            onViewReferences={goToReferences}
           />
         )
       case 'reset-password':
@@ -1274,6 +1375,9 @@ export default function App() {
         <UpgradeModal
           swapUsage={swapUsage}
           isTWA={isTWA}
+          appleIAP={appleIAP} appleProducts={appleProducts}
+          onApplePurchase={handleApplePurchase}
+          onRestorePurchases={() => { setShowUpgradeModal(false); setScreen('pricing') }}
           onClose={() => setShowUpgradeModal(false)}
           onViewPlans={() => { setShowUpgradeModal(false); setScreen('pricing') }}
         />
@@ -1352,7 +1456,7 @@ export default function App() {
         <BottomNav
           activeScreen={screen} onNavigate={setScreen}
           savedCount={savedRecipes.length} plan={plan} swapUsage={swapUsage}
-          isTWA={isTWA}
+          isTWA={isTWA} showPricing={!isTWA || appleIAP}
         />
       )}
 

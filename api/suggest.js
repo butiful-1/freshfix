@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse } from './recipeConsistency.js'
+import { CLAIM_LANGUAGE_RULES } from './_lib/claimRules.js'
+import { guardIdeas } from './_lib/claimGuard.js'
 
 export const config = { maxDuration: 30 }
 
@@ -51,6 +53,8 @@ function buildUserMessage(mealType, filters, restrictionLines, healthGoal) {
 }
 
 const SYSTEM_PROMPT = `You are Old2New, a creative meal suggestion assistant. Suggest delicious, practical meal ideas based on the user's preferences and dietary restrictions.
+${CLAIM_LANGUAGE_RULES}
+"calories" is an ESTIMATE per serving (whole number) from typical ingredient composition, or null if unsure.
 
 CRITICAL RULE: Respond ONLY with valid JSON matching this exact structure:
 {
@@ -135,7 +139,10 @@ export async function generateMealIdeas({ mealType, filters: rawFilters, dietary
     }
   }
 
-  return clean.slice(0, 5)
+  const final = clean.slice(0, 5)
+  // Medical-claim language guard (App Store 1.4.1).
+  await guardIdeas(final, client)
+  return final
 }
 
 export default async function handler(req, res) {

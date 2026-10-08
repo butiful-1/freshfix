@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: 'about',   label: 'About',   icon: 'ℹ️', activeIcon: 'ℹ️' },
 ]
 
-export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, swapUsage, isTWA }) {
+export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, swapUsage, isTWA, showPricing }) {
   const activeBase = ['results', 'shopping'].includes(activeScreen) ? 'home' : activeScreen
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
   const atLimit = plan === 'free' && swapsLeft === 0
@@ -16,7 +16,10 @@ export default function BottomNav({ activeScreen, onNavigate, savedCount, plan, 
   // standalone public marketing page (Sign In shown, no app chrome, and its
   // assets are stripped from the native bundle), which reads as a forced logout.
   // Pricing is likewise hidden natively (App Store rule 3.1.1). Both are web-only.
-  const visibleItems = isTWA ? NAV_ITEMS.filter(i => i.id !== 'pricing' && i.id !== 'blog') : NAV_ITEMS
+  // showPricing: the iOS app sells Plus/Premium through Apple In-App Purchase,
+  // so its Pricing tab is back; Android (TWA) still has no in-app purchases.
+  const pricingVisible = showPricing ?? !isTWA
+  const visibleItems = NAV_ITEMS.filter(i => (i.id !== 'blog' || !isTWA) && (i.id !== 'pricing' || pricingVisible))
 
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Main navigation">

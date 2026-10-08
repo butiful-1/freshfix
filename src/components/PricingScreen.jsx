@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { apiUrl } from '../apiBase'
+import { IAP_PRODUCTS, PLAN_DISPLAY_NAMES } from '../iap/products.js'
+import { openExternal } from './shared/SourcesLink.jsx'
+import { SHORT_DISCLAIMER } from '../healthDisclaimer.js'
 
 const FREE_LIMIT = 5
 
@@ -32,6 +35,7 @@ const PLANS = [
       'All 7 diet types',
       'Shopping list',
       'Save up to 50 recipes',
+      'PDF cookbook download',
       'Priority Transformations',
     ],
     stripeKey: 'wellness',
@@ -48,6 +52,7 @@ const PLANS = [
       'All 7 diet types',
       'Shopping list',
       'Save up to 150 recipes',
+      'PDF cookbook download',
       'Priority Transformations',
       'Priority support',
     ],
@@ -55,7 +60,7 @@ const PLANS = [
   },
 ]
 
-const FAQ = [
+const FAQ_WEB = [
   {
     q: 'Can I cancel anytime?',
     a: 'Yes — cancel anytime with no penalties. Your plan stays active until the end of the billing period, then reverts to Free.',
@@ -75,6 +80,37 @@ const FAQ = [
   {
     q: 'Can I switch between plans?',
     a: 'Yes. Upgrade or downgrade at any time. Changes take effect at your next billing cycle. Upgrades are prorated.',
+  },
+  {
+    q: 'Is my recipe data private?',
+    a: 'Your saved recipes are stored securely in your account. Recipe text is sent to the Claude AI API for transformation only — it is not retained or used for training. We do not sell your data.',
+  },
+]
+
+const FAQ_IOS = [
+  {
+    q: 'How does billing work?',
+    a: 'Plus and Premium are monthly auto-renewing subscriptions purchased through Apple In-App Purchase and billed to your Apple Account. The price shown is charged each month until you cancel.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Cancel in Settings → Apple Account → Subscriptions (or tap Manage Subscription here). Your plan stays active until the end of the current billing period, then reverts to Free. Cancellation must happen at least 24 hours before the period ends to avoid the next charge.',
+  },
+  {
+    q: 'Is there a free trial?',
+    a: `The Free plan includes ${FREE_LIMIT} Recipe Upgrades every month — forever — so you can try Old2New before subscribing.`,
+  },
+  {
+    q: "What's the difference between Plus and Premium?",
+    a: 'Plus gives you 50 Recipe Upgrades per month. Premium gives you 150 Recipe Upgrades per month plus priority support.',
+  },
+  {
+    q: 'Can I switch between plans?',
+    a: 'Yes. Both plans are in the same subscription group, so you can move between Plus and Premium at any time without holding two subscriptions. Apple applies upgrades immediately (prorated) and downgrades at your next renewal.',
+  },
+  {
+    q: 'I already subscribed on old2new.app. Do I need to buy again?',
+    a: 'No. Sign in with the same account and your existing plan works here. If your plan does not appear, tap Restore Purchases or sign out and back in.',
   },
   {
     q: 'Is my recipe data private?',
@@ -115,15 +151,41 @@ function FaqItem({ q, a }) {
   )
 }
 
-export default function PricingScreen({ plan, swapUsage, onBack, user }) {
+// Props added for the iOS app (Apple In-App Purchase, App Store 3.1.1):
+//   appleIAP          — true on the native iOS app
+//   appleProducts     — [{ plan, priceString, ... }] from StoreKit (localized prices)
+//   appleProductsError— message if StoreKit could not load products
+//   onApplePurchase(plan) → Promise<{ pending?, message? }>
+//   onRestorePurchases()  → Promise<{ plan }>
+//   onManageSubscription()
+//   planSource        — 'apple' | 'stripe' | null (who granted the current plan)
+export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP = false, appleProducts, appleProductsError, onApplePurchase, onRestorePurchases, onManageSubscription, planSource }) {
   const [loading, setLoading] = useState(null)
   const [error, setError]     = useState('')
+  const [notice, setNotice]   = useState('')
 
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
+
+  useEffect(() => { setError(''); setNotice('') }, [plan])
+
+  const applePriceFor = (planKey) => appleProducts?.find(p => p.plan === planKey)?.priceString || null
 
   async function handleSubscribe(planKey) {
     setLoading(planKey)
     setError('')
+    setNotice('')
+    if (appleIAP) {
+      try {
+        const outcome = await onApplePurchase(planKey)
+        if (outcome?.pending) setNotice(outcome.message)
+        else setNotice(`You're now on ${PLAN_DISPLAY_NAMES[outcome?.plan] || IAP_PRODUCTS[planKey].name}. Thank you!`)
+      } catch (e) {
+        if (e?.name !== 'PurchaseCancelled') setError(e?.message || 'Purchase could not be completed. You have not been charged.')
+      } finally {
+        setLoading(null)
+      }
+      return
+    }
     try {
       const res = await fetch(apiUrl('/api/create-checkout'), {
         method: 'POST',
@@ -138,6 +200,23 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
     }
     setLoading(null)
   }
+
+  async function handleRestore() {
+    setLoading('restore')
+    setError('')
+    setNotice('')
+    try {
+      const result = await onRestorePurchases()
+      if (result?.plan && result.plan !== 'free') setNotice(`Restored: your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active.`)
+      else setNotice('No active Apple subscription was found for this Apple Account. If you subscribed on old2new.app, make sure you are signed in with the same Old2New account.')
+    } catch (e) {
+      setError(e?.message || 'Could not restore purchases. Please try again.')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const FAQ = appleIAP ? FAQ_IOS : FAQ_WEB
 
   return (
     <div className="animate-in">
@@ -179,12 +258,26 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
           <span>{error}</span>
         </div>
       )}
+      {notice && (
+        <div role="status" style={{ margin: '0 16px 8px', fontSize: 13, color: 'var(--green-dark)', background: 'var(--green-pale)', border: '1px solid var(--green-light)', borderRadius: 10, padding: '10px 12px', lineHeight: 1.5 }}>
+          {notice}
+        </div>
+      )}
+      {appleIAP && appleProductsError && (
+        <div className="error-msg" style={{ margin: '0 16px 8px' }}>
+          <span className="error-icon">⚠️</span>
+          <span>{appleProductsError}</span>
+        </div>
+      )}
 
       {/* Plan cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: '16px 16px 8px' }}>
         {PLANS.map((p) => {
           const isCurrent = plan === p.id
           const isLoading = loading === p.stripeKey
+          const price = appleIAP && p.stripeKey ? (applePriceFor(p.stripeKey) || p.price) : p.price
+          const isPaidCurrentFromWeb = isCurrent && planSource === 'stripe'
+          const productsReady = !appleIAP || !!applePriceFor(p.stripeKey)
 
           return (
             <div key={p.id} style={{
@@ -213,7 +306,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: 26, fontWeight: 800, color: p.color }}>{p.price}</span>
+                    <span style={{ fontSize: 26, fontWeight: 800, color: p.color }}>{price}</span>
                     <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.period}</span>
                   </div>
                 </div>
@@ -228,14 +321,32 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
                 </div>
 
                 {p.stripeKey ? (
-                  <button
-                    className="btn btn-primary"
-                    style={{ background: isCurrent ? 'var(--gray-200)' : p.color, boxShadow: 'none' }}
-                    onClick={() => !isCurrent && handleSubscribe(p.stripeKey)}
-                    disabled={isCurrent || isLoading}
-                  >
-                    {isLoading ? <><div className="spinner" /> Redirecting to Stripe…</> : isCurrent ? '✓ Active' : `Start ${p.name} →`}
-                  </button>
+                  <>
+                    <button
+                      className="btn btn-primary"
+                      style={{ background: isCurrent ? 'var(--gray-200)' : p.color, boxShadow: 'none' }}
+                      onClick={() => !isCurrent && handleSubscribe(p.stripeKey)}
+                      disabled={isCurrent || !!loading || !productsReady}
+                    >
+                      {isLoading
+                        ? <><div className="spinner" /> {appleIAP ? 'Opening App Store…' : 'Redirecting to Stripe…'}</>
+                        : isCurrent
+                          ? '✓ Active'
+                          : appleIAP
+                            ? (plan !== 'free' ? `Switch to ${p.name} →` : `Subscribe to ${p.name} →`)
+                            : `Start ${p.name} →`}
+                    </button>
+                    {appleIAP && !isCurrent && (
+                      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
+                        Old2New {p.name} · 1 month · {price}/month, auto-renews until cancelled
+                      </p>
+                    )}
+                    {isPaidCurrentFromWeb && (
+                      <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
+                        Purchased on old2new.app
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <div style={{ textAlign: 'center', fontSize: 14, color: isCurrent ? p.color : 'var(--text-muted)', fontWeight: isCurrent ? 700 : 400, padding: '10px 0' }}>
                     {isCurrent ? '✓ Your current plan' : 'No credit card required'}
@@ -247,9 +358,31 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
         })}
       </div>
 
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '8px 16px 4px' }}>
-        Cancel anytime · No hidden fees · Billed monthly via Stripe
-      </p>
+      {appleIAP ? (
+        <div style={{ padding: '8px 16px 4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button className="btn btn-outline" style={{ width: '100%' }} onClick={handleRestore} disabled={!!loading}>
+              {loading === 'restore' ? <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Restoring…</> : 'Restore Purchases'}
+            </button>
+            {planSource === 'apple' && plan !== 'free' && onManageSubscription && (
+              <button className="btn btn-ghost" style={{ width: '100%' }} onClick={onManageSubscription} disabled={!!loading}>
+                Manage Subscription
+              </button>
+            )}
+          </div>
+          <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.55, marginTop: 12 }}>
+            Plus and Premium are monthly auto-renewing subscriptions billed to your Apple Account at the price shown. Payment is charged at confirmation of purchase and the subscription renews automatically each month unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in Settings → Apple Account → Subscriptions.
+            {' '}
+            <a href="https://old2new.app/terms.html" onClick={(e) => { e.preventDefault(); openExternal('https://old2new.app/terms.html') }} style={{ color: 'var(--green-dark)', fontWeight: 700 }}>Terms of Use</a>
+            {' · '}
+            <a href="https://old2new.app/privacy.html" onClick={(e) => { e.preventDefault(); openExternal('https://old2new.app/privacy.html') }} style={{ color: 'var(--green-dark)', fontWeight: 700 }}>Privacy Policy</a>
+          </p>
+        </div>
+      ) : (
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '8px 16px 4px' }}>
+          Cancel anytime · No hidden fees · Billed monthly via Stripe
+        </p>
+      )}
 
       {/* FAQ */}
       <div style={{ padding: '32px 16px 16px' }}>
@@ -281,7 +414,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user }) {
       </div>
 
       <div className="footer-disclaimer" style={{ marginTop: 8 }}>
-        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>{SHORT_DISCLAIMER}</p>
       </div>
     </div>
   )

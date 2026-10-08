@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react'
 import { MacroBar, MACRO_COLORS } from './MacroBar.jsx'
 import { isPlaceholder } from '../../data/publicRecipes.js'
+import SourcesLink from './SourcesLink.jsx'
+import { topicsForGoals } from '../../data/healthGoals.js'
+import { HEALTH_DISCLAIMER } from '../../healthDisclaimer.js'
 
 const TABS = [
   { id: 'recipe', label: 'Recipe', icon: '📋' },
@@ -16,8 +19,9 @@ const TABS = [
 // with full ARIA tab semantics + keyboard support (mouse, touch, and
 // keyboard arrow/Enter navigation), which the original screen doesn't need
 // since it's already inside an app shell rather than a public page.
-export default function RecipeResultTabs({ recipe, onSignUp }) {
+export default function RecipeResultTabs({ recipe, onSignUp, onViewReferences }) {
   const [activeTab, setActiveTab] = useState('recipe')
+  const sourceTopics = topicsForGoals(recipe.healthGoals || (recipe.healthGoal ? [recipe.healthGoal] : []))
   const tabRefs = useRef({})
 
   const ingredientsReady = Array.isArray(recipe.ingredients) &&
@@ -148,8 +152,8 @@ export default function RecipeResultTabs({ recipe, onSignUp }) {
             </div>
 
             <div className="disclaimer-badge" style={{ margin: '8px 16px' }}>
-              <span className="disclaimer-badge-icon">⚠️</span>
-              <p>Nutritional information is estimated. Always verify with your healthcare provider before making dietary changes.</p>
+              <span className="disclaimer-badge-icon">⚕️</span>
+              <p>{HEALTH_DISCLAIMER}</p>
             </div>
 
             <div style={{ padding: '4px 16px 16px' }}>
@@ -195,7 +199,10 @@ export default function RecipeResultTabs({ recipe, onSignUp }) {
             <div className="divider" />
 
             <div className="section" style={{ padding: '16px' }}>
-              <p className="section-title">💡 Why These Swaps</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                <p className="section-title" style={{ margin: 0 }}>💡 Why These Swaps</p>
+                <SourcesLink compact topics={sourceTopics} title="Sources for this transformation" intro="The general nutrition guidance behind this recipe's goal. The text describes ingredient characteristics; it is not medical advice." onViewAll={onViewReferences} />
+              </div>
               {whyReady ? (
                 <div className="why-box">{recipe.whyTheseSwaps}</div>
               ) : (
@@ -203,7 +210,7 @@ export default function RecipeResultTabs({ recipe, onSignUp }) {
               )}
               <div className="disclaimer-badge" style={{ margin: '14px 0 0' }}>
                 <span className="disclaimer-badge-icon">⚠️</span>
-                <p>This information is for general education only, not medical advice. Individual needs vary — please consult your doctor or a registered dietitian before making dietary changes.</p>
+                <p>{HEALTH_DISCLAIMER}</p>
               </div>
             </div>
           </div>
@@ -236,9 +243,10 @@ export default function RecipeResultTabs({ recipe, onSignUp }) {
                   </div>
                 )}
                 <div className="section" style={{ marginTop: 8, padding: '0 16px' }}>
-                  <p className="section-label" style={{ marginBottom: 6 }}>
-                    Gray = Before · Colored = After (estimated values)
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                    <p className="section-label" style={{ margin: 0 }}>Gray = Before · Colored = After (estimated values)</p>
+                    <SourcesLink compact label="How we estimate" title="How nutrition values are estimated" topics={['nutrition-estimates']} showMethodology onViewAll={onViewReferences} />
+                  </div>
                   <div className="macros-grid">
                     <MacroBar label="Protein" before={recipe.macrosBefore.protein || 0} after={recipe.macrosAfter.protein || 0} color={MACRO_COLORS.protein} />
                     <MacroBar label="Carbs" before={recipe.macrosBefore.carbs || 0} after={recipe.macrosAfter.carbs || 0} color={MACRO_COLORS.carbs} />
@@ -252,7 +260,7 @@ export default function RecipeResultTabs({ recipe, onSignUp }) {
             )}
             <div className="disclaimer-badge" style={{ margin: '16px' }}>
               <span className="disclaimer-badge-icon">⚠️</span>
-              <p>All values are estimates. Always verify with your healthcare provider before making dietary changes.</p>
+              <p>All values are per-serving estimates, not measurements. {HEALTH_DISCLAIMER}</p>
             </div>
           </div>
       </div>

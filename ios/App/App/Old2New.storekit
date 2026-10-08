@@ -1,0 +1,80 @@
+{
+  "identifier" : "0A1D2E3F-5A6B-4C7D-8E9F-0A1B2C3D4E5F",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_applicationInternalID" : "",
+    "_developerTeamID" : "Y4S56V3D4V",
+    "_failTransactionsEnabled" : false,
+    "_lastSynced" : null,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      { "current" : null, "enabled" : false, "name" : "Load Products" },
+      { "current" : null, "enabled" : false, "name" : "Purchase" },
+      { "current" : null, "enabled" : false, "name" : "Verification" },
+      { "current" : null, "enabled" : false, "name" : "App Store Sync" },
+      { "current" : null, "enabled" : false, "name" : "Subscription Status" },
+      { "current" : null, "enabled" : false, "name" : "App Transaction" },
+      { "current" : null, "enabled" : false, "name" : "Manage Subscriptions Sheet" },
+      { "current" : null, "enabled" : false, "name" : "Refund Request Sheet" },
+      { "current" : null, "enabled" : false, "name" : "Offer Code Redeem Sheet" }
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21500001",
+      "localizations" : [
+        { "description" : "More monthly recipe transformations and saved recipes", "displayName" : "Old2New Membership", "locale" : "en_US" }
+      ],
+      "name" : "Old2New Membership",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "24.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6900000002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            { "description" : "150 recipe transformations per month, save up to 150 recipes, PDF cookbook, priority support.", "displayName" : "Old2New Premium", "locale" : "en_US" }
+          ],
+          "productID" : "app.old2new.ios.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Old2New Premium Monthly",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [ ]
+        },
+        {
+          "adHocOffers" : [ ],
+          "codeOffers" : [ ],
+          "displayPrice" : "14.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6900000001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            { "description" : "50 recipe transformations per month, save up to 50 recipes, PDF cookbook.", "displayName" : "Old2New Plus", "locale" : "en_US" }
+          ],
+          "productID" : "app.old2new.ios.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Old2New Plus Monthly",
+          "subscriptionGroupID" : "21500001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [ ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
