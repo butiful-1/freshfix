@@ -27,6 +27,8 @@ describe('findClaimViolations — flags treatment / prevention / safe-for langua
     'Oleocanthal is a natural anti-inflammatory compound similar in action to ibuprofen.',
     'Refined oils promote inflammation.',
     'This quartet is the gold standard of anti-inflammatory spicing.',
+    'Increases fiber content, supports better blood sugar regulation, and aligns with Mediterranean principles.',
+    'Lean protein, helps stabilize blood sugar.',
   ]
   for (const text of bad) {
     it(`flags: ${text}`, () => { expect(findClaimViolations(text).length).toBeGreaterThan(0) })

@@ -27,6 +27,12 @@ export function resolvePlan({ applePlan = null, stripePlan = null } = {}) {
 // Legacy rows (source null) with a paid plan were only ever written by the
 // Stripe webhook, so they count as Stripe. If a live Stripe lookup was done,
 // it overrides the stored assumption.
+// Hand-granted memberships (entitlement_source = 'manual', e.g. the App Review
+// account) are protected: no Apple or Stripe event may change them.
+export function isProtected(profile) {
+  return profile?.entitlement_source === 'manual'
+}
+
 export function stripePlanFromProfile(profile, liveStripePlan) {
   if (liveStripePlan !== undefined) return isPaidPlan(liveStripePlan) ? liveStripePlan : null
   if (!profile) return null
@@ -41,6 +47,7 @@ export function stripePlanFromProfile(profile, liveStripePlan) {
 //   liveStripePlan — optional result of a live Stripe lookup (null = none).
 // Returns { plan, entitlement_source, resetUsage }.
 export function nextProfileForApple(profile, { applePlan, liveStripePlan } = {}) {
+  if (isProtected(profile)) return { plan: profile.plan, entitlement_source: 'manual', resetUsage: false }
   const stripePlan = stripePlanFromProfile(profile, liveStripePlan)
   const resolved = resolvePlan({ applePlan, stripePlan })
   const prevPlan = profile?.plan || 'free'
@@ -54,6 +61,7 @@ export function nextProfileForApple(profile, { applePlan, liveStripePlan } = {})
 //   stripePlan — plan Stripe now grants (null when the subscription ended).
 //   applePlan  — currently active Apple plan from apple_subscriptions, or null.
 export function nextProfileForStripe(profile, { stripePlan, applePlan } = {}) {
+  if (isProtected(profile)) return { plan: profile.plan, entitlement_source: 'manual', resetUsage: false }
   const resolved = resolvePlan({ applePlan, stripePlan })
   const prevPlan = profile?.plan || 'free'
   const resetUsage = isPaidPlan(resolved.plan) && PLAN_LEVEL[resolved.plan] > PLAN_LEVEL[prevPlan]

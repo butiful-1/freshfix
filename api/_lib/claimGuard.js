@@ -37,6 +37,9 @@ export const CLAIM_PATTERNS = [
   /\b(?:well[-\s]studied|has\s+been\s+shown|have\s+been\s+shown|shown\s+in\s+studies|studies\s+show|research\s+shows)\b/i,
   /\bgold\s+standard\s+of\s+(?:anti-?inflammatory|diabetic|healthy)/i,
   /\bideal\s+for\s+(?:insulin|diabet|blood\s+sugar|glucose|inflammation)/i,
+  /\b(?:blood\s+sugar|blood\s+glucose|glucose|insulin)\s+(?:regulation|control|management|balance|stability)\b/i,
+  /\b(?:supports?|supporting|promotes?|promoting|aids?|aiding|helps?\s+(?:with|maintain|keep)|maintains?)\s+(?:a\s+|better\s+|healthy\s+|stable\s+|steady\s+|normal\s+|optimal\s+)?(?:blood\s+sugar|blood\s+glucose|glucose\s+levels?|insulin)\b/i,
+  /\b(?:helps?|helping)\s+(?:to\s+)?(?:stabili[sz]e|regulate|control|lower|balance)\s+(?:your\s+)?(?:blood\s+sugar|blood\s+glucose|glucose|insulin|cholesterol|blood\s+pressure)\b/i,
 ]
 
 export function findClaimViolations(text) {

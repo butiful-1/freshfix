@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { HEALTH_SOURCES, SOURCE_TOPICS } from '../data/healthSources.js'
 import { HEALTH_GOALS } from '../data/healthGoals.js'
 import { HEALTH_DISCLAIMER, NUTRITION_METHODOLOGY } from '../healthDisclaimer.js'
@@ -8,6 +9,11 @@ import { openExternal } from './shared/SourcesLink.jsx'
 // nutrition-estimate methodology and the disclaimer. Reached from About,
 // from every "Sources" sheet, and (on the web) at /references.
 export default function ReferencesScreen({ onBack, embedded = false }) {
+  // The app shell keeps one scroll container across screens; start at the top.
+  useEffect(() => {
+    if (embedded) return
+    try { window.scrollTo(0, 0); document.querySelector('main.screen')?.scrollTo(0, 0) } catch {}
+  }, [embedded])
   const grouped = Object.entries(SOURCE_TOPICS).map(([topic, label]) => ({
     topic, label, sources: HEALTH_SOURCES.filter(s => s.topics.includes(topic)),
   })).filter(g => g.sources.length > 0)

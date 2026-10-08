@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Browser } from '@capacitor/browser'
 import { sourcesForTopics, SOURCE_TOPICS } from '../../data/healthSources.js'
 import { HEALTH_DISCLAIMER, NUTRITION_METHODOLOGY } from '../../healthDisclaimer.js'
@@ -59,7 +60,10 @@ export function SourcesSheet({ topics, title, intro, showMethodology, onClose, o
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  // Portaled to <body>: a position:fixed overlay rendered inside an animated
+  // (transformed) screen container would be positioned relative to that
+  // container and end up off-screen on long pages such as the results screen.
+  return createPortal(
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={title} onClick={onClose} style={{ zIndex: 1500 }}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '85vh', overflowY: 'auto' }}>
         <div className="modal-handle" />
@@ -69,7 +73,7 @@ export function SourcesSheet({ topics, title, intro, showMethodology, onClose, o
         </div>
 
         {intro && (
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: 12 }}>{intro}</p>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: 12, whiteSpace: 'pre-line' }}>{intro}</p>
         )}
 
         {showMethodology && (
@@ -114,6 +118,7 @@ export function SourcesSheet({ topics, title, intro, showMethodology, onClose, o
         )}
         <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={onClose}>Close</button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

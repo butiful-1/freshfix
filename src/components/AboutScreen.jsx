@@ -417,6 +417,11 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
                   Purchased on old2new.app. Your plan works here too.
                 </p>
               )}
+              {subscription.plan !== 'free' && subscription.source === 'manual' && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                  Complimentary plan. Nothing to purchase or manage here.
+                </p>
+              )}
               {subscription.plan !== 'free' && subscription.source === 'apple' && (
                 <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
                   Billed through your Apple Account. Renews monthly until cancelled in Settings → Apple Account → Subscriptions.

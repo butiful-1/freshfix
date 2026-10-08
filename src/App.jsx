@@ -290,7 +290,9 @@ export default function App() {
 
       setProfile(p)
       setPlan(p.plan || 'free')
-      setPlanSource(p.entitlement_source || null)
+      // Legacy paid rows (before migration 006) were only ever written by the
+      // Stripe webhook, so a paid plan with no recorded source is a web purchase.
+      setPlanSource(p.entitlement_source || (['wellness', 'family'].includes(p.plan) ? 'stripe' : null))
       setSwapUsage({ month: p.swaps_month, count: p.swaps_used || 0 })
       setDietaryPreferences(p.dietary_preferences || {})
       setMarketingEmailConsent(!!p.marketing_email_consent)
@@ -504,6 +506,14 @@ export default function App() {
     CapacitorApp.getLaunchUrl().then(r => handleUrl(r?.url)).catch(() => {})
     return () => { sub.then(h => h.remove()).catch(() => {}) }
   }, [])
+
+  // ── Start every screen at the top ─────────────
+  // The app shell is one scroll container (main.screen on native), so a
+  // screen opened from the bottom of a long page would otherwise inherit the
+  // previous scroll offset.
+  useEffect(() => {
+    try { window.scrollTo(0, 0); document.querySelector('main.screen')?.scrollTo(0, 0) } catch {}
+  }, [screen])
 
   // ── Apple IAP: products, launch/resume entitlement sync, live updates ──
   useEffect(() => {
@@ -1066,9 +1076,12 @@ export default function App() {
     try {
       const result = await iap.restorePurchases()
       await applyIapResult(result)
+      const restored = !!result?.applePlan
       const restoredPlan = result?.plan || plan
-      setIapMessage(restoredPlan !== 'free' ? `Restored: ${restoredPlan === 'family' ? 'Premium' : 'Plus'} is active.` : 'No active Apple subscription found for this Apple Account.')
-      return { plan: restoredPlan }
+      setIapMessage(restored
+        ? `Restored: ${restoredPlan === 'family' ? 'Premium' : 'Plus'} is active.`
+        : 'No Apple subscription was found for this Apple Account.')
+      return { plan: restoredPlan, restored }
     } finally {
       setIapBusy(false)
     }

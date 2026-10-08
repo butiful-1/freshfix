@@ -207,8 +207,13 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
     setNotice('')
     try {
       const result = await onRestorePurchases()
-      if (result?.plan && result.plan !== 'free') setNotice(`Restored: your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active.`)
-      else setNotice('No active Apple subscription was found for this Apple Account. If you subscribed on old2new.app, make sure you are signed in with the same Old2New account.')
+      if (result?.restored && result.plan !== 'free') {
+        setNotice(`Restored: your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active.`)
+      } else if (result?.plan && result.plan !== 'free') {
+        setNotice(`No Apple subscription was found for this Apple Account. Your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active${planSource === 'stripe' ? ' (purchased on old2new.app)' : planSource === 'manual' ? ' (complimentary)' : ''}.`)
+      } else {
+        setNotice('No Apple subscription was found for this Apple Account. If you subscribed on old2new.app, make sure you are signed in with the same Old2New account.')
+      }
     } catch (e) {
       setError(e?.message || 'Could not restore purchases. Please try again.')
     } finally {
@@ -217,6 +222,10 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
   }
 
   const FAQ = appleIAP ? FAQ_IOS : FAQ_WEB
+  // A paid plan bought on old2new.app is billed by Stripe. Offering an Apple
+  // subscription on top would let the customer pay twice for the same thing
+  // (App Store 3.1.2(b)), so the cards become informational; Restore stays.
+  const webManaged = appleIAP && plan !== 'free' && (planSource === 'stripe' || planSource === 'manual')
 
   return (
     <div className="animate-in">
@@ -276,7 +285,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
           const isCurrent = plan === p.id
           const isLoading = loading === p.stripeKey
           const price = appleIAP && p.stripeKey ? (applePriceFor(p.stripeKey) || p.price) : p.price
-          const isPaidCurrentFromWeb = isCurrent && planSource === 'stripe'
+          const isPaidCurrentFromWeb = isCurrent && (planSource === 'stripe' || planSource === 'manual')
           const productsReady = !appleIAP || !!applePriceFor(p.stripeKey)
 
           return (
@@ -320,7 +329,11 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
                   ))}
                 </div>
 
-                {p.stripeKey ? (
+                {p.stripeKey && webManaged && !isCurrent ? (
+                  <p style={{ fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0', lineHeight: 1.5 }}>
+                    {planSource === 'manual' ? 'Your current plan is complimentary and already includes this.' : 'Your current plan is billed on old2new.app. Change plans there to switch.'}
+                  </p>
+                ) : p.stripeKey ? (
                   <>
                     <button
                       className="btn btn-primary"
@@ -343,7 +356,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
                     )}
                     {isPaidCurrentFromWeb && (
                       <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-                        Purchased on old2new.app
+                        {planSource === 'manual' ? 'Complimentary plan' : 'Purchased on old2new.app'}
                       </p>
                     )}
                   </>

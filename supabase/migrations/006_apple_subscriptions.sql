@@ -2,10 +2,12 @@
 -- Apple In-App Purchase support (App Store Guideline 3.1.1).
 --
 -- 1) profiles.entitlement_source records WHICH system granted the current
---    paid plan ('stripe' | 'apple' | null for free). Existing paid rows were
---    only ever written by the Stripe webhook, so they are backfilled as
---    'stripe'. profiles.plan values are untouched ('free' | 'wellness' |
---    'family'); nothing is renamed.
+--    paid plan ('stripe' | 'apple' | 'manual' | null for free). Existing paid
+--    rows were written by the Stripe webhook or set by hand in the dashboard,
+--    so they are backfilled as 'stripe'; hand-granted memberships (the App
+--    Review account) are then marked 'manual', which the server treats as a
+--    protected entitlement it never changes. profiles.plan values are
+--    untouched ('free' | 'wellness' | 'family'); nothing is renamed.
 -- 2) apple_subscriptions stores one row per Apple subscription (keyed by
 --    Apple's originalTransactionId) so renewals, upgrades, expirations,
 --    refunds and revocations reported by App Store Server Notifications can
@@ -14,12 +16,23 @@
 
 alter table public.profiles
   add column if not exists entitlement_source text
-    check (entitlement_source in ('stripe', 'apple'));
+    check (entitlement_source in ('stripe', 'apple', 'manual'));
 
 update public.profiles
    set entitlement_source = 'stripe'
  where entitlement_source is null
    and plan in ('wellness', 'family');
+
+-- The dedicated App Review account keeps its reserved Premium membership as a
+-- protected 'manual' entitlement: no Stripe or Apple event can downgrade it,
+-- the iOS paywall shows it as complimentary and never sells on top of it, and
+-- it affects this one row only. Add other hand-granted accounts the same way.
+update public.profiles p
+   set entitlement_source = 'manual'
+  from auth.users u
+ where u.id = p.id
+   and u.email = 'kimwallace.1@yahoo.com'
+   and p.plan in ('wellness', 'family');
 
 create table if not exists public.apple_subscriptions (
   original_transaction_id   text primary key,

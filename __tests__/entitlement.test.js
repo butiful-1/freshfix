@@ -72,6 +72,21 @@ describe('nextProfileForApple', () => {
   })
 })
 
+describe('protected manual (reviewer) entitlement', () => {
+  const reviewer = { plan: 'family', entitlement_source: 'manual' }
+  it('is never changed by Apple events', () => {
+    expect(nextProfileForApple(reviewer, { applePlan: 'wellness' })).toEqual({ plan: 'family', entitlement_source: 'manual', resetUsage: false })
+    expect(nextProfileForApple(reviewer, { applePlan: null, liveStripePlan: null })).toEqual({ plan: 'family', entitlement_source: 'manual', resetUsage: false })
+  })
+  it('is never changed by Stripe events', () => {
+    expect(nextProfileForStripe(reviewer, { stripePlan: null, applePlan: null })).toEqual({ plan: 'family', entitlement_source: 'manual', resetUsage: false })
+    expect(nextProfileForStripe(reviewer, { stripePlan: 'wellness', applePlan: null })).toEqual({ plan: 'family', entitlement_source: 'manual', resetUsage: false })
+  })
+  it('does not leak to other rows: a normal Stripe row still reconciles', () => {
+    expect(nextProfileForStripe({ plan: 'family', entitlement_source: 'stripe' }, { stripePlan: null, applePlan: null }).plan).toBe('free')
+  })
+})
+
 describe('nextProfileForStripe', () => {
   it('Stripe checkout for a free user', () => {
     expect(nextProfileForStripe({ plan: 'free' }, { stripePlan: 'wellness', applePlan: null }))
