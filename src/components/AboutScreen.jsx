@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MARKETING_CONSENT_LABEL } from '../marketingConsent'
 import { supabase } from '../supabase'
 import { apiUrl } from '../apiBase'
@@ -33,7 +34,10 @@ function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription
     }
   }
 
-  return (
+  // Portaled to <body>: a position:fixed overlay inside the animated screen
+  // container is positioned relative to that container and lands off-screen
+  // when the About page is scrolled (seen on iPad in build-7 QA).
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -103,7 +107,8 @@ function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription
           Cancel
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
