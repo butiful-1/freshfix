@@ -75,7 +75,7 @@ OTHER
   sheet so it can be saved to Files or previewed.
   Email confirmation and password-reset links return to the app via the
   old2new:// URL scheme.
-• Test account: [REVIEW_EMAIL] / [REVIEW_PASSWORD]. This account has a
+• Test account: [REVIEW_EMAIL] / [REVIEW_PASSWORD] (the dedicated review account; keep its complimentary membership). This account has a
   complimentary Premium membership so every feature (150 transformations per
   month, PDF cookbook) can be exercised without purchasing. The Pricing tab
   shows the live Plus and Premium In-App Purchase products with Restore

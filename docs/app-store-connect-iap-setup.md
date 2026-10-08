@@ -128,6 +128,18 @@ binary; they are reviewed with the app.
 - Confirm the metadata edits in that document (description bullet about the
   guides library; "heart-healthy" wording).
 
+## 13. In-App Purchase review screenshot
+
+Each subscription needs a review screenshot (≥ 640 × 920 px) showing the
+purchase UI. Capture it on the Sandbox QA device after step 10: sign in with
+the fresh disposable account → Pricing tab (Free plan, Subscribe buttons
+visible) → screenshot. Save as `docs/app-store/iphone-6.9-07-paywall.png`
+and upload it for both subscriptions.
+
+## 14. Sandbox verification
+
+Follow `docs/ios-build7-deployment.md` §5 after the build is on TestFlight.
+
 ## Blockers summary
 
 Until steps 1–5 and 9 are done: **BLOCKED — REQUIRES APP STORE CONNECT

@@ -119,6 +119,9 @@ Automated
 - `npm run build` (vite + prerender 109 routes) and `npm run ios:sync`: clean.
 - `xcodebuild` Debug for the iPhone 17 Pro Max simulator: **BUILD SUCCEEDED**
   (5 Capacitor plugins: app, browser, filesystem, share, native-purchases).
+- `xcodebuild` Release, generic iOS device, `CODE_SIGNING_ALLOWED=NO`
+  (compile check for the archive): **BUILD SUCCEEDED** on the production-origin
+  bundle (no debug origin overrides in `ios/App/App/public`).
 - Claim-guard scan of the static demo recipes: 0 violations.
 
 Signed-out, iPhone 17 Pro Max simulator (Xcode run, StoreKit configuration active)
@@ -197,8 +200,12 @@ iPad Air 11-inch simulator, Xcode run with the local StoreKit configuration
   (the local `.env` has no `SUPABASE_SERVICE_ROLE_KEY`). The app shows the
   user-facing fallback message and keeps the StoreKit transaction unfinished
   so it is retried at next launch — that path was observed.
-- Account deletion: deliberately not yet run (the account is still needed if
-  the plan-write test is unblocked); runs last.
+- Account deletion (disposable account): About → Delete Account → in-app
+  confirmation modal → "Permanently delete my account" → app returns to the
+  signed-out home; the account can no longer sign in (API check) and the
+  reviewer account is intact: PASS. (The modal had the same off-screen
+  positioning fault as the Sources sheet on a scrolled page; fixed by
+  rendering it through a portal.)
 
 Known observations (not blockers)
 - Production API still runs the pre-remediation prompt until this branch is
@@ -209,13 +216,13 @@ Known observations (not blockers)
   simulator (pre-existing safety-net UI appears, then the app continues).
 
 ## 14. Tests blocked — and why
-- **Purchase → plan write → paywall shows the new plan (and the mirror:
-  revocation → free): BLOCKED on `SUPABASE_SERVICE_ROLE_KEY` + `SUPABASE_URL`
-  in the local `.env`** (never committed). With them, the already-verified
-  requests write `apple_subscriptions`/`profiles` and the UI updates; without
-  them this can only be verified in Sandbox after deploy + migration 006.
-- **Account deletion (disposable account): pending** — run after the item
-  above is decided, since deleting the account ends further purchase tests.
+- **Purchase → Supabase plan write → app shows the new plan (and
+  downgrade/cancel/refund → entitlement updated, Restore → newest valid
+  state): BLOCKED LOCALLY — VERIFY IN APPLE SANDBOX AFTER DEPLOYMENT.**
+  Kim's decision: no service-role key for local testing. The verification,
+  authentication and reconciliation logic is unit-tested (193 tests) and the
+  device → server path was exercised locally up to the database write.
+  Runbook: `docs/ios-build7-deployment.md` §5.
 - **APPLE SANDBOX / TESTFLIGHT TEST: BLOCKED — REQUIRES APP STORE CONNECT
   CONFIGURATION** (see `docs/app-store-connect-iap-setup.md`) plus deploying
   this branch to Vercel and running migration 006.
