@@ -16,6 +16,15 @@ export function supabaseAdmin(env = process.env) {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
+// Validates a user's access token. Works with the anon key, so the identity
+// check never depends on the service role being configured.
+export function supabaseAuthClient(env = process.env) {
+  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY
+  if (!url || !key) throw new Error('Supabase is not configured')
+  return createClient(url, key, { auth: { persistSession: false } })
+}
+
 export function stripeClient(env = process.env) {
   return env.STRIPE_SECRET_KEY ? new Stripe(env.STRIPE_SECRET_KEY) : null
 }

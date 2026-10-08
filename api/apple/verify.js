@@ -5,7 +5,7 @@
 // writes `plan` itself (the database rejects it), so paid access is never
 // granted on an unverified client-side flag.
 import { verifyTransactionJws, AppleEnvironmentError } from '../_lib/appleVerifier.js'
-import { applyAppleTransaction, supabaseAdmin, stripeClient, EntitlementOwnershipError } from '../_lib/appleEntitlement.js'
+import { applyAppleTransaction, supabaseAdmin, supabaseAuthClient, stripeClient, EntitlementOwnershipError } from '../_lib/appleEntitlement.js'
 import { APPLE_PRODUCT_IDS } from '../_lib/appleProducts.js'
 
 export const config = { maxDuration: 15 }
@@ -36,20 +36,17 @@ export default async function handler(req, res) {
   const jwsList = list.filter(j => typeof j === 'string' && j.split('.').length === 3).slice(0, 20)
   if (jwsList.length === 0) return res.status(400).json({ error: 'A signed transaction (jws) is required' })
 
-  let admin
-  try { admin = supabaseAdmin() } catch (e) { return res.status(500).json({ error: e.message }) }
-
-  const { data: userData, error: userErr } = await admin.auth.getUser(token)
+  // 1. Who is asking? (Only needs the project URL + anon key.)
+  const { data: userData, error: userErr } = await supabaseAuthClient().auth.getUser(token)
   const user = userData?.user
   if (userErr || !user) return res.status(401).json({ error: 'Invalid session' })
 
-  const stripe = stripeClient()
-  const results = []
-  let last = null
+  // 2. Verify every signed transaction BEFORE touching the database so a
+  //    forged or foreign payload never reaches it.
+  const verified = []
   for (const jws of jwsList) {
-    let tx
     try {
-      tx = await verifyTransactionJws(jws)
+      verified.push(await verifyTransactionJws(jws))
     } catch (e) {
       if (e instanceof AppleEnvironmentError) {
         console.error('[apple/verify] environment:', e.message)
@@ -58,12 +55,26 @@ export default async function handler(req, res) {
       console.error('[apple/verify] verification failed:', e.message)
       return res.status(422).json({ error: 'Apple transaction could not be verified' })
     }
+  }
+  console.log(`[apple/verify] user ${user.id}: ${verified.length} verified transaction(s) — ${verified.map(t => `${t.productId}#${t.transactionId}/${t.originalTransactionId} ${t.environment} exp=${t.expiresDate ? new Date(t.expiresDate).toISOString() : '-'}${t.revocationDate ? ' REVOKED' : ''}`).join('; ')}`)
+
+  // 3. Record and reconcile (service role).
+  let admin
+  try { admin = supabaseAdmin() } catch (e) {
+    console.error('[apple/verify] cannot write entitlement:', e.message)
+    return res.status(500).json({ error: e.message })
+  }
+  const stripe = stripeClient()
+  const results = []
+  let last = null
+  for (const tx of verified) {
     if (!APPLE_PRODUCT_IDS.includes(tx.productId)) {
       results.push({ transactionId: tx.transactionId, ignored: true })
       continue
     }
     try {
       last = await applyAppleTransaction({ admin, stripe, tx, requestingUserId: user.id })
+      console.log(`[apple/verify] user ${user.id}: ${tx.productId} ${last.row?.status} → plan ${last.plan} (${last.entitlement_source || 'free'})`)
       results.push({ transactionId: tx.transactionId, productId: tx.productId, status: last.row?.status, expiresAt: last.row?.expires_at })
     } catch (e) {
       if (e instanceof EntitlementOwnershipError) return res.status(409).json({ error: e.message })

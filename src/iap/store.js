@@ -61,7 +61,7 @@ export async function verifyWithServer(jwsList) {
     // 5xx is our problem — never show raw server text, and tell the user the
     // purchase is safe: StoreKit keeps the transaction and we retry at launch.
     const friendly = res.status >= 500
-      ? 'Your purchase went through, but we could not confirm it with our server just now. Your plan will update automatically; you can also tap Restore Purchases in a moment.'
+      ? 'We could not confirm your subscription with our server just now. Any purchase is safe with Apple and your plan will update automatically; you can also tap Restore Purchases in a moment.'
       : (body.error || 'Verification failed. Please try again.')
     console.error('[iap] verify failed:', res.status, body.error)
     const err = new Error(friendly)
