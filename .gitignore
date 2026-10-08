@@ -7,3 +7,6 @@ dist-ios/
 *.local
 
 .vercel
+
+*.p8
+private_keys/
