@@ -16,7 +16,10 @@ Privacy show "Last updated: October 8, 2026"; `/references` serves the app and
 the deployed bundle contains the References screen; Stripe checkout and
 health endpoints unchanged; reviewer row still `family / manual`.
 
-Post-deploy finding (fixed, commit `ec121c5`, awaiting push): in a browser
+Post-deploy finding (fixed in commit `ec121c5`, pushed and redeployed; verified
+on production by planting an invalid session — the SIGNED_OUT path fired and
+`/references` stayed on the References page; `scripts/verify-deploy.sh`: all
+9 checks pass against the new bundle): in a browser
 holding an expired Supabase session, `/references` bounced to the homepage
 because the route was missing from `isPublicPath` (the sign-out handler sends
 every non-public path to the splash). `/references` is now public, the three
