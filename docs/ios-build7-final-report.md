@@ -158,6 +158,38 @@ Reviewer account, iPad Air 11-inch (M4) simulator (Xcode run)
 Not exercised with the reviewer account by design (reserved membership must
 not change): Apple purchase, upgrade/downgrade, expiry, account deletion.
 
+Disposable QA account (`butiful@yahoo.com`, free plan, confirmed by Kim),
+iPad Air 11-inch simulator, Xcode run with the local StoreKit configuration
+- Free tier: "5 of 5 Recipe Upgrades", Upgrade button, Pricing tab visible,
+  Free card marked current, Subscribe buttons on Plus and Premium with the
+  per-card terms line, Restore Purchases, disclosure + Terms/Privacy: PASS.
+- Plus purchase: StoreKit sheet "Old2New Plus $14.99 per month" → Subscribe →
+  "You're all set": PASS (LOCAL STOREKIT).
+- Premium while Plus is active: StoreKit sheet shows "Your upgrade will start
+  now. You'll receive a refund for the remainder of your current subscription"
+  → PASS — proves both products are in one group (3.1.2(b)); Transaction
+  Manager shows ID 1 Premium with original transaction ID 0 (the Plus
+  purchase), i.e. one subscription, no duplicate.
+- Downgrade: Transaction Manager → Subscription Options → Old2New Plus → Save
+  (renewal preference changed, access continues on Premium until period end):
+  PASS. Cancel Subscription → Save: PASS.
+- Refund (revocation): Transaction Manager → Refund Purchase → the app's
+  transactionUpdated listener fired immediately and the server logged the same
+  transaction as REVOKED: PASS.
+- Server verification path (local dev server, APPLE_ALLOW_XCODE_ENV=1): for
+  the launch-time sync, Restore and the live refund, the server authenticated
+  the QA user from the Supabase token and verified the Xcode-signed JWS
+  (`app.old2new.ios.premium.monthly #1/0 exp=2026-11-08 … REVOKED`): PASS.
+- Restore Purchases: triggers StoreKit's test sign-in sheet, queries current
+  entitlements (1 before the refund, 0 after) and calls the server: PASS.
+- Purchase → `profiles.plan` written → plan shown in the app: **NOT VERIFIED
+  LOCALLY.** Every call stopped at `Supabase service role is not configured`
+  (the local `.env` has no `SUPABASE_SERVICE_ROLE_KEY`). The app shows the
+  user-facing fallback message and keeps the StoreKit transaction unfinished
+  so it is retried at next launch — that path was observed.
+- Account deletion: deliberately not yet run (the account is still needed if
+  the plan-write test is unblocked); runs last.
+
 Known observations (not blockers)
 - Production API still runs the pre-remediation prompt until this branch is
   deployed, so live transform text can still contain phrases the new claim
@@ -167,22 +199,18 @@ Known observations (not blockers)
   simulator (pre-existing safety-net UI appears, then the app continues).
 
 ## 14. Tests blocked — and why
-- **LOCAL STOREKIT PURCHASE TESTS (Plus purchase, Premium purchase,
-  upgrade/downgrade, cancelled/expired entitlement, pending/Ask-to-Buy,
-  purchase-to-plan sync): NOT RUN.** They need a free, confirmed disposable
-  account (the reviewer account must stay unchanged and is not purchasable on
-  iOS by design). `qa-ios-build7@old2new.app` exists but is unconfirmed — confirm
-  it in Supabase → Authentication → Users, or provide another confirmed free
-  account. The purchase-to-plan sync additionally needs `SUPABASE_URL` +
-  `SUPABASE_SERVICE_ROLE_KEY` in the local `.env`, or can be verified in
-  Sandbox after deploy + migration.
-- **Account deletion: NOT RUN** (same disposable-account dependency; the
-  reviewer account must not be deleted).
+- **Purchase → plan write → paywall shows the new plan (and the mirror:
+  revocation → free): BLOCKED on `SUPABASE_SERVICE_ROLE_KEY` + `SUPABASE_URL`
+  in the local `.env`** (never committed). With them, the already-verified
+  requests write `apple_subscriptions`/`profiles` and the UI updates; without
+  them this can only be verified in Sandbox after deploy + migration 006.
+- **Account deletion (disposable account): pending** — run after the item
+  above is decided, since deleting the account ends further purchase tests.
 - **APPLE SANDBOX / TESTFLIGHT TEST: BLOCKED — REQUIRES APP STORE CONNECT
   CONFIGURATION** (see `docs/app-store-connect-iap-setup.md`) plus deploying
   this branch to Vercel and running migration 006.
-- Paywall review screenshot for App Store Connect: capture from a free account
-  once available (`docs/app-store/iphone-6.9-07-paywall.png`).
+- Paywall review screenshot for App Store Connect: `docs/app-store/ipad-13-07-paywall.png`
+  can be captured from the current free-account state on request.
 
 ## 15. App Store Connect steps remaining
 `docs/app-store-connect-iap-setup.md` sections 1–12 (agreement, group, two
