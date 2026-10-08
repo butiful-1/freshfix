@@ -21,6 +21,22 @@ export const CLAIM_PATTERNS = [
   /\b(?:guaranteed?|will)\s+(?:help\s+you\s+)?lose\s+weight\b/i,
   /\bboosts?\s+(?:your\s+)?(?:immune\s+system|immunity|metabolism)\b/i,
   /\bdetox(?:es|ify|ifies|ifying)?\b/i,
+  // insulin / glucose physiology claims
+  /\b(?:improv|support|boost|enhanc|increas|restor)\w*\s+(?:your\s+|the\s+)?insulin\s+sensitivity\b/i,
+  /\binsulin\s+(?:resistance|sensitivity)\s+management\b/i,
+  /\b(?:do(?:es)?\s+not|don'?t|won'?t|never|without)\s+(?:significantly\s+)?(?:rais|spik|affect|impact|elevat)\w*\s+(?:your\s+)?(?:blood\s+sugar|blood\s+glucose|glucose|insulin)/i,
+  /\b(?:spikes?|spiking)\s+(?:your\s+)?(?:blood\s+sugar|blood\s+glucose|insulin)\b/i,
+  /\b(?:blunts?|blunting|curbs?|flattens?)\s+(?:\w+\s+){0,3}?(?:blood\s+sugar|glucose)\s+(?:rises?|spikes?|response)/i,
+  /\bslows?\s+(?:down\s+)?(?:the\s+)?(?:glucose|sugar|carbohydrate)\s+absorption\b/i,
+  /\b(?:improves?|better|healthier)\s+(?:the\s+)?(?:overall\s+)?glycemic\s+(?:profile|response|control)\b/i,
+  // inflammation claims
+  /\b(?:has|have|with|possess\w*)\s+(?:\w+\s+){0,2}?anti-?inflammatory\s+(?:properties|effects?|compounds?|activity|benefits?)\b/i,
+  /\banti-?inflammatory\s+(?:compound|polyphenols?|pathways?|response|research\s+backing|spicing)\b/i,
+  /\b(?:promotes?|contributes?\s+to|causes?|triggers?|drives?|calms?|fights?|lowers?)\s+(?:chronic\s+)?inflammation\b/i,
+  /\bsimilar\s+in\s+action\s+to\s+(?:ibuprofen|aspirin|\w+\s+drugs?)\b/i,
+  /\b(?:well[-\s]studied|has\s+been\s+shown|have\s+been\s+shown|shown\s+in\s+studies|studies\s+show|research\s+shows)\b/i,
+  /\bgold\s+standard\s+of\s+(?:anti-?inflammatory|diabetic|healthy)/i,
+  /\bideal\s+for\s+(?:insulin|diabet|blood\s+sugar|glucose|inflammation)/i,
 ]
 
 export function findClaimViolations(text) {

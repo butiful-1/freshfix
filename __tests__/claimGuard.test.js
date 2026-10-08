@@ -19,6 +19,14 @@ describe('findClaimViolations — flags treatment / prevention / safe-for langua
     'Research suggests vinegar may reduce post-meal blood sugar spikes.',
     'This soup burns fat and boosts your metabolism.',
     'A detox smoothie that will help you lose weight.',
+    'Monk fruit and erythritol do not raise insulin levels, making them ideal for insulin resistance management.',
+    'Tart cherries contain anthocyanins that may support insulin sensitivity.',
+    'Apple cider vinegar has been shown in studies to help blunt post-meal blood sugar rises.',
+    'Peas add fiber which slows glucose absorption.',
+    'Capsaicin has anti-inflammatory properties.',
+    'Oleocanthal is a natural anti-inflammatory compound similar in action to ibuprofen.',
+    'Refined oils promote inflammation.',
+    'This quartet is the gold standard of anti-inflammatory spicing.',
   ]
   for (const text of bad) {
     it(`flags: ${text}`, () => { expect(findClaimViolations(text).length).toBeGreaterThan(0) })
@@ -35,6 +43,9 @@ describe('findClaimViolations — allows characteristic language', () => {
     'Monk fruit is a sugar substitute with a very low glycemic index.',
     'Please consult your doctor or a registered dietitian before making dietary changes.',
     'Cauliflower rice is much lower in carbohydrate than white rice.',
+    'Avocado oil is high in monounsaturated (unsaturated) fat and has a high smoke point.',
+    'Turmeric, ginger, cinnamon and black pepper are the spices most associated with anti-inflammatory-style eating patterns.',
+    'Extra virgin olive oil provides monounsaturated fat in place of saturated fat.',
   ]
   for (const text of ok) {
     it(`allows: ${text}`, () => { expect(findClaimViolations(text)).toEqual([]) })

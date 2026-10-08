@@ -199,8 +199,10 @@ export default function RecipeResultTabs({ recipe, onSignUp, onViewReferences })
             <div className="divider" />
 
             <div className="section" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                <p className="section-title" style={{ margin: 0 }}>💡 Why These Swaps</p>
+              {/* Stacked (not right-aligned) so the control never sits under the
+                  quick-view modal's sticky close button. */}
+              <p className="section-title" style={{ marginBottom: 6 }}>💡 Why These Swaps</p>
+              <div style={{ marginBottom: 8 }}>
                 <SourcesLink compact topics={sourceTopics} title="Sources for this transformation" intro="The general nutrition guidance behind this recipe's goal. The text describes ingredient characteristics; it is not medical advice." onViewAll={onViewReferences} />
               </div>
               {whyReady ? (
@@ -243,9 +245,9 @@ export default function RecipeResultTabs({ recipe, onSignUp, onViewReferences })
                   </div>
                 )}
                 <div className="section" style={{ marginTop: 8, padding: '0 16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                    <p className="section-label" style={{ margin: 0 }}>Gray = Before · Colored = After (estimated values)</p>
-                    <SourcesLink compact label="How we estimate" title="How nutrition values are estimated" topics={['nutrition-estimates']} showMethodology onViewAll={onViewReferences} />
+                  <p className="section-label" style={{ marginBottom: 6 }}>Gray = Before · Colored = After (estimated values)</p>
+                  <div style={{ marginBottom: 10 }}>
+                    <SourcesLink compact label="How we estimate · Sources" title="How nutrition values are estimated" topics={['nutrition-estimates']} showMethodology onViewAll={onViewReferences} />
                   </div>
                   <div className="macros-grid">
                     <MacroBar label="Protein" before={recipe.macrosBefore.protein || 0} after={recipe.macrosAfter.protein || 0} color={MACRO_COLORS.protein} />
