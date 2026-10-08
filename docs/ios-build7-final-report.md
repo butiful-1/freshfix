@@ -181,7 +181,17 @@ iPad Air 11-inch simulator, Xcode run with the local StoreKit configuration
   the QA user from the Supabase token and verified the Xcode-signed JWS
   (`app.old2new.ios.premium.monthly #1/0 exp=2026-11-08 … REVOKED`): PASS.
 - Restore Purchases: triggers StoreKit's test sign-in sheet, queries current
-  entitlements (1 before the refund, 0 after) and calls the server: PASS.
+  entitlements and calls the server with every transaction on the device
+  (before the refund: the Premium upgrade; after it: the revoked Premium
+  upgrade plus the original Plus purchase, both verified): PASS. That second
+  call exposed a real bug — the older Plus transaction in the same
+  subscription chain was applied after the revoked Premium one and would have
+  re-granted access. Fixed: the server now applies only the newest
+  transaction per originalTransactionId, skips transactions StoreKit marks as
+  upgraded, and refuses to overwrite a newer recorded state with an older
+  transaction (3 new tests). While the server is unavailable the paywall shows
+  "We could not confirm your subscription with our server just now…" and the
+  Free plan stays in force: PASS.
 - Purchase → `profiles.plan` written → plan shown in the app: **NOT VERIFIED
   LOCALLY.** Every call stopped at `Supabase service role is not configured`
   (the local `.env` has no `SUPABASE_SERVICE_ROLE_KEY`). The app shows the

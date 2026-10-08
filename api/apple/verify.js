@@ -5,7 +5,7 @@
 // writes `plan` itself (the database rejects it), so paid access is never
 // granted on an unverified client-side flag.
 import { verifyTransactionJws, AppleEnvironmentError } from '../_lib/appleVerifier.js'
-import { applyAppleTransaction, supabaseAdmin, supabaseAuthClient, stripeClient, EntitlementOwnershipError } from '../_lib/appleEntitlement.js'
+import { applyAppleTransaction, newestPerSubscription, supabaseAdmin, supabaseAuthClient, stripeClient, EntitlementOwnershipError } from '../_lib/appleEntitlement.js'
 import { APPLE_PRODUCT_IDS } from '../_lib/appleProducts.js'
 
 export const config = { maxDuration: 15 }
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
   const stripe = stripeClient()
   const results = []
   let last = null
-  for (const tx of verified) {
+  for (const tx of newestPerSubscription(verified)) {
     if (!APPLE_PRODUCT_IDS.includes(tx.productId)) {
       results.push({ transactionId: tx.transactionId, ignored: true })
       continue

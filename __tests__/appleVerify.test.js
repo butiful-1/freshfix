@@ -5,7 +5,7 @@
 // APPLE_ALLOW_XCODE_ENV=1 — the production server never does.
 import { describe, it, expect, beforeEach } from 'vitest'
 import { verifyTransactionJws, allowedEnvironments, makeVerifier, AppleEnvironmentError, peekJwsPayload } from '../api/_lib/appleVerifier.js'
-import { applyAppleTransaction, deriveAppleStatus, rowFromTransaction, EntitlementOwnershipError } from '../api/_lib/appleEntitlement.js'
+import { applyAppleTransaction, deriveAppleStatus, rowFromTransaction, newestPerSubscription, EntitlementOwnershipError } from '../api/_lib/appleEntitlement.js'
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
 function fakeJws(payload, header = { alg: 'ES256', x5c: [] }) {
@@ -166,5 +166,32 @@ describe('applyAppleTransaction', () => {
   it('ignores products that are not ours', async () => {
     const r = await applyAppleTransaction({ admin, stripe: null, tx: txPayload({ productId: 'app.old2new.ios.gold' }), requestingUserId: USER })
     expect(r.ignored).toBe(true)
+  })
+})
+
+describe('one subscription chain — only the newest transaction counts', () => {
+  const plus = txPayload({ transactionId: '0', originalTransactionId: '0', productId: 'app.old2new.ios.plus.monthly', purchaseDate: NOW - 5000 })
+  const premium = txPayload({ transactionId: '1', originalTransactionId: '0', productId: 'app.old2new.ios.premium.monthly', purchaseDate: NOW - 1000, revocationDate: NOW })
+  it('newestPerSubscription keeps the latest per originalTransactionId and drops upgraded ones', () => {
+    expect(newestPerSubscription([premium, plus]).map(t => t.transactionId)).toEqual(['1'])
+    expect(newestPerSubscription([plus, premium]).map(t => t.transactionId)).toEqual(['1'])
+    expect(newestPerSubscription([{ ...plus, isUpgraded: true }])).toEqual([])
+    const other = txPayload({ transactionId: '9', originalTransactionId: '9' })
+    expect(newestPerSubscription([plus, other]).map(t => t.transactionId).sort()).toEqual(['0', '9'])
+  })
+  it('a refunded upgrade followed by the original Plus purchase (restore order) stays revoked → free', async () => {
+    const admin = fakeAdmin({ profiles: { [USER]: { plan: 'free', entitlement_source: null } }, users: { [USER]: 'qa@example.com' } })
+    const r1 = await applyAppleTransaction({ admin, stripe: null, tx: premium, requestingUserId: USER })
+    expect(r1.plan).toBe('free'); expect(r1.row.status).toBe('revoked')
+    const r2 = await applyAppleTransaction({ admin, stripe: null, tx: plus, requestingUserId: USER })
+    expect(r2.ignored).toBe(true)
+    expect(admin.state.profiles[USER].plan).toBe('free')
+    expect(admin.state.appleRows['0'].status).toBe('revoked')
+  })
+  it('an upgraded transaction is ignored even when it arrives alone', async () => {
+    const admin = fakeAdmin({ profiles: { [USER]: { plan: 'free', entitlement_source: null } }, users: { [USER]: 'qa@example.com' } })
+    const r = await applyAppleTransaction({ admin, stripe: null, tx: { ...plus, isUpgraded: true }, requestingUserId: USER })
+    expect(r.ignored).toBe(true)
+    expect(admin.state.profiles[USER].plan).toBe('free')
   })
 })

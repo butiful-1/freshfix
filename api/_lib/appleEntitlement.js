@@ -67,6 +67,24 @@ export function rowFromTransaction(tx, renewal, notificationType, userId) {
 
 export class EntitlementOwnershipError extends Error {}
 
+// One Apple subscription = one originalTransactionId with a chain of
+// transactions (purchase, renewals, upgrades). Only the NEWEST one describes
+// the current state; an older sibling (e.g. the Plus purchase that was later
+// upgraded to Premium and then refunded) must never be applied after it.
+export function newestPerSubscription(transactions) {
+  const byOriginal = new Map()
+  for (const tx of transactions) {
+    if (!tx || tx.isUpgraded) continue // superseded by a higher tier in the same group
+    const key = String(tx.originalTransactionId)
+    const prev = byOriginal.get(key)
+    const ts = tx.purchaseDate || 0
+    if (!prev || ts > (prev.purchaseDate || 0) || (ts === (prev.purchaseDate || 0) && String(tx.transactionId) > String(prev.transactionId))) {
+      byOriginal.set(key, tx)
+    }
+  }
+  return [...byOriginal.values()]
+}
+
 // Returns { userId, plan, entitlement_source, applePlan, row }.
 export async function applyAppleTransaction({ admin, stripe, tx, renewal = null, notificationType = null, requestingUserId = null, env = process.env }) {
   const plan = planForAppleProduct(tx.productId)
@@ -74,8 +92,15 @@ export async function applyAppleTransaction({ admin, stripe, tx, renewal = null,
 
   const originalId = String(tx.originalTransactionId)
   const { data: existing, error: selErr } = await admin
-    .from('apple_subscriptions').select('user_id').eq('original_transaction_id', originalId).maybeSingle()
+    .from('apple_subscriptions').select('user_id, purchase_date, last_transaction_id').eq('original_transaction_id', originalId).maybeSingle()
   if (selErr) throw selErr
+
+  // Never let an older transaction in the same chain overwrite a newer state
+  // (e.g. a replayed purchase after a renewal, upgrade or refund was recorded).
+  if (existing?.purchase_date && tx.purchaseDate && Date.parse(existing.purchase_date) > tx.purchaseDate) {
+    return { ignored: true, reason: `stale transaction ${tx.transactionId} (newer ${existing.last_transaction_id} already recorded)` }
+  }
+  if (tx.isUpgraded) return { ignored: true, reason: `transaction ${tx.transactionId} was upgraded` }
 
   // Resolve the owner: stored row → appAccountToken (set to the Supabase user
   // id at purchase time) → the signed-in user making a device verify call.
