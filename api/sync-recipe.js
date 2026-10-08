@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from './recipeConsistency.js'
+import { CLAIM_LANGUAGE_RULES } from './_lib/claimRules.js'
+import { guardTransformResult } from './_lib/claimGuard.js'
 
 export const config = { maxDuration: 30 }
 
@@ -14,6 +16,7 @@ const ALLOWED_ORIGINS = [
 ]
 
 const SYNC_SYSTEM_PROMPT = `You are Old2New. The user has edited the ingredient list of a recipe. Rewrite the instructions and shoppingList to match the updated ingredients exactly, following the user's dietary restrictions.
+${CLAIM_LANGUAGE_RULES}
 
 CRITICAL RULE: Respond ONLY with valid JSON matching this exact structure:
 {
@@ -92,6 +95,8 @@ export default async function handler(req, res) {
         })
       }
     }
+
+    await guardTransformResult(recipe, client)
 
     return res.json(recipe)
   } catch (err) {

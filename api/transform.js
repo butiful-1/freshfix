@@ -1,5 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { checkConsistency, describeViolations, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from './recipeConsistency.js'
+import { CLAIM_LANGUAGE_RULES } from './_lib/claimRules.js'
+import { guardTransformResult } from './_lib/claimGuard.js'
 
 export const config = { maxDuration: 55 }
 
@@ -62,6 +64,8 @@ When given a recipe (or just a dish name), transform it intelligently:
 - Make smart ingredient swaps appropriate to the selected diets
 - Be encouraging, friendly, and positive
 - Always include a reminder to consult a healthcare provider
+${CLAIM_LANGUAGE_RULES}
+NUTRITION ESTIMATES: caloriesBefore/caloriesAfter and every macro value are PER SERVING (using the "servings" you return), rounded to whole numbers, estimated from typical ingredient composition data such as USDA FoodData Central. They are estimates, not measurements.
 
 Your JSON response must match this EXACT structure:
 {
@@ -168,6 +172,10 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
         })
       }
     }
+
+    // Medical-claim language guard (App Store 1.4.1): deterministic check,
+    // one cheap rewrite of offending fields, strip as a last resort.
+    await guardTransformResult(result, client)
 
     return res.json(result)
   } catch (err) {

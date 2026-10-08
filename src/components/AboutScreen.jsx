@@ -1,15 +1,20 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MARKETING_CONSENT_LABEL } from '../marketingConsent'
 import { supabase } from '../supabase'
 import { apiUrl } from '../apiBase'
 import { requestAccountDeletion } from '../deleteAccount'
+import SourcesLink from './shared/SourcesLink.jsx'
+import { HEALTH_GOALS, topicsForGoals } from '../data/healthGoals.js'
+import { HEALTH_DISCLAIMER, SHORT_DISCLAIMER } from '../healthDisclaimer.js'
+import { PLAN_DISPLAY_NAMES } from '../iap/products.js'
 
 // Apple Guideline 5.1.1(v): account deletion must be initiated and completed
 // in-app. This is an in-app confirmation modal (NOT window.confirm/alert, which
 // are unreliable in the iOS WKWebView) that clearly states what is deleted,
 // requires an explicit confirm, shows progress and any error inline, and never
 // leaves the user unsure whether deletion happened.
-function DeleteAccountModal({ email, onCancel, onConfirmed }) {
+function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription }) {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
@@ -29,7 +34,10 @@ function DeleteAccountModal({ email, onCancel, onConfirmed }) {
     }
   }
 
-  return (
+  // Portaled to <body>: a position:fixed overlay inside the animated screen
+  // container is positioned relative to that container and lands off-screen
+  // when the About page is scrolled (seen on iPad in build-7 QA).
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -59,8 +67,13 @@ function DeleteAccountModal({ email, onCancel, onConfirmed }) {
         <ul style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 14px', paddingLeft: 20 }}>
           <li>Your saved recipes</li>
           <li>Your dietary preferences and settings</li>
-          <li>Any active subscription (cancelled automatically)</li>
+          <li>Any Plus or Premium plan purchased on old2new.app (cancelled automatically)</li>
         </ul>
+        {hasAppleSubscription && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, margin: '0 0 14px', background: 'var(--amber-pale, #FFFBEB)', border: '1px solid #FCD34D', borderRadius: 10, padding: '10px 12px' }}>
+            <strong>Apple subscription:</strong> deleting your account does not cancel a subscription billed through Apple. Cancel it in Settings → Apple Account → Subscriptions (or via Manage Subscription on the Pricing screen) so you are not billed again.
+          </p>
+        )}
         <p style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600, lineHeight: 1.5, margin: '0 0 18px' }}>
           This cannot be undone.
         </p>
@@ -94,7 +107,8 @@ function DeleteAccountModal({ email, onCancel, onConfirmed }) {
           Cancel
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -103,7 +117,7 @@ const PREF_OPTIONS = [
   { key: 'vegan',      label: 'Vegan',        icon: '🌱', desc: 'No animal products of any kind' },
   { key: 'dairyFree',  label: 'Dairy Free',   icon: '🥛', desc: 'No milk, cheese, butter, or cream' },
   { key: 'glutenFree', label: 'Gluten Free',  icon: '🌾', desc: 'No wheat, barley, or rye' },
-  { key: 'noNuts',     label: 'No Nuts',      icon: '🥜', desc: 'Nut-allergy safe' },
+  { key: 'noNuts',     label: 'No Nuts',      icon: '🥜', desc: 'Excludes nuts and nut products — always check labels; not a guarantee against cross-contamination' },
 ]
 
 function DietaryPreferencesSection({ dietaryPreferences, onSave }) {
@@ -241,7 +255,7 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent }) {
+export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent, onViewReferences, subscription }) {
   // App Store rule 5.1.1(v): account deletion is initiated and completed in-app
   // via an in-app confirmation modal (see DeleteAccountModal).
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -279,9 +293,9 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
             Old2New is a recipe transformation app that helps transform your favorite recipes into healthier versions — without losing the flavor or comfort you love.
           </p>
           <p style={{ marginTop: 10 }}>
-            Whether you're managing a GLP-1 medication like Ozempic or Wegovy, following a keto lifestyle,
+            Whether you're eating in a GLP-1-friendly way, following a keto lifestyle,
             eating Mediterranean, or just trying to eat a little cleaner — Old2New adapts any recipe to
-            match your goals in seconds.
+            match your goals in seconds. It describes what a recipe contains; it does not give medical advice.
           </p>
         </div>
 
@@ -320,28 +334,51 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
 
         {/* Supported Diets */}
         <div className="about-section">
-          <h3>Supported Diets</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <h3 style={{ margin: 0 }}>Supported Diets</h3>
+            <SourcesLink
+              compact
+              label="What these mean · Sources"
+              title="Transformation goals"
+              topics={topicsForGoals(HEALTH_GOALS.map(g => g.id))}
+              intro={HEALTH_GOALS.map(g => `${g.icon} ${g.id}: ${g.definition}`).join('\n\n')}
+              onViewAll={onViewReferences}
+            />
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
             {DIETS.map(d => (
               <span key={d} className="badge badge-green" style={{ fontSize: 13, padding: '5px 12px' }}>{d}</span>
             ))}
           </div>
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 10, lineHeight: 1.5 }}>
+            Each goal describes the eating pattern Old2New applies to your recipe — ingredient characteristics, not medical outcomes.
+          </p>
         </div>
+
+        {/* Sources & References */}
+        {onViewReferences && (
+          <div className="about-section">
+            <h3>📚 Sources &amp; References</h3>
+            <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+              Every nutrition statement and estimate in Old2New points to an authoritative source (USDA, FDA, NIH, CDC, professional bodies, peer-reviewed research), and the References library explains how nutrition values are estimated.
+            </p>
+            <button className="btn btn-outline" style={{ width: '100%', marginTop: 10 }} onClick={onViewReferences}>
+              Open Sources &amp; References
+            </button>
+          </div>
+        )}
 
         {/* Health Disclaimer */}
         <div className="about-section">
-          <h3>⚠️ Health Disclaimer</h3>
+          <h3>⚕️ Health Disclaimer</h3>
           <div className="about-legal">
-            <p><strong>Old2New is a recipe transformation tool for informational purposes ONLY.</strong></p>
+            <p><strong>{HEALTH_DISCLAIMER}</strong></p>
             <p>
-              We are not doctors, dietitians, or medical professionals. Old2New does not provide
-              medical advice, diagnosis, or treatment. Calorie and macro estimates are approximate
-              and for general guidance only — individual results will vary.
-            </p>
-            <p>
-              Always consult your physician or registered dietitian before making significant dietary
-              changes, especially if you are taking GLP-1 medications (Ozempic, Wegovy, Mounjaro)
-              or managing a chronic health condition.
+              We are not doctors, dietitians, or medical professionals. Recipes, ingredient swaps and
+              nutrition figures are generated by AI; calories and macros are per-serving estimates,
+              not measurements. Always consult your physician or registered dietitian before making
+              dietary changes, especially if you are taking GLP-1 medications (Ozempic, Wegovy, Mounjaro),
+              have diabetes or food allergies, or are managing any chronic health condition.
             </p>
           </div>
         </div>
@@ -369,6 +406,50 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
             marketingEmailConsent={marketingEmailConsent}
             onSave={onSaveMarketingConsent}
           />
+        )}
+
+        {/* Subscription (iOS: Apple In-App Purchase) */}
+        {user && subscription && (
+          <div className="about-section">
+            <h3>Subscription</h3>
+            <div style={{ padding: '14px 16px', background: 'var(--gray-50)', borderRadius: 14, border: '1px solid var(--gray-200)' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Current plan</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--green-dark)', marginTop: 2 }}>
+                {PLAN_DISPLAY_NAMES[subscription.plan] || 'Free'}
+              </div>
+              {subscription.plan !== 'free' && subscription.source === 'stripe' && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                  Purchased on old2new.app. Your plan works here too.
+                </p>
+              )}
+              {subscription.plan !== 'free' && subscription.source === 'manual' && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                  Complimentary plan. Nothing to purchase or manage here.
+                </p>
+              )}
+              {subscription.plan !== 'free' && subscription.source === 'apple' && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                  Billed through your Apple Account. Renews monthly until cancelled in Settings → Apple Account → Subscriptions.
+                </p>
+              )}
+              {subscription.message && (
+                <p role="status" style={{ fontSize: 12.5, color: 'var(--green-dark)', marginTop: 6, fontWeight: 600 }}>{subscription.message}</p>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+              {subscription.plan === 'free' && subscription.onViewPlans && (
+                <button className="btn btn-primary" style={{ width: '100%' }} onClick={subscription.onViewPlans}>See Plus &amp; Premium plans</button>
+              )}
+              {subscription.source === 'apple' && subscription.onManage && (
+                <button className="btn btn-outline" style={{ width: '100%' }} onClick={subscription.onManage}>Manage Subscription</button>
+              )}
+              {subscription.onRestore && (
+                <button className="btn btn-ghost" style={{ width: '100%' }} onClick={subscription.onRestore} disabled={subscription.busy}>
+                  {subscription.busy ? 'Restoring…' : 'Restore Purchases'}
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Account */}
@@ -430,12 +511,13 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
       </div>
 
       <div className="footer-disclaimer">
-        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>{SHORT_DISCLAIMER}</p>
       </div>
 
       {showDeleteModal && user && (
         <DeleteAccountModal
           email={user.email}
+          hasAppleSubscription={subscription?.source === 'apple'}
           onCancel={() => setShowDeleteModal(false)}
           onConfirmed={handleAccountDeleted}
         />

@@ -1,3 +1,6 @@
+import SourcesLink from './shared/SourcesLink.jsx'
+import { topicsForGoals } from '../data/healthGoals.js'
+import { HEALTH_DISCLAIMER } from '../healthDisclaimer.js'
 import { useState, useEffect } from 'react'
 
 const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL
@@ -226,8 +229,11 @@ export default function RecipeShareScreen({ recipeId, onSignUp, onLogin }) {
       )}
 
       <div className="disclaimer-badge" style={{ margin: '8px 16px' }}>
-        <span className="disclaimer-badge-icon">⚠️</span>
-        <p>Nutritional information is estimated. Always verify with your healthcare provider before making dietary changes.</p>
+        <span className="disclaimer-badge-icon">⚕️</span>
+        <p>Calories and macros are per-serving estimates. {HEALTH_DISCLAIMER}</p>
+      </div>
+      <div style={{ padding: '0 16px 100px' }}>
+        <SourcesLink label="Sources & how we estimate nutrition" title="Sources" topics={topicsForGoals(recipe?.diets || [])} showMethodology />
       </div>
 
       {/* Sticky CTA */}

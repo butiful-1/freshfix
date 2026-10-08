@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { apiUrl } from '../apiBase'
+import SourcesLink from './shared/SourcesLink.jsx'
+import { HEALTH_DISCLAIMER } from '../healthDisclaimer.js'
 
 const MEAL_TYPES = [
   { id: 'Breakfast', emoji: '🌅' },
@@ -69,7 +71,7 @@ function IdeaCard({ idea, onTransform }) {
           </div>
           <div style={{ display: 'flex', gap: 14, fontSize: 12, color: 'var(--text-muted)' }}>
             {idea.cookingTime && <span>⏱ {idea.cookingTime}</span>}
-            {idea.calories    && <span>🔥 ~{idea.calories} cal</span>}
+            {idea.calories    && <span>🔥 ~{idea.calories} cal (est.)</span>}
           </div>
         </div>
       </div>
@@ -84,7 +86,7 @@ function IdeaCard({ idea, onTransform }) {
   )
 }
 
-export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea, onBack }) {
+export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea, onBack, onViewReferences }) {
   const [step,      setStep]      = useState(1)
   const [mealType,  setMealType]  = useState(null)
   const [filters,   setFilters]   = useState({ protein: null, cuisine: null, cookingTime: null })
@@ -284,6 +286,9 @@ export default function WhatSoundsGoodScreen({ dietaryPreferences, onSelectIdea,
             </div>
           )}
         </div>
+        {!isLoading && ideas.length > 0 && (
+          <SourcesLink compact label="Sources" title="Meal ideas — sources" topics={['nutrition-estimates', 'portions']} showMethodology intro="Ideas are AI-generated suggestions. Calorie figures are rough per-serving estimates." onViewAll={onViewReferences} />
+        )}
       </div>
 
       <div style={{ padding: '20px 20px 24px' }}>

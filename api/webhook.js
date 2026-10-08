@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { activeApplePlanForUser, nextProfileForStripe, writeProfilePlan } from './_lib/entitlement.js'
 
 export const config = {maxDuration: 10}
 
@@ -45,12 +46,14 @@ export default async function handler(req, res) {
       const userId = session.client_reference_id
       if (userId && plan && ['wellness', 'family'].includes(plan)) {
         try {
-          const { error } = await getSupabase()
-            .from('profiles')
-            .update({ plan, swaps_used: 0 })
-            .eq('id', userId)
-          if (error) throw error
-          console.log(`Plan upgraded — userId: ${userId}, plan: ${plan}`)
+          const admin = getSupabase()
+          // Reconcile with any active Apple subscription (highest tier wins)
+          // and record that Stripe is the source of this entitlement.
+          const { data: profile } = await admin.from('profiles').select('plan, entitlement_source').eq('id', userId).maybeSingle()
+          const applePlan = await activeApplePlanForUser(admin, userId).catch(() => null)
+          const next = nextProfileForStripe(profile, { stripePlan: plan, applePlan })
+          await writeProfilePlan(admin, userId, { ...next, resetUsage: true })
+          console.log(`Plan upgraded — userId: ${userId}, plan: ${next.plan} (${next.entitlement_source})`)
         } catch (err) {
           console.error('Webhook plan upgrade error:', err.message)
         }
@@ -76,8 +79,12 @@ export default async function handler(req, res) {
           if (error) throw error
           const user = users.find(u => u.email === email)
           if (user) {
-            await supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id)
-            console.log(`Plan downgraded — email: ${email}, plan: free`)
+            // Never wipe an active Apple entitlement when the web subscription ends.
+            const { data: profile } = await supabase.from('profiles').select('plan, entitlement_source').eq('id', user.id).maybeSingle()
+            const applePlan = await activeApplePlanForUser(supabase, user.id).catch(() => null)
+            const next = nextProfileForStripe(profile, { stripePlan: null, applePlan })
+            await writeProfilePlan(supabase, user.id, next)
+            console.log(`Stripe subscription ended — email: ${email}, plan now: ${next.plan} (${next.entitlement_source || 'free'})`)
           } else {
             console.log(`Subscription deleted but no user found for email: ${email}`)
           }

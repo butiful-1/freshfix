@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import SourcesLink from './shared/SourcesLink.jsx'
+import { HEALTH_GOALS, topicsForGoals } from '../data/healthGoals.js'
 
 const DIETS = [
   { id: 'GLP-1 Friendly', label: 'GLP-1 Friendly', icon: '💊' },
@@ -23,6 +25,14 @@ export default function OnboardingScreen({ onComplete }) {
       <p className="onboarding-sub">
         Choose your diet preferences so Old2New can fix recipes your way. You can always change this later.
       </p>
+      <div style={{ marginBottom: 12 }}>
+        <SourcesLink
+          label="What these goals mean · Sources"
+          title="Transformation goals"
+          topics={topicsForGoals(HEALTH_GOALS.map(g => g.id))}
+          intro={HEALTH_GOALS.map(g => `${g.icon} ${g.id}: ${g.definition}`).join('\n\n')}
+        />
+      </div>
 
       <div className="onboarding-grid">
         {DIETS.map(diet => (

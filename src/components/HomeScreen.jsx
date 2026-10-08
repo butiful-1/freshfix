@@ -1,3 +1,7 @@
+import SourcesLink from './shared/SourcesLink.jsx'
+import { HEALTH_GOALS, topicsForGoals } from '../data/healthGoals.js'
+import { SHORT_DISCLAIMER } from '../healthDisclaimer.js'
+
 const DIETS = [
   { id: 'GLP-1 Friendly', label: 'GLP-1 Friendly', icon: '💊' },
   { id: 'Keto', label: 'Keto', icon: '🥑' },
@@ -16,9 +20,12 @@ export default function HomeScreen({
   onTransform, isLoading, error,
   savedRecipes, onViewSaved,
   plan, swapUsage, onUpgrade, transformLimit,
-  dietaryPreferences, onWhatSoundsGood, isTWA,
-  healthGoal, onHealthGoalChange,
+  dietaryPreferences, onWhatSoundsGood, isTWA, showUpgrade,
+  healthGoal, onHealthGoalChange, onViewReferences,
 }) {
+  // Upgrade controls: web always; iOS native via Apple IAP (showUpgrade);
+  // Android TWA never (no Play Billing).
+  const canUpgrade = showUpgrade ?? !isTWA
   const canTransform = recipeInput.trim().length > 0 && (selectedDiets.length > 0 || healthGoal.trim().length > 0) && !isLoading
   const recent = savedRecipes.slice(0, 3)
   const swapsUsed = swapUsage?.count || 0
@@ -52,9 +59,20 @@ export default function HomeScreen({
           rows={5}
         />
 
-        <p className="diet-section-label">
-          <span>🎯</span> How would you like to transform your recipe?
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <p className="diet-section-label" style={{ margin: 0 }}>
+            <span>🎯</span> How would you like to transform your recipe?
+          </p>
+          <SourcesLink
+            compact
+            label="What these mean"
+            title="Transformation goals"
+            topics={topicsForGoals(selectedDiets.length ? selectedDiets : HEALTH_GOALS.map(g => g.id))}
+            intro={(selectedDiets.length ? HEALTH_GOALS.filter(g => selectedDiets.includes(g.id)) : HEALTH_GOALS).map(g => `${g.icon} ${g.id}: ${g.definition}`).join('\n\n')}
+            onViewAll={onViewReferences}
+            style={{ whiteSpace: 'nowrap' }}
+          />
+        </div>
 
         <div className="home-diet-grid">
           {DIETS.map(diet => (
@@ -122,7 +140,7 @@ export default function HomeScreen({
                 }
               </span>
             </div>
-            {!isTWA && (
+            {canUpgrade && (
               <button
                 onClick={onUpgrade}
                 style={{
@@ -157,7 +175,7 @@ export default function HomeScreen({
             Select a preference above or enter one below to continue
           </p>
         )}
-        {atLimit && !isTWA && (
+        {atLimit && canUpgrade && (
           <p style={{ fontSize: 13, color: 'var(--red)', textAlign: 'center', marginTop: 6 }}>
             {'Upgrade for more Recipe Upgrades →'}{' '}
             <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: 'var(--red)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 13 }}>
@@ -221,7 +239,9 @@ export default function HomeScreen({
       </div>
 
       <div className="footer-disclaimer" style={{ marginTop: 16 }}>
-        <p>Old2New is for informational purposes only. Not medical advice. Consult your physician before changing your diet.</p>
+        <p>{SHORT_DISCLAIMER}{' '}
+          {onViewReferences && <button type="button" onClick={onViewReferences} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--green-dark)', fontWeight: 700, textDecoration: 'underline', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--font)' }}>Sources &amp; References</button>}
+        </p>
       </div>
     </div>
   )

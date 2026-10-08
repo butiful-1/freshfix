@@ -4,11 +4,15 @@ import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
 import { checkConsistency, buildDietaryRestrictionLines, parseJsonResponse, runRepair } from '../api/recipeConsistency.js'
 import { generateMealIdeas, VALID_MEAL_TYPES } from '../api/suggest.js'
+import { CLAIM_LANGUAGE_RULES } from '../api/_lib/claimRules.js'
+import { guardTransformResult } from '../api/_lib/claimGuard.js'
+import appleVerifyHandler from '../api/apple/verify.js'
+import appleNotificationsHandler from '../api/apple/notifications.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
-app.use(cors({ origin: ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:4173'] }))
+app.use(cors({ origin: ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:4173', 'capacitor://localhost'] }))
 app.use(express.json({ limit: '16kb' }))
 
 const SYSTEM_PROMPT = `You are Old2New, a warm and encouraging recipe transformation assistant for healthy eating. You help people transform their old comfort recipes into healthy new favorites matching their diet preferences.
@@ -20,6 +24,8 @@ When given a recipe (or just a dish name), transform it intelligently:
 - Make smart ingredient swaps appropriate to the selected diets
 - Be encouraging, friendly, and positive
 - Always include a reminder to consult a healthcare provider
+${CLAIM_LANGUAGE_RULES}
+NUTRITION ESTIMATES: caloriesBefore/caloriesAfter and every macro value are PER SERVING (using the "servings" you return), rounded to whole numbers, estimated from typical ingredient composition data such as USDA FoodData Central. They are estimates, not measurements.
 
 Your JSON response must match this EXACT structure:
 {
@@ -145,6 +151,7 @@ Transform it according to the diet preferences${restrictionLines.length > 0 ? ' 
       }
     }
 
+    await guardTransformResult(result, client)
     console.log(`[transform] ${elapsed()} sending response`)
     res.json(result)
   } catch (err) {
@@ -265,6 +272,7 @@ app.post('/api/sync-recipe', async (req, res) => {
       }
     }
 
+    await guardTransformResult(recipe, client)
     res.json(recipe)
   } catch (err) {
     console.error('Sync-recipe error:', err.message)
@@ -306,6 +314,15 @@ app.post('/api/suggest', async (req, res) => {
     }
   }
 })
+
+// Apple In-App Purchase endpoints, mounted locally so a debug iOS build
+// (VITE_API_ORIGIN=http://<mac-ip>:3001) can verify StoreKit-testing
+// transactions. Needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env and
+// APPLE_ALLOW_XCODE_ENV=1 (Xcode StoreKit configuration transactions are
+// unsigned and are never accepted by the production server).
+app.post('/api/apple/verify', (req, res) => appleVerifyHandler(req, res))
+app.options('/api/apple/verify', (req, res) => appleVerifyHandler(req, res))
+app.post('/api/apple/notifications', (req, res) => appleNotificationsHandler(req, res))
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', model: 'claude-sonnet-4-6' }))
 
