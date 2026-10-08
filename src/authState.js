@@ -33,7 +33,8 @@ export function isPublicPath(pathname = '') {
     pathname === '/blog' ||
     pathname.startsWith('/blog/') ||
     pathname === '/about' ||
-    pathname === '/contact'
+    pathname === '/contact' ||
+    pathname === '/references'
   )
 }
 

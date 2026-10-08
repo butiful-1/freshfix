@@ -130,3 +130,14 @@ describe('isPublicPath — auth events never redirect off public marketing pages
     expect([...AUTH_CLEARING_EVENTS].sort()).toEqual(['SIGNED_OUT', 'USER_DELETED'])
   })
 })
+
+describe('isPublicPath — /references is a public page', () => {
+  it('a stale session (SIGNED_OUT on load) must not bounce /references to the splash', () => {
+    expect(isPublicPath('/references')).toBe(true)
+    expect(decideAuthAction('SIGNED_OUT', null, {}).type).toBe('sign-out') // the handler then checks isPublicPath before navigating
+  })
+  it('existing public paths unchanged', () => {
+    for (const p of ['/about', '/contact', '/blog', '/blog/x', '/recipes/x', '/recipe/x']) expect(isPublicPath(p)).toBe(true)
+    for (const p of ['/', '/pricing', '/success', '/auth/callback']) expect(isPublicPath(p)).toBe(false)
+  })
+})

@@ -359,7 +359,7 @@ export default function App() {
             if (localStorage.getItem('old2new_pending_reset')) {
               localStorage.removeItem('old2new_pending_reset')
               setScreen('reset-password')
-            } else if (!path.startsWith('/recipes/') && path !== '/blog' && !path.startsWith('/blog/') && path !== '/about' && path !== '/contact') {
+            } else if (!isPublicPath(path)) {
               // Public recipe pages (standalone /recipes/:slug, or the homepage
               // while a recipe quick-view modal has the URL set to /recipes/:slug
               // — see SplashScreen.jsx) and public blog pages (index /blog and
@@ -390,7 +390,7 @@ export default function App() {
           await loadProfile(session.user.id, session.user)
           loadSavedRecipes(session.user.id)
           appInitializedRef.current = true
-          if (!window.location.pathname.startsWith('/recipe/') && !window.location.pathname.startsWith('/recipes/') && window.location.pathname !== '/blog' && !window.location.pathname.startsWith('/blog/') && window.location.pathname !== '/about' && window.location.pathname !== '/contact') {
+          if (!isPublicPath(window.location.pathname)) {
             goToApp()
           }
         }
