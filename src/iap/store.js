@@ -57,7 +57,14 @@ export async function verifyWithServer(jwsList) {
   })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = new Error(body.error || `Verification failed (${res.status})`)
+    // 4xx carries a message meant for the user (ownership conflict, session);
+    // 5xx is our problem — never show raw server text, and tell the user the
+    // purchase is safe: StoreKit keeps the transaction and we retry at launch.
+    const friendly = res.status >= 500
+      ? 'Your purchase went through, but we could not confirm it with our server just now. Your plan will update automatically; you can also tap Restore Purchases in a moment.'
+      : (body.error || 'Verification failed. Please try again.')
+    console.error('[iap] verify failed:', res.status, body.error)
+    const err = new Error(friendly)
     err.status = res.status
     throw err
   }
