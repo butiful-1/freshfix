@@ -6,7 +6,8 @@
 O=${1:-https://old2new.app}; fail=0
 chk() { local name=$1 want=$2 got=$3; if [[ "$got" == *"$want"* ]]; then echo "OK   $name"; else echo "FAIL $name (got: ${got:0:120})"; fail=1; fi }
 
-chk "References page renders"            "Sources"               "$(curl -s "$O/references" | grep -o -m1 'Sources')"
+chk "References route serves the app"    "200"                   "$(curl -s -o /dev/null -w '%{http_code}' "$O/references")"
+chk "Bundle contains the References screen" "Sources & References" "$(curl -s "$O/" | grep -o 'assets/index-[A-Za-z0-9_-]*\.js' | head -1 | xargs -I{} curl -s "$O/{}" | grep -o -m1 'Sources & References')"
 chk "apple/verify route live (401)"      "Not signed in"         "$(curl -s -X POST "$O/api/apple/verify" -H 'Content-Type: application/json' -d '{"jws":"a.b.c"}')"
 chk "apple/notifications route live"     "signedPayload"         "$(curl -s -X POST "$O/api/apple/notifications" -H 'Content-Type: application/json' -d '{}')"
 chk "apple/notifications rejects forged" "could not be verified" "$(curl -s -X POST "$O/api/apple/notifications" -H 'Content-Type: application/json' -d '{"signedPayload":"eyJhbGciOiJFUzI1NiJ9.eyJub3RpZmljYXRpb25UeXBlIjoiVEVTVCIsImRhdGEiOnsiZW52aXJvbm1lbnQiOiJTYW5kYm94IiwiYnVuZGxlSWQiOiJhcHAub2xkMm5ldy5pb3MifX0.c2ln"}')"

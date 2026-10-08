@@ -1,7 +1,20 @@
 # Old2New iOS 1.0 (build 7) — remediation report
 
-Status at 2026-10-08. Branch `feat/ios-iap-health-citations` (not pushed, not
-submitted). Nothing has been uploaded to App Store Connect.
+Status at 2026-10-08. Branch `feat/ios-iap-health-citations` merged to `master`
+via PR #8 (merge commit `c29c45e`) and deployed to production by Vercel.
+Migration 006 applied and verified by Kim (family/manual 1, wellness/stripe 1,
+free 59, apple_subscriptions 0 rows). `APPLE_APP_APPLE_ID` set (Production +
+Preview). Nothing has been uploaded to App Store Connect or submitted to Apple.
+
+Post-deploy verification (2026-10-08, production): `/api/apple/verify` 401 to
+an unauthenticated POST; `/api/apple/notifications` 400 without payload, 401
+"could not be verified" for forged Sandbox AND Production payloads (the
+Production case proves `APPLE_APP_APPLE_ID` is read — a missing value answers
+503), 503 for an Xcode-environment payload; a signed-in user sending an
+Xcode-environment transaction is refused (503, never written); Terms and
+Privacy show "Last updated: October 8, 2026"; `/references` serves the app and
+the deployed bundle contains the References screen; Stripe checkout and
+health endpoints unchanged; reviewer row still `family / manual`.
 
 ## 1. Audit findings
 See `docs/apple-rejection-remediation-plan.md` Part A. Key points: the only paid
