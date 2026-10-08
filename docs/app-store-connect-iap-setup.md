@@ -96,7 +96,18 @@ Never put any of these in git.
 Supabase Dashboard → SQL Editor → paste and run
 `supabase/migrations/006_apple_subscriptions.sql`. It adds
 `profiles.entitlement_source` (backfilled to `'stripe'` for current paid rows)
-and the `apple_subscriptions` table. No existing values are changed.
+and the `apple_subscriptions` table. No `plan` values are changed.
+
+**App Review account.** The dedicated reviewer account
+(`kimwallace.1@yahoo.com`) has a reserved Premium membership (`plan = 'family'`,
+`swaps_used` resets monthly). The migration marks that one row
+`entitlement_source = 'manual'`, which the server treats as protected: no
+Apple or Stripe event can downgrade or change it, the iOS paywall shows it as
+"Complimentary plan" and never sells an Apple subscription on top of it, and
+nothing about it affects other users. Run the migration *before* the review
+build is tested so the label reads "Complimentary plan" rather than
+"Purchased on old2new.app" (both are harmless). Do not delete or edit that
+account.
 
 ## 10. Sandbox tester
 

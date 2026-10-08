@@ -1,7 +1,7 @@
 # Old2New iOS 1.0 (build 7) — remediation report
 
-Status at 2026-10-08. Branch `feat/ios-iap-health-citations`, commit `d1485b0`
-(not pushed, not submitted). Nothing has been uploaded to App Store Connect.
+Status at 2026-10-08. Branch `feat/ios-iap-health-citations` (not pushed, not
+submitted). Nothing has been uploaded to App Store Connect.
 
 ## 1. Audit findings
 See `docs/apple-rejection-remediation-plan.md` Part A. Key points: the only paid
@@ -44,7 +44,9 @@ Included in the subscription entitlement (the monthly quota). No separate IAP.
 
 ## 6. Stripe / Supabase entitlement mapping
 `profiles.plan` unchanged (`free|wellness|family`); new `profiles.entitlement_source`
-(`stripe|apple|null`); new `apple_subscriptions` table keyed by Apple
+(`stripe|apple|manual|null` — `manual` marks hand-granted memberships such as the
+App Review account; the server never changes a `manual` row and the iOS paywall
+shows it as complimentary and not purchasable); new `apple_subscriptions` table keyed by Apple
 originalTransactionId with `app_account_token = Supabase user id`. Rules in
 `api/_lib/entitlement.js`: highest active tier wins; Apple grant resets usage on
 a new/upgraded tier; Apple expiry → live Stripe check → Stripe plan or free;
@@ -110,35 +112,77 @@ References screen and /references; Results screen badge; public recipe tabs
 and share screen; Pricing footer (short form); PDF cover and final page.
 
 ## 13. Tests actually run — results
-- `npx vitest run`: 10 files, **174 passed** (102 pre-existing + 72 new).
-- `node scripts/check-health-links.mjs`: **30/30 links resolve**.
-- `npm run build` (vite + prerender 109 routes): **clean**; `npm run ios:sync`: clean.
-- `xcodebuild … -scheme App -configuration Debug` for iPhone 17 Pro Max
-  simulator: **BUILD SUCCEEDED** (plugin compiles, 3 Capacitor plugins).
-- Simulator launch via simctl: app launches to the splash screen; device log
-  shows the StoreKit plugin start (`TransactionUpdateStart`, `Products_SK2`).
+
+Automated
+- `npx vitest run`: 10 files, **190 passed** (102 pre-existing + 88 new).
+- `node scripts/check-health-links.mjs`: **30/30 links resolve** (2026-10-08).
+- `npm run build` (vite + prerender 109 routes) and `npm run ios:sync`: clean.
+- `xcodebuild` Debug for the iPhone 17 Pro Max simulator: **BUILD SUCCEEDED**
+  (5 Capacitor plugins: app, browser, filesystem, share, native-purchases).
 - Claim-guard scan of the static demo recipes: 0 violations.
-- Server modules import cleanly; local dev server starts and serves `/api/health`.
+
+Signed-out, iPhone 17 Pro Max simulator (Xcode run, StoreKit configuration active)
+- Launch, splash, Browse Recipes, demo quick view: PASS. "Sources" sheet opens
+  and the USDA FoodData Central link opens in the in-app Safari sheet: PASS.
+
+Reviewer account (`kimwallace.1@yahoo.com`, complimentary Premium — inspected
+via the API: `plan=family`, `swaps_used` 0→3 this month, no Stripe/Apple rows;
+nothing changed except three transformations and one test recipe that was
+saved and then deleted again)
+- Sign in (email/password): PASS. Session restoration after three Xcode
+  relaunches: PASS (still signed in, counters correct). Sign out: PASS
+  ("Signed out successfully" toast, back to splash). Sign in again: PASS.
+- Recipe Transform, all four goals: Diabetic Friendly (Chicken Alfredo),
+  Mediterranean (Beef Lasagna), GLP-1 Friendly (Shrimp Scampi), High Protein
+  (+GLP-1, same dish): PASS. Results show "calories (est.)", "about N cal",
+  "How we estimate" sheet with methodology + sources, Swaps "Sources" sheet,
+  Macros "How we estimate · Sources" sheet with goal-specific topics, full
+  disclaimer badge with "Sources & References" link: PASS.
+- "What these mean" goal definitions (Home) and About → Supported Diets
+  sources, About → Sources & References → References screen: PASS.
+- What Sounds Good → Dinner → ideas with "~N cal (est.)" and Sources: PASS.
+- Save to Cookbook: PASS (then deleted to leave the account unchanged).
+- PDF cookbook (paid feature): PASS after fix — opens the native share sheet;
+  Preview shows cover disclaimer, 6 recipes, Sources & References pages.
+- Pricing tab: StoreKit products load from the local configuration ($14.99 /
+  $24.99), Premium shown as current with "Purchased on old2new.app", Plus card
+  informational ("billed on old2new.app"), Restore Purchases (StoreKit test
+  sign-in sheet → "No Apple subscription was found for this Apple Account.",
+  plan unchanged), subscription disclosure + Terms/Privacy links: PASS.
+- About → Subscription: current plan, Restore Purchases: PASS.
+
+Reviewer account, iPad Air 11-inch (M4) simulator (Xcode run)
+- Launch, splash (tablet layout), sign in, Home, Pricing (products, web-managed
+  treatment, Restore, disclosure), goal-definitions sheet: PASS.
+
+Not exercised with the reviewer account by design (reserved membership must
+not change): Apple purchase, upgrade/downgrade, expiry, account deletion.
+
+Known observations (not blockers)
+- Production API still runs the pre-remediation prompt until this branch is
+  deployed, so live transform text can still contain phrases the new claim
+  guard would rewrite (seen: "helps stabilize blood sugar"). Deploying the
+  branch activates the prompt rules and the guard.
+- First auth check after a cold launch occasionally takes 5–10 s on the
+  simulator (pre-existing safety-net UI appears, then the app continues).
 
 ## 14. Tests blocked — and why
-- **LOCAL STOREKIT TEST: BLOCKED (not run).** The Mac's login session is locked
-  (`CGSSessionScreenIsLocked = true`), so neither Xcode (needed to launch with
-  the StoreKit configuration) nor synthetic taps into the Simulator work.
-  Unlock the Mac and keep it awake, then run the scheme `App` on iPhone 17 Pro
-  Max / iPad Air 11-inch from Xcode (the shared scheme already loads
-  `Old2New.storekit`).
-- **Signed-in iOS QA (transform, save, PDF, paywall, purchase, restore, sign
-  out, delete): BLOCKED.** Sign-up requires email confirmation; no confirmed
-  test account is available. A QA user `qa-ios-build7@old2new.app` was created
-  (unconfirmed) on 2026-10-08 — confirm it in Supabase → Authentication → Users,
-  or provide a confirmed test login.
-- **Entitlement sync end-to-end on device: BLOCKED** until the local `.env` has
-  `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (or until the branch is deployed
-  and tested in Sandbox).
+- **LOCAL STOREKIT PURCHASE TESTS (Plus purchase, Premium purchase,
+  upgrade/downgrade, cancelled/expired entitlement, pending/Ask-to-Buy,
+  purchase-to-plan sync): NOT RUN.** They need a free, confirmed disposable
+  account (the reviewer account must stay unchanged and is not purchasable on
+  iOS by design). `qa-ios-build7@old2new.app` exists but is unconfirmed — confirm
+  it in Supabase → Authentication → Users, or provide another confirmed free
+  account. The purchase-to-plan sync additionally needs `SUPABASE_URL` +
+  `SUPABASE_SERVICE_ROLE_KEY` in the local `.env`, or can be verified in
+  Sandbox after deploy + migration.
+- **Account deletion: NOT RUN** (same disposable-account dependency; the
+  reviewer account must not be deleted).
 - **APPLE SANDBOX / TESTFLIGHT TEST: BLOCKED — REQUIRES APP STORE CONNECT
-  CONFIGURATION** (see `docs/app-store-connect-iap-setup.md`).
-- iPhone / iPad smoke tests: not run (same blockers). Paywall review screenshot
-  (`docs/app-store/iphone-6.9-07-paywall.png`) not yet captured.
+  CONFIGURATION** (see `docs/app-store-connect-iap-setup.md`) plus deploying
+  this branch to Vercel and running migration 006.
+- Paywall review screenshot for App Store Connect: capture from a free account
+  once available (`docs/app-store/iphone-6.9-07-paywall.png`).
 
 ## 15. App Store Connect steps remaining
 `docs/app-store-connect-iap-setup.md` sections 1–12 (agreement, group, two
