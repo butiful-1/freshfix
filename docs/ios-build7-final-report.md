@@ -16,6 +16,13 @@ Privacy show "Last updated: October 8, 2026"; `/references` serves the app and
 the deployed bundle contains the References screen; Stripe checkout and
 health endpoints unchanged; reviewer row still `family / manual`.
 
+Post-deploy finding (fixed, commit `ec121c5`, awaiting push): in a browser
+holding an expired Supabase session, `/references` bounced to the homepage
+because the route was missing from `isPublicPath` (the sign-out handler sends
+every non-public path to the splash). `/references` is now public, the three
+duplicated path lists in App.jsx use `isPublicPath`, and a test covers it. The
+in-app References screen was never affected.
+
 ## 1. Audit findings
 See `docs/apple-rejection-remediation-plan.md` Part A. Key points: the only paid
 items are the Plus/Premium monthly subscriptions (Stripe, web only; internal
