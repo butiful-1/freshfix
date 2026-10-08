@@ -372,7 +372,7 @@ export default function CookbookPDF({ recipes, generatedDate }) {
         <Text style={[styles.refText, { marginTop: 10 }]}>{HEALTH_DISCLAIMER}</Text>
         <View style={styles.pageFooter} fixed>
           <Text style={styles.pageFooterText}>Old2New — Sources & References</Text>
-          <Text style={styles.pageFooterText}>{totalPages + 1} / {totalPages + 1}</Text>
+          <Text style={styles.pageFooterText} render={({ pageNumber, totalPages: total }) => `${pageNumber} / ${total}`} />
         </View>
       </Page>
     </Document>

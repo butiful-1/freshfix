@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { isNativeApp } from '../authRedirect'
 
 const DIET_EMOJI = {
   'GLP-1 Friendly': '💊', Keto: '🥑', Mediterranean: '🫒',
@@ -36,6 +37,24 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare,
       ])
       const date = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
       const blob = await pdf(<CookbookPDF recipes={recipes} generatedDate={date} />).toBlob()
+      if (isNativeApp()) {
+        // The iOS WebView ignores <a download>. Write the PDF to the app's
+        // cache and hand it to the system share sheet (Save to Files, AirDrop,
+        // Mail, Books…), which is the native equivalent of a download.
+        const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+          import('@capacitor/filesystem'),
+          import('@capacitor/share'),
+        ])
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result).split(',')[1])
+          reader.onerror = () => reject(new Error('Could not read the PDF'))
+          reader.readAsDataURL(blob)
+        })
+        const file = await Filesystem.writeFile({ path: 'my-old2new-cookbook.pdf', data: base64, directory: Directory.Cache })
+        await Share.share({ title: 'My Old2New Cookbook', url: file.uri, dialogTitle: 'Save or share your cookbook' })
+        return
+      }
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href     = url
@@ -45,6 +64,8 @@ export default function SavedRecipesScreen({ recipes, onView, onDelete, onShare,
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch (e) {
+      // Dismissing the iOS share sheet rejects with a "canceled" error — not a failure.
+      if (/cancel/i.test(String(e?.message || e))) return
       console.error('[Old2New] Cookbook download failed:', e)
       setDownloadErr('Download failed. Please try again.')
     } finally {
