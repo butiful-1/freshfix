@@ -239,9 +239,20 @@ Known observations (not blockers)
   simulator (pre-existing safety-net UI appears, then the app continues).
 
 ## 14. Tests blocked — and why
-- **Purchase → Supabase plan write → app shows the new plan (and
-  downgrade/cancel/refund → entitlement updated, Restore → newest valid
-  state): BLOCKED LOCALLY — VERIFY IN APPLE SANDBOX AFTER DEPLOYMENT.**
+- **Purchase → Supabase plan write: VERIFIED IN APPLE SANDBOX (2026-10-09).**
+  Build 7 from TestFlight on Kim's iPhone, sandbox tester, QA account
+  `butiful@yahoo.com`: Premium purchase → `/api/apple/verify` wrote
+  `apple_subscriptions` (originalTransactionId 2000001248608534, product
+  premium, environment Sandbox, status subscribed, expires 2026-10-10 16:25 UTC)
+  and `profiles.plan='family'`, `entitlement_source='apple'`, `swaps_used=0`;
+  About shows "Billed through your Apple Account" with Manage Subscription.
+  Products had not loaded on the device for a period after the Paid Apps
+  Agreement activated (propagation delay); they loaded later the same morning.
+- **Still to verify in Sandbox:** Plus purchase on a fresh account, upgrade,
+  downgrade/cancel/refund via notifications (no `last_notification_type` has
+  been recorded yet for the row above — watch for SUBSCRIBED/DID_RENEW), and
+  Restore after reinstall. Previously: BLOCKED LOCALLY — VERIFY IN APPLE
+  SANDBOX AFTER DEPLOYMENT.**
   Kim's decision: no service-role key for local testing. The verification,
   authentication and reconciliation logic is unit-tested (193 tests) and the
   device → server path was exercised locally up to the database write.
