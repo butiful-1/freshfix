@@ -5,6 +5,7 @@ import { MARKETING_CONSENT_VERSION } from './marketingConsent'
 import { App as CapacitorApp } from '@capacitor/app'
 import { isNativeApp, NATIVE_AUTH_SCHEME, closeNativeBrowser } from './authRedirect'
 import { signOutToastMessage } from './signOutToast'
+import { signOutFast } from './signOut'
 import { decideAuthAction, isPublicPath } from './authState'
 import { isIOSNative } from './platform'
 import * as iap from './iap/store'
@@ -1091,12 +1092,19 @@ export default function App() {
 
   const goToReferences = () => { setReferencesReturnScreen(screen); setScreen('references') }
 
+  // First tap must respond: show the pressed state at once, sign out locally
+  // (instant SIGNED_OUT → splash), revoke on the server in the background.
+  const [signingOut, setSigningOut] = useState(false)
   const handleLogout = async () => {
+    if (signingOut) return
+    setSigningOut(true)
     try {
-      await supabase.auth.signOut()
+      await signOutFast(supabase)
       setJustSignedOut(true)
     } catch (e) {
       console.error('[Old2New] Sign out error:', e.message)
+    } finally {
+      setSigningOut(false)
     }
   }
 
@@ -1322,7 +1330,7 @@ export default function App() {
       case 'about':
         return (
           <AboutScreen
-            user={user} onLogout={handleLogout} onAccountDeleted={handleAccountDeleted}
+            user={user} onLogout={handleLogout} signingOut={signingOut} onAccountDeleted={handleAccountDeleted}
             dietaryPreferences={dietaryPreferences}
             onSavePreferences={handleSaveDietaryPreferences}
             marketingEmailConsent={marketingEmailConsent}
@@ -1461,7 +1469,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={`screen ${!showNav ? 'no-nav' : ''}`}>
+      <main className={`screen ${!showNav ? 'no-nav' : ''} ${showMarketingBanner ? 'banner-visible' : ''}`}>
         {renderScreen()}
       </main>
 

@@ -255,7 +255,7 @@ const DIETS = [
   '💪 High Protein', '🍬 Low Sugar', '🔥 Low Calorie', '❤️ Diabetic Friendly',
 ]
 
-export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent, onViewReferences, subscription }) {
+export default function AboutScreen({ user, onLogout, signingOut = false, onAccountDeleted, dietaryPreferences, onSavePreferences, marketingEmailConsent, onSaveMarketingConsent, onViewReferences, subscription }) {
   // App Store rule 5.1.1(v): account deletion is initiated and completed in-app
   // via an in-app confirmation modal (see DeleteAccountModal).
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -462,10 +462,19 @@ export default function AboutScreen({ user, onLogout, onAccountDeleted, dietaryP
                 <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>{user.email}</div>
               </div>
               <button
+                type="button"
                 onClick={onLogout}
-                style={{ background: 'var(--red-bg)', color: 'var(--red)', border: 'none', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                disabled={signingOut}
+                aria-busy={signingOut || undefined}
+                style={{
+                  background: 'var(--red-bg)', color: 'var(--red)', border: 'none', borderRadius: 10,
+                  // Same look; taller hit area (Apple HIG 44pt minimum) and no tap delay.
+                  padding: '8px 14px', minHeight: 44, minWidth: 88, fontSize: 13, fontWeight: 700,
+                  cursor: signingOut ? 'default' : 'pointer', opacity: signingOut ? 0.6 : 1,
+                  touchAction: 'manipulation', flexShrink: 0, fontFamily: 'var(--font)',
+                }}
               >
-                Sign Out
+                {signingOut ? 'Signing out…' : 'Sign Out'}
               </button>
             </div>
             <button

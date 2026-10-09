@@ -91,6 +91,12 @@ body {
   min-height: 0;
 }
 
+/* The floating marketing-consent banner sits above the bottom nav; give the
+   page enough bottom padding that the last controls (About → Sign Out /
+   Delete Account) can scroll clear of it instead of hiding underneath. */
+.screen.banner-visible {
+  padding-bottom: calc(var(--nav-h) + 150px + env(safe-area-inset-bottom, 0px));
+}
 .screen.no-nav {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
