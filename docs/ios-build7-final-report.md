@@ -1,10 +1,20 @@
-# Old2New iOS 1.0 (build 7) — remediation report
+# Old2New iOS 1.0 (builds 7 and 8) — remediation report
 
-Status at 2026-10-08. Branch `feat/ios-iap-health-citations` merged to `master`
-via PR #8 (merge commit `c29c45e`) and deployed to production by Vercel.
-Migration 006 applied and verified by Kim (family/manual 1, wellness/stripe 1,
-free 59, apple_subscriptions 0 rows). `APPLE_APP_APPLE_ID` set (Production +
-Preview). Nothing has been uploaded to App Store Connect or submitted to Apple.
+**Status at 2026-10-09 17:32 UTC: SUBMITTED TO APP REVIEW.** Version 1.0 with
+build 8, the "Old2New Membership" group and both subscriptions are in one
+review submission (`5a9d87fc-6bf2-4cb3-98e3-ec045fbbd675`), all Waiting for
+Review; release type "after approval" (manual release). Kim approved the
+submission explicitly on 2026-10-09.
+
+Timeline: branch `feat/ios-iap-health-citations` merged to `master` via PR #8
+(`c29c45e`) and deployed by Vercel on 2026-10-08; migration 006 applied and
+verified by Kim (family/manual 1, wellness/stripe 1, free 59); `APPLE_APP_APPLE_ID`
+set (Production + Preview). Build 7 uploaded 2026-10-08 (VALID), used for the
+Sandbox verification below. Build 8 (`5adfdc0`, Sign Out first-tap fix only)
+uploaded 2026-10-09 09:42 PDT (VALID), real-device sanity-checked by Kim, and
+submitted. App Store Server Notifications V2 confirmed on both URLs via the
+App Store Connect API and a sandbox TEST notification delivered with SUCCESS.
+Review notes (3,934 chars) applied through the API; demo account unchanged.
 
 Post-deploy verification (2026-10-08, production): `/api/apple/verify` 401 to
 an unauthenticated POST; `/api/apple/notifications` 400 without payload, 401
@@ -257,18 +267,34 @@ Known observations (not blockers)
   authentication and reconciliation logic is unit-tested (193 tests) and the
   device → server path was exercised locally up to the database write.
   Runbook: `docs/ios-build7-deployment.md` §5.
-- **APPLE SANDBOX / TESTFLIGHT TEST: BLOCKED — REQUIRES APP STORE CONNECT
-  CONFIGURATION** (see `docs/app-store-connect-iap-setup.md`) plus deploying
-  this branch to Vercel and running migration 006.
-- Paywall review screenshot for App Store Connect: `docs/app-store/ipad-13-07-paywall.png`
-  can be captured from the current free-account state on request.
+- **Sandbox / TestFlight (build 7 then build 8), Kim's iPhone, sandbox tester,
+  QA account `butiful@yahoo.com`): PASSED** — products load, Plus purchase,
+  Premium purchase (recorded as family/apple, see above), Sign Out on first
+  tap (build 8), sign back in, Pricing, Premium entitlement persists, Restore
+  Purchases keeps Premium active; no real payment method charged.
+- Paywall review screenshots: captured from the free-account paywall on the
+  iPhone 17 Pro Max simulator (`~/Desktop/Old2New-AppStore-Review/`) and
+  uploaded by Kim to both subscriptions (App Store Connect reports the review
+  screenshot asset COMPLETE on each).
+- **Sign Out first-tap fix (build 8)**: root cause was the global sign-out's
+  network round trip before SIGNED_OUT plus no pressed state, a ~30pt target
+  and the consent banner able to overlap the control; fixed in `src/signOut.js`
+  / AboutScreen / index.css, 4 tests, verified on iPhone and iPad simulators
+  and on Kim's device.
 
-## 15. App Store Connect steps remaining
-`docs/app-store-connect-iap-setup.md` sections 1–12 (agreement, group, two
-subscriptions, ranking, notifications URL, EULA, `APPLE_APP_APPLE_ID`,
-migration 006, sandbox tester, attach IAPs to the 1.0 submission, review notes
-and metadata edits).
+## 15. App Store Connect steps — all done
+Agreements active; group and both subscriptions configured (Premium L1
+$24.99, Plus L2 $14.99, 1 month, all territories, localizations, review notes,
+screenshots); server-notification URLs V2 for Production and Sandbox;
+`APPLE_APP_APPLE_ID`; migration 006; sandbox tester; subscriptions attached to
+the version and submitted with it; review notes applied. Remaining after
+approval: release version 1.0 manually (release type is "after approval").
+
+Lesson recorded: the App Store Connect API cannot attach subscriptions to a
+version or add them to a review submission (`'subscription' is not a
+relationship on reviewSubmissionItems`); that step is web-UI only, and a
+rejected submission must be closed before a new one can take items.
 
 ## 16. App Review notes
-`docs/app-review-notes-build8.md` — ready to paste after filling the test
-account placeholders.
+`docs/app-review-notes-build8.md` — the exact text now on version 1.0 in App
+Store Connect (demo account configured there, not in the repo).
