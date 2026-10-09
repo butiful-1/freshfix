@@ -1,4 +1,4 @@
-# App Review Notes — Old2New 1.0 (build 7)
+# App Review Notes — Old2New 1.0 (build 8)
 
 Paste the block below into App Store Connect → version 1.0 → App Review
 Information → Notes. Fill the two placeholders. Do not commit real
@@ -6,7 +6,7 @@ credentials to this file.
 
 ---
 
-Thank you for the detailed review of build 6. Build 7 addresses both issues.
+Thank you for the detailed review of build 6. Build 8 addresses both issues (build 7 was superseded on TestFlight by build 8, which only adds a first-tap fix for Sign Out).
 
 GUIDELINE 3.1.1 — IN-APP PURCHASE
 • Plus ($14.99/month) and Premium ($24.99/month) are now sold with Apple In-App
@@ -24,6 +24,7 @@ GUIDELINE 3.1.1 — IN-APP PURCHASE
 • To purchase: on the Pricing screen tap "Subscribe to Plus" or "Subscribe to
   Premium". The native StoreKit sheet completes the purchase; the app verifies
   the signed transaction on our server and the plan updates immediately.
+  Verified end to end in the Sandbox environment with TestFlight build 8.
 • Restore Purchases: Pricing screen (button under the plan cards) and
   About tab → Subscription → Restore Purchases. Manage Subscription (Apple's
   sheet) is on the same two screens for Apple-billed plans.
@@ -94,7 +95,7 @@ OTHER
 2. **Description** — replace "Free plan includes 5 recipe transformations per
    month." with "Free plan includes 5 recipe transformations per month. Plus
    ($14.99/month) and Premium ($24.99/month) subscriptions add more."
-3. **What's New (1.0 build 7)** — "Plus and Premium subscriptions are now
+3. **What's New (1.0 build 8)** — "Plus and Premium subscriptions are now
    available with In-App Purchase. Added sources and references for all
    nutrition information."
 4. **Age rating** — unchanged (Medical/Treatment Information: Infrequent/Mild).

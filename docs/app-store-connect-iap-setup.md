@@ -124,7 +124,7 @@ binary; they are reviewed with the app.
 ## 12. App Review information (version page)
 
 - Sign-in required: **Yes** — provide a confirmed test account (see
-  `docs/app-review-notes-build7.md`, which is the text to paste into Notes).
+  `docs/app-review-notes-build8.md`, which is the text to paste into Notes).
 - Confirm the metadata edits in that document (description bullet about the
   guides library; "heart-healthy" wording).
 

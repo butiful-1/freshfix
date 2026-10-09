@@ -270,5 +270,5 @@ migration 006, sandbox tester, attach IAPs to the 1.0 submission, review notes
 and metadata edits).
 
 ## 16. App Review notes
-`docs/app-review-notes-build7.md` — ready to paste after filling the test
+`docs/app-review-notes-build8.md` — ready to paste after filling the test
 account placeholders.
