@@ -118,6 +118,61 @@ const FAQ_IOS = [
   },
 ]
 
+const FAQ_GOOGLE = [
+  {
+    q: 'How does billing work?',
+    a: 'Plus and Premium are monthly auto-renewing subscriptions purchased through Google Play and billed to the Google account on this device. The price shown is charged when you confirm the purchase and again each month until you cancel.',
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Open the Google Play app → tap your profile → Payments & subscriptions → Subscriptions → Old2New (or tap Manage Subscription here). Cancelling stops future charges; your plan stays active until the end of the current billing period, then reverts to Free.',
+  },
+  {
+    q: 'Is there a free trial?',
+    a: `The Free plan includes ${FREE_LIMIT} Recipe Upgrades every month — forever — so you can try Old2New before subscribing.`,
+  },
+  {
+    q: "What's the difference between Plus and Premium?",
+    a: 'Plus gives you 50 Recipe Upgrades per month. Premium gives you 150 Recipe Upgrades per month plus priority support.',
+  },
+  {
+    q: 'Can I switch between plans?',
+    a: 'Yes. You never hold two subscriptions at once: switching to Premium takes effect immediately and Google Play charges the prorated difference; switching to Plus takes effect at your next renewal.',
+  },
+  {
+    q: 'I already subscribed on old2new.app. Do I need to buy again?',
+    a: 'No. Sign in with the same account and your existing plan works here. If your plan does not appear, tap Restore Purchases or sign out and back in.',
+  },
+  {
+    q: 'Is my recipe data private?',
+    a: 'Your saved recipes are stored securely in your account. Recipe text is sent to the Claude AI API for transformation only — it is not retained or used for training. We do not sell your data.',
+  },
+]
+
+// Wording that differs between the two in-app stores.
+const STORE_COPY = {
+  apple: {
+    name: 'App Store',
+    account: 'Apple Account',
+    opening: 'Opening App Store…',
+    noneFound: 'No Apple subscription was found for this Apple Account.',
+    manageHint: 'Manage or cancel anytime in Settings → Apple Account → Subscriptions.',
+    disclosure: 'Plus and Premium are monthly auto-renewing subscriptions billed to your Apple Account at the price shown. Payment is charged at confirmation of purchase and the subscription renews automatically each month unless cancelled at least 24 hours before the end of the current period.',
+    elsewhere: 'Your current plan is billed through Apple. Change plans in the Old2New iPhone app or in Settings → Apple Account → Subscriptions.',
+    faq: FAQ_IOS,
+  },
+  google: {
+    name: 'Google Play',
+    account: 'Google account',
+    opening: 'Opening Google Play…',
+    noneFound: 'No Google Play subscription was found for the Google account on this device.',
+    manageHint: 'Manage or cancel anytime in the Google Play app under Payments & subscriptions → Subscriptions.',
+    disclosure: 'Plus and Premium are monthly auto-renewing subscriptions billed through Google Play at the price shown. Payment is charged to your Google Play account when you confirm the purchase, and the subscription renews automatically every month at the same price until you cancel. Cancelling stops future charges; your plan stays active until the end of the current billing period.',
+    elsewhere: 'Your current plan is billed through Google Play. Change plans in the Old2New Android app or in Google Play → Subscriptions.',
+    faq: FAQ_GOOGLE,
+  },
+}
+
 function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false)
   return (
@@ -151,33 +206,39 @@ function FaqItem({ q, a }) {
   )
 }
 
-// Props added for the iOS app (Apple In-App Purchase, App Store 3.1.1):
-//   appleIAP          — true on the native iOS app
-//   appleProducts     — [{ plan, priceString, ... }] from StoreKit (localized prices)
-//   appleProductsError— message if StoreKit could not load products
-//   onApplePurchase(plan) → Promise<{ pending?, message? }>
-//   onRestorePurchases()  → Promise<{ plan }>
+// Props for the in-app stores (Apple In-App Purchase on iOS, App Store 3.1.1;
+// Google Play Billing in the Android app):
+//   appleIAP          — true on the native iOS app (kept for compatibility)
+//   storeIAP          — 'apple' | 'google' | null: which store sells plans here
+//   appleProducts     — [{ plan, priceString, ... }] from the store (localized prices)
+//   appleProductsError— message if the store could not load products
+//   onApplePurchase(plan) → Promise<{ pending?, deferred?, message?, plan? }>
+//   onRestorePurchases()  → Promise<{ plan, restored }>
 //   onManageSubscription()
-//   planSource        — 'apple' | 'stripe' | null (who granted the current plan)
-export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP = false, appleProducts, appleProductsError, onApplePurchase, onRestorePurchases, onManageSubscription, planSource }) {
+//   planSource        — 'apple' | 'google' | 'stripe' | 'manual' | null (who granted the current plan)
+export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP = false, storeIAP = null, appleProducts, appleProductsError, onApplePurchase, onRestorePurchases, onManageSubscription, planSource }) {
   const [loading, setLoading] = useState(null)
   const [error, setError]     = useState('')
   const [notice, setNotice]   = useState('')
+
+  const store = storeIAP || (appleIAP ? 'apple' : null)
+  const inApp = !!store
+  const copy = inApp ? STORE_COPY[store] : null
 
   const swapsLeft = Math.max(0, FREE_LIMIT - (swapUsage?.count || 0))
 
   useEffect(() => { setError(''); setNotice('') }, [plan])
 
-  const applePriceFor = (planKey) => appleProducts?.find(p => p.plan === planKey)?.priceString || null
+  const storePriceFor = (planKey) => appleProducts?.find(p => p.plan === planKey)?.priceString || null
 
   async function handleSubscribe(planKey) {
     setLoading(planKey)
     setError('')
     setNotice('')
-    if (appleIAP) {
+    if (inApp) {
       try {
         const outcome = await onApplePurchase(planKey)
-        if (outcome?.pending) setNotice(outcome.message)
+        if (outcome?.pending || outcome?.deferred) setNotice(outcome.message)
         else setNotice(`You're now on ${PLAN_DISPLAY_NAMES[outcome?.plan] || IAP_PRODUCTS[planKey].name}. Thank you!`)
       } catch (e) {
         if (e?.name !== 'PurchaseCancelled') setError(e?.message || 'Purchase could not be completed. You have not been charged.')
@@ -210,9 +271,14 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
       if (result?.restored && result.plan !== 'free') {
         setNotice(`Restored: your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active.`)
       } else if (result?.plan && result.plan !== 'free') {
-        setNotice(`No Apple subscription was found for this Apple Account. Your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active${planSource === 'stripe' ? ' (purchased on old2new.app)' : planSource === 'manual' ? ' (complimentary)' : ''}.`)
+        const via = planSource === 'stripe' ? ' (purchased on old2new.app)'
+          : planSource === 'manual' ? ' (complimentary)'
+          : planSource === 'apple' ? ' (purchased through Apple)'
+          : planSource === 'google' ? ' (purchased through Google Play)'
+          : ''
+        setNotice(`${copy.noneFound} Your ${PLAN_DISPLAY_NAMES[result.plan]} plan is active${via}.`)
       } else {
-        setNotice('No Apple subscription was found for this Apple Account. If you subscribed on old2new.app, make sure you are signed in with the same Old2New account.')
+        setNotice(`${copy.noneFound} If you subscribed on old2new.app, make sure you are signed in with the same Old2New account.`)
       }
     } catch (e) {
       setError(e?.message || 'Could not restore purchases. Please try again.')
@@ -221,11 +287,20 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
     }
   }
 
-  const FAQ = appleIAP ? FAQ_IOS : FAQ_WEB
-  // A paid plan bought on old2new.app is billed by Stripe. Offering an Apple
-  // subscription on top would let the customer pay twice for the same thing
-  // (App Store 3.1.2(b)), so the cards become informational; Restore stays.
-  const webManaged = appleIAP && plan !== 'free' && (planSource === 'stripe' || planSource === 'manual')
+  const FAQ = inApp ? copy.faq : FAQ_WEB
+  // A paid plan granted elsewhere (Stripe on old2new.app, a complimentary
+  // membership, or the other store) must not be sold again on top: the customer
+  // would pay twice for the same thing (App Store 3.1.2(b); same principle on
+  // Google Play). The cards become informational; Restore stays.
+  const managedElsewhere = inApp && plan !== 'free' && !!planSource && planSource !== store
+  const elsewhereMessage = planSource === 'manual' ? 'Your current plan is complimentary and already includes this.'
+    : planSource === 'stripe' ? 'Your current plan is billed on old2new.app. Change plans there to switch.'
+    : STORE_COPY[planSource]?.elsewhere || ''
+  const currentPlanNote = planSource === 'manual' ? 'Complimentary plan'
+    : planSource === 'stripe' ? 'Purchased on old2new.app'
+    : planSource === 'apple' ? 'Purchased through Apple'
+    : planSource === 'google' ? 'Purchased through Google Play'
+    : ''
 
   return (
     <div className="animate-in">
@@ -272,7 +347,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
           {notice}
         </div>
       )}
-      {appleIAP && appleProductsError && (
+      {inApp && appleProductsError && (
         <div className="error-msg" style={{ margin: '0 16px 8px' }}>
           <span className="error-icon">⚠️</span>
           <span>{appleProductsError}</span>
@@ -284,9 +359,9 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
         {PLANS.map((p) => {
           const isCurrent = plan === p.id
           const isLoading = loading === p.stripeKey
-          const price = appleIAP && p.stripeKey ? (applePriceFor(p.stripeKey) || p.price) : p.price
-          const isPaidCurrentFromWeb = isCurrent && (planSource === 'stripe' || planSource === 'manual')
-          const productsReady = !appleIAP || !!applePriceFor(p.stripeKey)
+          const price = inApp && p.stripeKey ? (storePriceFor(p.stripeKey) || p.price) : p.price
+          const isPaidCurrentElsewhere = isCurrent && !!planSource && planSource !== store && inApp
+          const productsReady = !inApp || !!storePriceFor(p.stripeKey)
 
           return (
             <div key={p.id} style={{
@@ -329,9 +404,9 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
                   ))}
                 </div>
 
-                {p.stripeKey && webManaged && !isCurrent ? (
+                {p.stripeKey && managedElsewhere && !isCurrent ? (
                   <p style={{ fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0', lineHeight: 1.5 }}>
-                    {planSource === 'manual' ? 'Your current plan is complimentary and already includes this.' : 'Your current plan is billed on old2new.app. Change plans there to switch.'}
+                    {elsewhereMessage}
                   </p>
                 ) : p.stripeKey ? (
                   <>
@@ -342,21 +417,21 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
                       disabled={isCurrent || !!loading || !productsReady}
                     >
                       {isLoading
-                        ? <><div className="spinner" /> {appleIAP ? 'Opening App Store…' : 'Redirecting to Stripe…'}</>
+                        ? <><div className="spinner" /> {inApp ? copy.opening : 'Redirecting to Stripe…'}</>
                         : isCurrent
                           ? '✓ Active'
-                          : appleIAP
+                          : inApp
                             ? (plan !== 'free' ? `Switch to ${p.name} →` : `Subscribe to ${p.name} →`)
                             : `Start ${p.name} →`}
                     </button>
-                    {appleIAP && !isCurrent && (
+                    {inApp && !isCurrent && (
                       <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-                        Old2New {p.name} · 1 month · {price}/month, auto-renews until cancelled
+                        Old2New {p.name} · 1 month · {price}/month, billed monthly through {copy.name}, auto-renews until cancelled
                       </p>
                     )}
-                    {isPaidCurrentFromWeb && (
+                    {isPaidCurrentElsewhere && (
                       <p style={{ fontSize: 11.5, color: 'var(--text-muted)', textAlign: 'center', marginTop: 8, lineHeight: 1.5 }}>
-                        {planSource === 'manual' ? 'Complimentary plan' : 'Purchased on old2new.app'}
+                        {currentPlanNote}
                       </p>
                     )}
                   </>
@@ -371,20 +446,20 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
         })}
       </div>
 
-      {appleIAP ? (
+      {inApp ? (
         <div style={{ padding: '8px 16px 4px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button className="btn btn-outline" style={{ width: '100%' }} onClick={handleRestore} disabled={!!loading}>
               {loading === 'restore' ? <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> Restoring…</> : 'Restore Purchases'}
             </button>
-            {planSource === 'apple' && plan !== 'free' && onManageSubscription && (
+            {planSource === store && plan !== 'free' && onManageSubscription && (
               <button className="btn btn-ghost" style={{ width: '100%' }} onClick={onManageSubscription} disabled={!!loading}>
                 Manage Subscription
               </button>
             )}
           </div>
           <p style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.55, marginTop: 12 }}>
-            Plus and Premium are monthly auto-renewing subscriptions billed to your Apple Account at the price shown. Payment is charged at confirmation of purchase and the subscription renews automatically each month unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in Settings → Apple Account → Subscriptions.
+            {copy.disclosure} {copy.manageHint}
             {' '}
             <a href="https://old2new.app/terms.html" onClick={(e) => { e.preventDefault(); openExternal('https://old2new.app/terms.html') }} style={{ color: 'var(--green-dark)', fontWeight: 700 }}>Terms of Use</a>
             {' · '}

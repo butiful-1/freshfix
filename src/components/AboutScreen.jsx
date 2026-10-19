@@ -14,7 +14,7 @@ import { PLAN_DISPLAY_NAMES } from '../iap/products.js'
 // are unreliable in the iOS WKWebView) that clearly states what is deleted,
 // requires an explicit confirm, shows progress and any error inline, and never
 // leaves the user unsure whether deletion happened.
-function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription }) {
+function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription, hasGoogleSubscription }) {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
@@ -72,6 +72,11 @@ function DeleteAccountModal({ email, onCancel, onConfirmed, hasAppleSubscription
         {hasAppleSubscription && (
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, margin: '0 0 14px', background: 'var(--amber-pale, #FFFBEB)', border: '1px solid #FCD34D', borderRadius: 10, padding: '10px 12px' }}>
             <strong>Apple subscription:</strong> deleting your account does not cancel a subscription billed through Apple. Cancel it in Settings → Apple Account → Subscriptions (or via Manage Subscription on the Pricing screen) so you are not billed again.
+          </p>
+        )}
+        {hasGoogleSubscription && (
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55, margin: '0 0 14px', background: 'var(--amber-pale, #FFFBEB)', border: '1px solid #FCD34D', borderRadius: 10, padding: '10px 12px' }}>
+            <strong>Google Play subscription:</strong> deleting your account does not cancel a subscription billed through Google Play. Cancel it in the Google Play app under Payments &amp; subscriptions → Subscriptions (or via Manage Subscription on the Pricing screen) so you are not billed again.
           </p>
         )}
         <p style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600, lineHeight: 1.5, margin: '0 0 18px' }}>
@@ -429,7 +434,16 @@ export default function AboutScreen({ user, onLogout, signingOut = false, onAcco
               )}
               {subscription.plan !== 'free' && subscription.source === 'apple' && (
                 <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
-                  Billed through your Apple Account. Renews monthly until cancelled in Settings → Apple Account → Subscriptions.
+                  {subscription.store === 'google'
+                    ? 'Billed through Apple. Your plan works here too; manage it on your iPhone or iPad.'
+                    : 'Billed through your Apple Account. Renews monthly until cancelled in Settings → Apple Account → Subscriptions.'}
+                </p>
+              )}
+              {subscription.plan !== 'free' && subscription.source === 'google' && (
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5 }}>
+                  {subscription.store === 'apple'
+                    ? 'Billed through Google Play. Your plan works here too; manage it in the Google Play app on your Android device.'
+                    : 'Billed through Google Play. Renews monthly until cancelled in the Google Play app under Payments & subscriptions → Subscriptions.'}
                 </p>
               )}
               {subscription.message && (
@@ -440,7 +454,7 @@ export default function AboutScreen({ user, onLogout, signingOut = false, onAcco
               {subscription.plan === 'free' && subscription.onViewPlans && (
                 <button className="btn btn-primary" style={{ width: '100%' }} onClick={subscription.onViewPlans}>See Plus &amp; Premium plans</button>
               )}
-              {subscription.source === 'apple' && subscription.onManage && (
+              {(subscription.source === 'apple' || subscription.source === 'google') && subscription.onManage && (
                 <button className="btn btn-outline" style={{ width: '100%' }} onClick={subscription.onManage}>Manage Subscription</button>
               )}
               {subscription.onRestore && (
@@ -527,6 +541,7 @@ export default function AboutScreen({ user, onLogout, signingOut = false, onAcco
         <DeleteAccountModal
           email={user.email}
           hasAppleSubscription={subscription?.source === 'apple'}
+          hasGoogleSubscription={subscription?.source === 'google'}
           onCancel={() => setShowDeleteModal(false)}
           onConfirmed={handleAccountDeleted}
         />

@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
-import { activeApplePlanForUser, nextProfileForStripe, writeProfilePlan } from './_lib/entitlement.js'
+import { activeApplePlanForUser, activeGooglePlanForUser, nextProfileForStripe, writeProfilePlan } from './_lib/entitlement.js'
 
 export const config = {maxDuration: 10}
 
@@ -29,7 +29,8 @@ export default async function handler(req, res) {
       try {
         const { data: profile } = await admin.from('profiles').select('plan, entitlement_source').eq('id', userId).maybeSingle()
         const applePlan = await activeApplePlanForUser(admin, userId).catch(() => null)
-        const next = nextProfileForStripe(profile, { stripePlan: plan, applePlan })
+        const googlePlan = await activeGooglePlanForUser(admin, userId).catch(() => null)
+        const next = nextProfileForStripe(profile, { stripePlan: plan, applePlan, googlePlan })
         await writeProfilePlan(admin, userId, { ...next, resetUsage: true })
       } catch (e) {
         console.error('verify-session plan update error:', e.message)

@@ -1,6 +1,6 @@
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
-import { activeApplePlanForUser, nextProfileForStripe, writeProfilePlan } from './_lib/entitlement.js'
+import { activeApplePlanForUser, activeGooglePlanForUser, nextProfileForStripe, writeProfilePlan } from './_lib/entitlement.js'
 
 export const config = {maxDuration: 10}
 
@@ -51,7 +51,8 @@ export default async function handler(req, res) {
           // and record that Stripe is the source of this entitlement.
           const { data: profile } = await admin.from('profiles').select('plan, entitlement_source').eq('id', userId).maybeSingle()
           const applePlan = await activeApplePlanForUser(admin, userId).catch(() => null)
-          const next = nextProfileForStripe(profile, { stripePlan: plan, applePlan })
+          const googlePlan = await activeGooglePlanForUser(admin, userId).catch(() => null)
+          const next = nextProfileForStripe(profile, { stripePlan: plan, applePlan, googlePlan })
           await writeProfilePlan(admin, userId, { ...next, resetUsage: true })
           console.log(`Plan upgraded — userId: ${userId}, plan: ${next.plan} (${next.entitlement_source})`)
         } catch (err) {
@@ -79,10 +80,11 @@ export default async function handler(req, res) {
           if (error) throw error
           const user = users.find(u => u.email === email)
           if (user) {
-            // Never wipe an active Apple entitlement when the web subscription ends.
+            // Never wipe an active Apple or Google Play entitlement when the web subscription ends.
             const { data: profile } = await supabase.from('profiles').select('plan, entitlement_source').eq('id', user.id).maybeSingle()
             const applePlan = await activeApplePlanForUser(supabase, user.id).catch(() => null)
-            const next = nextProfileForStripe(profile, { stripePlan: null, applePlan })
+            const googlePlan = await activeGooglePlanForUser(supabase, user.id).catch(() => null)
+            const next = nextProfileForStripe(profile, { stripePlan: null, applePlan, googlePlan })
             await writeProfilePlan(supabase, user.id, next)
             console.log(`Stripe subscription ended — email: ${email}, plan now: ${next.plan} (${next.entitlement_source || 'free'})`)
           } else {

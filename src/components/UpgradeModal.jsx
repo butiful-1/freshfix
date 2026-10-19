@@ -1,26 +1,36 @@
 import { useState } from 'react'
 import { apiUrl } from '../apiBase'
+import { supabase } from '../supabase'
 import { IAP_PRODUCTS } from '../iap/products.js'
 
 // Shown when the monthly transformation quota is used up.
 //   • Web: Stripe Checkout (unchanged).
 //   • iOS native: Apple In-App Purchase via `onApplePurchase(plan)` (App Store 3.1.1).
-//   • Android TWA: no purchases — informational only.
-export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, appleIAP, onApplePurchase, onRestorePurchases, appleProducts }) {
+//   • Android app (billing-enabled build): Google Play Billing via the same
+//     `onApplePurchase(plan)` callback (App.jsx routes it to the right store).
+//   • Android build without billing: no purchases — informational only.
+const STORE_COPY = {
+  apple:  { name: 'App Store',   disclosure: 'Monthly auto-renewing subscriptions billed to your Apple Account. Cancel anytime in Settings → Apple Account → Subscriptions.' },
+  google: { name: 'Google Play', disclosure: 'Monthly auto-renewing subscriptions billed through Google Play at the price shown; they renew automatically each month until cancelled. Cancel anytime in the Google Play app under Payments & subscriptions → Subscriptions.' },
+}
+
+export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, appleIAP, storeIAP, onApplePurchase, onRestorePurchases, appleProducts }) {
   const [loading, setLoading] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
+  const store = storeIAP || (appleIAP ? 'apple' : null)
+  const inApp = !!store
   const priceFor = (plan) => appleProducts?.find(p => p.plan === plan)?.priceString || IAP_PRODUCTS[plan].fallbackPrice
 
   async function handleSubscribe(plan) {
     setLoading(plan)
     setError('')
     setNotice('')
-    if (appleIAP) {
+    if (inApp) {
       try {
         const outcome = await onApplePurchase(plan)
-        if (outcome?.pending) { setNotice(outcome.message); setLoading(null); return }
+        if (outcome?.pending || outcome?.deferred) { setNotice(outcome.message); setLoading(null); return }
         onClose()
       } catch (e) {
         if (e?.name !== 'PurchaseCancelled') setError(e?.message || 'Purchase could not be completed.')
@@ -29,9 +39,23 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
       return
     }
     try {
+      // The server derives the account id for the checkout from this session
+      // token (client_reference_id); the Stripe webhook and /api/verify-session
+      // only write the paid plan to the profile when it is present. Without
+      // it the purchase would succeed in Stripe but never become Plus/Premium.
+      let token = ''
+      try {
+        const { data } = await supabase.auth.getSession()
+        token = data?.session?.access_token || ''
+      } catch {}
+      if (!token) {
+        setError('Please sign in again before upgrading.')
+        setLoading(null)
+        return
+      }
       const res = await fetch(apiUrl('/api/create-checkout'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan }),
       })
       const data = await res.json()
@@ -47,7 +71,8 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
     }
   }
 
-  const noPurchases = isTWA && !appleIAP
+  const noPurchases = isTWA && !inApp
+  const opening = inApp ? `Opening ${STORE_COPY[store].name}…` : 'Redirecting…'
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true">
@@ -103,7 +128,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
                 style={{ position: 'relative' }}
               >
                 {loading === 'wellness' ? (
-                  <><div className="spinner" /> {appleIAP ? 'Opening App Store…' : 'Redirecting…'}</>
+                  <><div className="spinner" /> {opening}</>
                 ) : (
                   <>💚 Plus — {priceFor('wellness')}/mo · 50 Recipe Upgrades/month</>
                 )}
@@ -115,7 +140,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
                 disabled={!!loading}
               >
                 {loading === 'family' ? (
-                  <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> {appleIAP ? 'Opening App Store…' : 'Redirecting…'}</>
+                  <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> {opening}</>
                 ) : (
                   <>⭐ Premium — {priceFor('family')}/mo · 150 Recipe Upgrades/month</>
                 )}
@@ -129,7 +154,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
               >
                 See all plans →
               </button>
-              {appleIAP && onRestorePurchases && (
+              {inApp && onRestorePurchases && (
                 <button
                   className="btn btn-ghost"
                   onClick={onRestorePurchases}
@@ -141,9 +166,9 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
               )}
             </div>
 
-            {appleIAP && (
+            {inApp && (
               <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.5, marginBottom: 10 }}>
-                Monthly auto-renewing subscriptions billed to your Apple Account. Cancel anytime in Settings → Apple Account → Subscriptions.
+                {STORE_COPY[store].disclosure}
               </p>
             )}
 

@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { planForAppleProduct } from './appleProducts.js'
 import {
-  activeApplePlanForUser, liveStripePlanForEmail, nextProfileForApple,
+  activeApplePlanForUser, activeGooglePlanForUser, liveStripePlanForEmail, nextProfileForApple,
   stripePriceToPlanMap, writeProfilePlan,
 } from './entitlement.js'
 
@@ -122,6 +122,9 @@ export async function applyAppleTransaction({ admin, stripe, tx, renewal = null,
   if (!userId) return { unassigned: true, row }
 
   const applePlan = await activeApplePlanForUser(admin, userId)
+  // An active Google Play subscription on the same account must survive any
+  // Apple change (highest tier wins; see entitlement.js).
+  const googlePlan = await activeGooglePlanForUser(admin, userId).catch(() => null)
 
   const { data: profile, error: pErr } = await admin
     .from('profiles').select('plan, entitlement_source').eq('id', userId).maybeSingle()
@@ -136,12 +139,15 @@ export async function applyAppleTransaction({ admin, stripe, tx, renewal = null,
       const { data } = await admin.auth.admin.getUserById(userId)
       liveStripePlan = await liveStripePlanForEmail(stripe, data?.user?.email, stripePriceToPlanMap(env))
     } catch (e) {
+      // Unknown Stripe state must never be written as "no Stripe plan": that
+      // would drop a paying web subscriber to free. Leave the profile untouched
+      // and fail the request so Apple (5xx) or the device (next launch) retries.
       console.error('[apple] live Stripe lookup failed:', e.message)
-      liveStripePlan = null
+      throw new Error(`Stripe lookup failed while reconciling the Apple entitlement: ${e.message}`)
     }
   }
 
-  const next = nextProfileForApple(profile, { applePlan, liveStripePlan })
+  const next = nextProfileForApple(profile, { applePlan, liveStripePlan, googlePlan })
   const changed = !profile || profile.plan !== next.plan || (profile.entitlement_source || null) !== (next.entitlement_source || null) || next.resetUsage
   if (changed) await writeProfilePlan(admin, userId, next)
 

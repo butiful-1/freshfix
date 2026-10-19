@@ -9,6 +9,7 @@ import { signOutFast } from './signOut'
 import { decideAuthAction, isPublicPath } from './authState'
 import { isIOSNative } from './platform'
 import * as iap from './iap/store'
+import * as googleIap from './iap/googleStore'
 
 // Races a promise against a ms timeout; on timeout resolves with `fallback`
 // instead of rejecting so callers can proceed gracefully without re-throwing.
@@ -122,6 +123,14 @@ export default function App() {
   // server-written profiles.plan; these hold StoreKit product info and the
   // entitlement source for the UI.
   const appleIAP = isIOSNative()
+  // Google Play Billing (Android app only). The Android app is a Trusted Web
+  // Activity of this site; the billing-enabled build (versionCode ≥ 9) exposes
+  // the Digital Goods API, detected asynchronously below. Older Android builds
+  // and plain browsers keep the old behaviour: no purchases shown.
+  const [googleIAP, setGoogleIAP] = useState(false)
+  // 'apple' | 'google' | null — which in-app store (if any) sells plans here.
+  const storeIAP = appleIAP ? 'apple' : googleIAP ? 'google' : null
+  const store = storeIAP === 'google' ? googleIap : iap
   const [appleProducts, setAppleProducts] = useState(null)
   const [appleProductsError, setAppleProductsError] = useState('')
   const [planSource, setPlanSource] = useState(null)
@@ -516,26 +525,41 @@ export default function App() {
     try { window.scrollTo(0, 0); document.querySelector('main.screen')?.scrollTo(0, 0) } catch {}
   }, [screen])
 
-  // ── Apple IAP: products, launch/resume entitlement sync, live updates ──
+  // ── Google Play Billing detection (Android TWA only) ──
   useEffect(() => {
-    if (!appleIAP) return
-    iap.loadProducts()
+    if (!isTWA || appleIAP) return
+    let cancelled = false
+    googleIap.detectGoogleBilling()
+      .then(ok => { if (!cancelled) { setGoogleIAP(ok); if (ok) console.log('[google-iap] Google Play Billing available') } })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isTWA, appleIAP])
+
+  // ── In-app store (Apple / Google Play): products, launch/resume entitlement sync, live updates ──
+  useEffect(() => {
+    if (!storeIAP) return
+    const storeName = storeIAP === 'apple' ? 'the App Store' : 'Google Play'
+    store.loadProducts()
       .then(p => { setAppleProducts(p); if (!p.length) setAppleProductsError('Subscriptions are not available right now. Please try again later.') })
-      .catch(e => { console.error('[iap] products:', e.message); setAppleProductsError('Could not load subscription prices from the App Store. Please try again later.') })
-  }, [appleIAP])
+      .catch(e => { console.error('[iap] products:', e.message); setAppleProductsError(`Could not load subscription prices from ${storeName}. Please try again later.`) })
+  }, [storeIAP]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!appleIAP || !user) return
+    if (!storeIAP || !user) return
     let cancelled = false
-    const sync = () => iap.syncEntitlements()
+    const sync = () => store.syncEntitlements()
       .then(r => { if (!cancelled && r?.plan) { setPlan(r.plan); setPlanSource(r.source || null); loadProfile(user.id, user) } })
       .catch(e => console.warn('[iap] sync:', e.message))
     sync()
     const onVisible = () => { if (document.visibilityState === 'visible') sync() }
     document.addEventListener('visibilitychange', onVisible)
-    const stop = iap.onTransactionUpdated((r) => { if (!cancelled && r?.plan) { setPlan(r.plan); setPlanSource(r.source || null); loadProfile(user.id, user) } })
+    // StoreKit delivers renewals/approvals live; Google Play changes arrive via
+    // the resume sync above (and server-side notifications).
+    const stop = storeIAP === 'apple'
+      ? iap.onTransactionUpdated((r) => { if (!cancelled && r?.plan) { setPlan(r.plan); setPlanSource(r.source || null); loadProfile(user.id, user) } })
+      : () => {}
     return () => { cancelled = true; document.removeEventListener('visibilitychange', onVisible); stop() }
-  }, [appleIAP, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [storeIAP, user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── URL routing ──────────────────────────────
   useEffect(() => {
@@ -1059,11 +1083,17 @@ export default function App() {
     if (user) await loadProfile(user.id, user)
   }
 
+  // Buy or switch plans through whichever store this app runs in.
   const handleApplePurchase = async (planKey) => {
     if (!user) throw new Error('Please sign in to subscribe.')
     try {
-      const result = await iap.purchasePlan(planKey, user.id)
+      const result = storeIAP === 'google'
+        ? await googleIap.purchasePlan(planKey)
+        : await iap.purchasePlan(planKey, user.id)
       await applyIapResult(result)
+      if (result?.deferred && result.deferredPlan) {
+        return { plan: result?.plan, deferred: true, message: `Your plan changes to ${result.deferredPlan === 'family' ? 'Premium' : 'Plus'} at your next renewal. Until then you keep ${result?.plan === 'family' ? 'Premium' : 'Plus'}.` }
+      }
       return { plan: result?.plan }
     } catch (e) {
       if (e instanceof iap.PurchasePending) return { pending: true, message: e.message }
@@ -1075,20 +1105,25 @@ export default function App() {
     setIapBusy(true)
     setIapMessage('')
     try {
-      const result = await iap.restorePurchases()
+      const result = await store.restorePurchases()
       await applyIapResult(result)
-      const restored = !!result?.applePlan
+      const restored = storeIAP === 'google' ? !!result?.googlePlan : !!result?.applePlan
       const restoredPlan = result?.plan || plan
       setIapMessage(restored
         ? `Restored: ${restoredPlan === 'family' ? 'Premium' : 'Plus'} is active.`
-        : 'No Apple subscription was found for this Apple Account.')
+        : storeIAP === 'google'
+          ? 'No Google Play subscription was found for this Google account.'
+          : 'No Apple subscription was found for this Apple Account.')
       return { plan: restoredPlan, restored }
     } finally {
       setIapBusy(false)
     }
   }
 
-  const handleManageSubscription = () => { iap.openManageSubscriptions().catch(e => console.error('[iap] manage:', e.message)) }
+  const handleManageSubscription = () => {
+    const p = storeIAP === 'google' ? googleIap.openManageSubscriptions(plan) : iap.openManageSubscriptions()
+    Promise.resolve(p).catch(e => console.error('[iap] manage:', e.message))
+  }
 
   const goToReferences = () => { setReferencesReturnScreen(screen); setScreen('references') }
 
@@ -1219,9 +1254,9 @@ export default function App() {
             healthGoal={healthGoal} onHealthGoalChange={setHealthGoal}
             onTransform={handleTransform} isLoading={isLoading} error={error}
             savedRecipes={savedRecipes} onViewSaved={handleViewSaved}
-            plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA || appleIAP) setScreen('pricing') }}
+            plan={plan} swapUsage={swapUsage} onUpgrade={() => { if (!isTWA || storeIAP) setScreen('pricing') }}
             transformLimit={transformLimit} dietaryPreferences={dietaryPreferences}
-            onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA} showUpgrade={!isTWA || appleIAP}
+            onWhatSoundsGood={() => setScreen('suggest')} isTWA={isTWA} showUpgrade={!isTWA || !!storeIAP}
             onViewReferences={goToReferences}
           />
         )
@@ -1239,14 +1274,15 @@ export default function App() {
       case 'shopping':
         return <ShoppingListScreen result={transformResult} onBack={() => setScreen('results')} />
       case 'saved':
-        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} onShare={handleMarkShared} plan={plan} isTWA={isTWA} showUpgrade={!isTWA || appleIAP} onUpgrade={() => setScreen('pricing')} />
+        return <SavedRecipesScreen recipes={savedRecipes} onView={handleViewSaved} onDelete={handleDeleteSaved} onShare={handleMarkShared} plan={plan} isTWA={isTWA} showUpgrade={!isTWA || !!storeIAP} onUpgrade={() => setScreen('pricing')} />
       case 'pricing':
-        // Android (TWA) has no in-app purchases; iOS sells Plus/Premium via Apple IAP.
-        if (isTWA && !appleIAP) { setTimeout(() => setScreen('home'), 0); return null }
+        // iOS sells Plus/Premium via Apple IAP; the Android app via Google Play
+        // Billing. An Android build without billing has no in-app purchases.
+        if (isTWA && !storeIAP) { setTimeout(() => setScreen('home'), 0); return null }
         return (
           <PricingScreen
             plan={plan} swapUsage={swapUsage} onBack={() => setScreen('home')} user={user}
-            appleIAP={appleIAP} appleProducts={appleProducts} appleProductsError={appleProductsError}
+            appleIAP={appleIAP} storeIAP={storeIAP} appleProducts={appleProducts} appleProductsError={appleProductsError}
             onApplePurchase={handleApplePurchase} onRestorePurchases={handleRestorePurchases}
             onManageSubscription={handleManageSubscription} planSource={planSource}
           />
@@ -1336,11 +1372,11 @@ export default function App() {
             marketingEmailConsent={marketingEmailConsent}
             onSaveMarketingConsent={handleSaveMarketingConsent}
             onViewReferences={goToReferences}
-            subscription={appleIAP ? {
-              plan, source: planSource, busy: iapBusy, message: iapMessage,
+            subscription={storeIAP ? {
+              plan, source: planSource, store: storeIAP, busy: iapBusy, message: iapMessage,
               onViewPlans: () => setScreen('pricing'),
               onRestore: () => handleRestorePurchases().catch(e => setIapMessage(e.message)),
-              onManage: planSource === 'apple' ? handleManageSubscription : undefined,
+              onManage: planSource === storeIAP ? handleManageSubscription : undefined,
             } : undefined}
           />
         )
@@ -1396,7 +1432,7 @@ export default function App() {
         <UpgradeModal
           swapUsage={swapUsage}
           isTWA={isTWA}
-          appleIAP={appleIAP} appleProducts={appleProducts}
+          appleIAP={appleIAP} storeIAP={storeIAP} appleProducts={appleProducts}
           onApplePurchase={handleApplePurchase}
           onRestorePurchases={() => { setShowUpgradeModal(false); setScreen('pricing') }}
           onClose={() => setShowUpgradeModal(false)}
@@ -1477,7 +1513,7 @@ export default function App() {
         <BottomNav
           activeScreen={screen} onNavigate={setScreen}
           savedCount={savedRecipes.length} plan={plan} swapUsage={swapUsage}
-          isTWA={isTWA} showPricing={!isTWA || appleIAP}
+          isTWA={isTWA} showPricing={!isTWA || !!storeIAP}
         />
       )}
 

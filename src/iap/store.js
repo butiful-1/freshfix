@@ -76,8 +76,10 @@ async function finish(transactionId) {
   try { await NativePurchases.acknowledgePurchase({ purchaseToken: String(transactionId) }) } catch { /* already finished */ }
 }
 
-export class PurchaseCancelled extends Error {}
-export class PurchasePending extends Error {}
+// `name` is set explicitly so UI code can test `e.name === 'PurchaseCancelled'`
+// without importing the class (a subclass of Error otherwise reports 'Error').
+export class PurchaseCancelled extends Error { constructor(m) { super(m); this.name = 'PurchaseCancelled' } }
+export class PurchasePending extends Error { constructor(m) { super(m); this.name = 'PurchasePending' } }
 
 // Buy (or switch to) a plan. `userId` becomes the appAccountToken so Apple's
 // server notifications can be matched to this account.

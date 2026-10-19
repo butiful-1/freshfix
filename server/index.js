@@ -8,6 +8,8 @@ import { CLAIM_LANGUAGE_RULES } from '../api/_lib/claimRules.js'
 import { guardTransformResult } from '../api/_lib/claimGuard.js'
 import appleVerifyHandler from '../api/apple/verify.js'
 import appleNotificationsHandler from '../api/apple/notifications.js'
+import googleVerifyHandler from '../api/google/verify.js'
+import googleNotificationsHandler from '../api/google/notifications.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -323,6 +325,9 @@ app.post('/api/suggest', async (req, res) => {
 app.post('/api/apple/verify', (req, res) => appleVerifyHandler(req, res))
 app.options('/api/apple/verify', (req, res) => appleVerifyHandler(req, res))
 app.post('/api/apple/notifications', (req, res) => appleNotificationsHandler(req, res))
+app.post('/api/google/verify', (req, res) => googleVerifyHandler(req, res))
+app.options('/api/google/verify', (req, res) => googleVerifyHandler(req, res))
+app.post('/api/google/notifications', (req, res) => googleNotificationsHandler(req, res))
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', model: 'claude-sonnet-4-6' }))
 
