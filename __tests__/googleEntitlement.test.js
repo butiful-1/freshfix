@@ -135,6 +135,20 @@ describe('applyGooglePurchase', () => {
     const r = await applyGooglePurchase({ admin, stripe: null, play, purchaseToken: 'tokB', purchase: purchaseV2({ productId: 'old2new_premium_monthly', deferredProductId: 'old2new_plus_monthly', ack: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED' }), requestingUserId: USER })
     expect(r.plan).toBe('family'); expect(r.row.deferred_product_id).toBe('old2new_plus_monthly')
   })
+  it('final expiry after a deferred downgrade keeps the product the row ended on', async () => {
+    // Renewal applied the deferred Premium → Plus switch: the row records Plus.
+    await applyGooglePurchase({ admin, stripe: null, play, purchaseToken: 'tokB', purchase: purchaseV2({ productId: 'old2new_plus_monthly', ack: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED' }), requestingUserId: USER })
+    expect(admin.state.googleRows.tokB.product_id).toBe('old2new_plus_monthly')
+    // Google's final EXPIRED payload lists both products with the same expiry.
+    const expired = purchaseV2({ productId: 'old2new_plus_monthly', state: 'SUBSCRIPTION_STATE_EXPIRED', autoRenew: false, expiry: NOW - 1, ack: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED' })
+    expired.lineItems.push({ ...expired.lineItems[0], productId: 'old2new_premium_monthly' })
+    const r = await applyGooglePurchase({ admin, stripe: null, play, purchaseToken: 'tokB', purchase: expired, notificationType: 'SUBSCRIPTION_EXPIRED' })
+    expect(r.row.product_id).toBe('old2new_plus_monthly'); expect(r.row.plan).toBe('wellness'); expect(r.row.status).toBe('expired')
+    expect(r.plan).toBe('free'); expect(admin.state.profiles[USER]).toMatchObject({ plan: 'free', entitlement_source: null })
+    // Without a stored row the tie still resolves to the higher tier.
+    expect(primaryLineItem(expired).productId).toBe('old2new_premium_monthly')
+    expect(primaryLineItem(expired, 'old2new_plus_monthly').productId).toBe('old2new_plus_monthly')
+  })
   it('cancellation keeps access through the paid period, then expiry drops to free', async () => {
     await applyGooglePurchase({ admin, stripe: null, play, purchaseToken: 'tokA', purchase: purchaseV2(), requestingUserId: USER })
     let r = await applyGooglePurchase({ admin, stripe: null, play, purchaseToken: 'tokA', purchase: purchaseV2({ state: 'SUBSCRIPTION_STATE_CANCELED', autoRenew: false, ack: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED' }), notificationType: 'SUBSCRIPTION_CANCELED' })

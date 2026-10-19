@@ -42,7 +42,12 @@ const parseTime = (t) => (t ? Date.parse(t) : 0)
 // a known product and the latest expiry (a deferred downgrade keeps the old
 // item until renewal; the replacement target is listed under
 // deferredItemReplacement, not as its own line item).
-export function primaryLineItem(purchase) {
+// Picks the line item that represents the subscription now: the latest expiry
+// wins; on a tie (Google's final EXPIRED payload after a deferred downgrade
+// lists both products with the same expiry) the product already recorded on
+// the row wins, so a dead row keeps the tier it actually ended on; otherwise
+// the higher tier.
+export function primaryLineItem(purchase, preferredProductId = null) {
   const items = (purchase?.lineItems || []).filter(li => planForGoogleProduct(li.productId))
   if (items.length === 0) return null
   return items.reduce((best, li) => {
@@ -50,6 +55,10 @@ export function primaryLineItem(purchase) {
     const a = PLAN_LEVEL[planForGoogleProduct(li.productId)], b = PLAN_LEVEL[planForGoogleProduct(best.productId)]
     const ea = parseTime(li.expiryTime), eb = parseTime(best.expiryTime)
     if (ea !== eb) return ea > eb ? li : best
+    if (preferredProductId) {
+      if (li.productId === preferredProductId) return li
+      if (best.productId === preferredProductId) return best
+    }
     return a > b ? li : best
   }, null)
 }
@@ -70,8 +79,8 @@ export function deriveGoogleStatus(purchase, notificationType = null, now = Date
   return exp > now ? 'active' : 'expired'
 }
 
-export function rowFromPurchase(purchaseToken, purchase, notificationType, userId, now = Date.now()) {
-  const item = primaryLineItem(purchase)
+export function rowFromPurchase(purchaseToken, purchase, notificationType, userId, now = Date.now(), preferredProductId = null) {
+  const item = primaryLineItem(purchase, preferredProductId)
   const productId = item?.productId || null
   const autoRenew = item?.autoRenewingPlan ? item.autoRenewingPlan.autoRenewEnabled === true : null
   return {
@@ -100,12 +109,12 @@ export function rowFromPurchase(purchaseToken, purchase, notificationType, userI
 // Returns { userId, plan, entitlement_source, googlePlan, row } or
 // { unassigned: true, row } when no Old2New account is linked yet.
 export async function applyGooglePurchase({ admin, stripe, play = null, purchaseToken, purchase, notificationType = null, requestingUserId = null, env = process.env, now = Date.now() }) {
-  const item = primaryLineItem(purchase)
-  if (!item) return { ignored: true, reason: 'no known Old2New product on this purchase' }
-
   const { data: existing, error: selErr } = await admin
-    .from('google_subscriptions').select('user_id, status').eq('purchase_token', purchaseToken).maybeSingle()
+    .from('google_subscriptions').select('user_id, status, product_id').eq('purchase_token', purchaseToken).maybeSingle()
   if (selErr) throw selErr
+
+  const item = primaryLineItem(purchase, existing?.product_id || null)
+  if (!item) return { ignored: true, reason: 'no known Old2New product on this purchase' }
 
   // Resolve the owner: stored row → the row of the purchase this one replaced
   // (upgrade/downgrade/re-signup) → the signed-in user making a device call.
@@ -121,7 +130,7 @@ export async function applyGooglePurchase({ admin, stripe, play = null, purchase
     throw new EntitlementOwnershipError('This Google Play subscription is already linked to a different Old2New account.')
   }
 
-  const row = rowFromPurchase(purchaseToken, purchase, notificationType, userId, now)
+  const row = rowFromPurchase(purchaseToken, purchase, notificationType, userId, now, existing?.product_id || null)
   const { error: upErr } = await admin.from('google_subscriptions').upsert(row, { onConflict: 'purchase_token' })
   if (upErr) throw upErr
 

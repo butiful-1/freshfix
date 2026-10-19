@@ -130,7 +130,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
                 {loading === 'wellness' ? (
                   <><div className="spinner" /> {opening}</>
                 ) : (
-                  <>💚 Plus — {priceFor('wellness')}/mo · 50 Recipe Upgrades/month</>
+                  <>💚 Plus — {priceFor('wellness')}/mo · 50 saved recipes</>
                 )}
               </button>
 
@@ -142,7 +142,7 @@ export default function UpgradeModal({ onClose, onViewPlans, swapUsage, isTWA, a
                 {loading === 'family' ? (
                   <><div className="spinner spinner-green" style={{ borderTopColor: 'var(--green)' }} /> {opening}</>
                 ) : (
-                  <>⭐ Premium — {priceFor('family')}/mo · 150 Recipe Upgrades/month</>
+                  <>⭐ Premium — {priceFor('family')}/mo · 150 saved recipes</>
                 )}
               </button>
 

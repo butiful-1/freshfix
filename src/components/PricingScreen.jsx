@@ -15,10 +15,9 @@ const PLANS = [
     emoji: '🌱',
     color: '#6B9E6D',
     features: [
-      `5 Recipe Upgrades Every Month`,
+      '5 saved recipes every month',
       'All 7 diet types',
       'Shopping list',
-      'Save up to 5 recipes',
     ],
     stripeKey: null,
   },
@@ -31,10 +30,9 @@ const PLANS = [
     color: '#22C55E',
     popular: true,
     features: [
-      '50 Recipe Upgrades Every Month',
+      '50 saved recipes every month',
       'All 7 diet types',
       'Shopping list',
-      'Save up to 50 recipes',
       'PDF cookbook download',
       'Priority Transformations',
     ],
@@ -48,10 +46,9 @@ const PLANS = [
     emoji: '⚡',
     color: '#16A34A',
     features: [
-      '150 Recipe Upgrades Every Month',
+      '150 saved recipes every month',
       'All 7 diet types',
       'Shopping list',
-      'Save up to 150 recipes',
       'PDF cookbook download',
       'Priority Transformations',
       'Priority support',
@@ -67,7 +64,7 @@ const FAQ_WEB = [
   },
   {
     q: 'Is there a free trial for paid plans?',
-    a: `We offer ${FREE_LIMIT} free Recipe Upgrades every month on the Free plan — forever. Try Old2New before you commit to anything.`,
+    a: `We offer ${FREE_LIMIT} free saved recipes every month on the Free plan — forever. Try Old2New before you commit to anything.`,
   },
   {
     q: 'What payment methods are accepted?',
@@ -75,7 +72,7 @@ const FAQ_WEB = [
   },
   {
     q: "What's the difference between Plus and Premium?",
-    a: 'Plus gives you 50 Recipe Upgrades per month — great for most people. Premium gives you 150 Recipe Upgrades per month plus priority support, ideal for power users or households cooking multiple diet types.',
+    a: 'Plus gives you 50 saved recipes every month — great for most people. Premium gives you 150 saved recipes every month plus priority support, ideal for power users or households cooking multiple diet types.',
   },
   {
     q: 'Can I switch between plans?',
@@ -98,11 +95,11 @@ const FAQ_IOS = [
   },
   {
     q: 'Is there a free trial?',
-    a: `The Free plan includes ${FREE_LIMIT} Recipe Upgrades every month — forever — so you can try Old2New before subscribing.`,
+    a: `The Free plan includes ${FREE_LIMIT} saved recipes every month — forever — so you can try Old2New before subscribing.`,
   },
   {
     q: "What's the difference between Plus and Premium?",
-    a: 'Plus gives you 50 Recipe Upgrades per month. Premium gives you 150 Recipe Upgrades per month plus priority support.',
+    a: 'Plus gives you 50 saved recipes every month. Premium gives you 150 saved recipes every month plus priority support.',
   },
   {
     q: 'Can I switch between plans?',
@@ -129,11 +126,11 @@ const FAQ_GOOGLE = [
   },
   {
     q: 'Is there a free trial?',
-    a: `The Free plan includes ${FREE_LIMIT} Recipe Upgrades every month — forever — so you can try Old2New before subscribing.`,
+    a: `The Free plan includes ${FREE_LIMIT} saved recipes every month — forever — so you can try Old2New before subscribing.`,
   },
   {
     q: "What's the difference between Plus and Premium?",
-    a: 'Plus gives you 50 Recipe Upgrades per month. Premium gives you 150 Recipe Upgrades per month plus priority support.',
+    a: 'Plus gives you 50 saved recipes every month. Premium gives you 150 saved recipes every month plus priority support.',
   },
   {
     q: 'Can I switch between plans?',
@@ -316,7 +313,7 @@ export default function PricingScreen({ plan, swapUsage, onBack, user, appleIAP 
           More Monthly Recipe Transformations
         </h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Upgrade for more monthly Recipe Upgrades and saved recipes.
+          Upgrade for more saved recipes every month.
         </p>
 
         {plan === 'free' && (
