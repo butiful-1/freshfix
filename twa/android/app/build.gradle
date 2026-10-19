@@ -8,10 +8,13 @@ android {
 
     defaultConfig {
         applicationId 'app.old2new.twa'
-        minSdk 21
+        // Google Play Billing via the Digital Goods API needs Chrome 101+ on
+        // Android 9+; the androidbrowserhelper billing module itself requires
+        // API 24 (Android 7.0). Raised from 21 with the 1.2 (versionCode 9) release.
+        minSdk 24
         targetSdk 36
-        versionCode 8
-        versionName '1.1'
+        versionCode 9
+        versionName '1.2'
     }
 
     signingConfigs {
@@ -37,5 +40,11 @@ android {
 }
 
 dependencies {
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    // Play Billing bridge for Trusted Web Activities (Digital Goods API +
+    // Payment Request 'https://play.google.com/billing'). 1.2.0 (July 2026)
+    // is built on Google Play Billing Library 8.3.0, which satisfies Google's
+    // "Billing Library 8 or newer for all app updates after Aug 31, 2026" rule.
+    implementation 'com.google.androidbrowserhelper:billing:1.2.0'
+    implementation 'com.android.billingclient:billing:8.3.0'
 }
