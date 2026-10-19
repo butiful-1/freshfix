@@ -8,7 +8,29 @@
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/LauncherTheme"
         android:allowBackup="false"
+        android:manageSpaceActivity="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
         android:supportsRtl="true">
+
+        <!-- Required by androidbrowserhelper 2.7.x: LauncherActivity.launchTwa()
+             always toggles this component (site-settings shortcut); on recent
+             Android versions toggling an undeclared component throws and the
+             app crashed at launch (seen on Android 17, build 9). Declared the
+             same way Bubblewrap's template does. -->
+        <activity
+            android:name="com.google.androidbrowserhelper.trusted.ManageDataLauncherActivity"
+            android:exported="false"
+            android:enabled="true"
+            android:excludeFromRecents="true">
+            <meta-data
+                android:name="android.support.customtabs.trusted.MANAGE_SPACE_URL"
+                android:value="@string/default_url" />
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity" />
 
         <activity
             android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"

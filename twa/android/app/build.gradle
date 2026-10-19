@@ -13,8 +13,8 @@ android {
         // API 24 (Android 7.0). Raised from 21 with the 1.2 (versionCode 9) release.
         minSdk 24
         targetSdk 36
-        versionCode 9
-        versionName '1.2'
+        versionCode 10
+        versionName '1.2.1'
     }
 
     signingConfigs {

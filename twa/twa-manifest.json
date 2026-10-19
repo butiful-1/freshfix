@@ -40,6 +40,6 @@
     "path": "./android.keystore",
     "alias": "old2new"
   },
-  "appVersion": "1.2",
-  "appVersionCode": 9
+  "appVersion": "1.2.1",
+  "appVersionCode": 10
 }
