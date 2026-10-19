@@ -37,3 +37,27 @@ Known cosmetic follow-up: after a deferred downgrade, Google's final EXPIRED
 payload lists both line items with the same expiry; `primaryLineItem` then
 records the higher tier's product id on the (already expired, non-granting)
 row. Entitlement is unaffected.
+
+## Addendum — wrap-up session (2026-10-19, afternoon)
+
+Changes since the table above: plan copy now says "saved recipes" (no
+"upgrades/mo" wording), `primaryLineItem` keeps the row's product on a tied
+final expiry (new unit test), service-account key rotated, master
+fast-forwarded to the deploy branch, build 10 (1.2.1) promoted to Production.
+
+| # | Step | Result | Evidence |
+|---|---|---|---|
+| A1 | Org policy `iam.disableServiceAccountKeyCreation` | project override (not enforced) set, new JSON key created, override restored to "Inherit parent's policy" — effective status Enforced | Cloud Console |
+| A2 | New key `02f1f476…` | access token issued, Play Developer API answers 400 (bad token), not 401 | local check, key file deleted afterwards |
+| A3 | Vercel production `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | removed + re-added with the new key (value never printed), redeployed | `vercel env` |
+| A4 | Old key `025a533f…` | deleted in Cloud Console after the new key was proven | Cloud Console toast |
+| A5 | Pricing screen in the TWA (fresh bundle) | "50 saved recipes every month" / "150 saved recipes every month", live $14.99/mo and $24.99/mo from Play, Google disclosures, Restore Purchases, no Stripe | page text |
+| A6 | Plus purchase with the rotated key | "You're now on Plus", home "50 of 50", row active + acknowledged, profile wellness/google | verify 200 at 17:55:36Z |
+| A7 | Restore Purchases | "Restored: your Plus plan is active." | page text |
+| A8 | RTDN after rotation | `SUBSCRIPTION_RENEWED` processed 17:59:55Z (state re-fetched from Play with the new key), expires_at advanced | DB |
+| A9 | Other entitlement sources | apple/family 1, manual/family 2, stripe/wellness 1 — unchanged | profiles summary |
+| A10 | Cleanup | test subscription cancelled in Play; expires at period end → account returns to free | DB |
+
+Known: a device verify (`/api/google/verify`) rewrites `last_notification_type`
+to NULL because it carries no RTDN type; the column records the last RTDN
+only until the next launch sync. Entitlement is unaffected.
